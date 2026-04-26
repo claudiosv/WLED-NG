@@ -201,17 +201,17 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
 
         // limit max. selectable preset to 250, even though DMX max. val is 255
         int dmxValPreset = (e131_data[dataOffset+1] > 250 ? 250 : e131_data[dataOffset+1]);
-        
-        // only apply preset if value changed 
-        if (dmxValPreset != 0 && dmxValPreset != currentPreset &&  
+
+        // only apply preset if value changed
+        if (dmxValPreset != 0 && dmxValPreset != currentPreset &&
             // only apply preset if not in playlist, or playlist changed
-            (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) { 
+            (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) {
           presetCycCurr = dmxValPreset;
           applyPreset(dmxValPreset, CALL_MODE_NOTIFICATION);
         }
 
         // only change brightness if value changed
-        if (bri != e131_data[dataOffset]) {                                        
+        if (bri != e131_data[dataOffset]) {
           bri = e131_data[dataOffset];
           strip.setBrightness(bri, false);
           stateUpdated(CALL_MODE_WS_SEND);
@@ -243,7 +243,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
 
           if (e131_data[dataOffset+1] < strip.getModeCount())
             if (e131_data[dataOffset+1] != seg.mode)      seg.setMode(   e131_data[dataOffset+1]);
-          if (e131_data[dataOffset+2]   != seg.speed)     seg.speed     = e131_data[dataOffset+2];      
+          if (e131_data[dataOffset+2]   != seg.speed)     seg.speed     = e131_data[dataOffset+2];
           if (e131_data[dataOffset+3]   != seg.intensity) seg.intensity = e131_data[dataOffset+3];
           if (e131_data[dataOffset+4]   != seg.palette)   seg.setPalette(e131_data[dataOffset+4]);
 
@@ -285,7 +285,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
         return;
         break;
       }
-      
+
     case DMX_MODE_MULTIPLE_DRGB:
     case DMX_MODE_MULTIPLE_RGB:
     case DMX_MODE_MULTIPLE_RGBW:
@@ -540,7 +540,7 @@ static void sendArtnetPollReply(ArtPollReply *reply, IPAddress ipAddress, uint16
   reply->reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
   reply->reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
 
-  snprintf_P((char *)reply->reply_node_report, sizeof(reply->reply_node_report)-1, PSTR("#0001 [%04u] OK - WLED v%s"), pollReplyCount, versionString);
+  snprintf((char *)reply->reply_node_report, sizeof(reply->reply_node_report)-1, "#0001 [%04u] OK - WLED v%.32s", pollReplyCount, versionString);
 
   if (pollReplyCount < 9999) {
     pollReplyCount++;

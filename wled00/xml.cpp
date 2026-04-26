@@ -45,7 +45,7 @@ static void fillWLEDVersion(char *buf, size_t len)
 {
   if (!buf || len == 0) return;
 
-  snprintf_P(buf,len,PSTR("WLED %s (%d)<br>\\\"%s\\\"<br>(Processor: %s)"),
+  snprintf_P(buf,len,PSTR("WLED %.10s (%d)<br>\\\"%.32s\\\"<br>(Processor: %.10s)"),
     versionString,
     VERSION,
     releaseString,

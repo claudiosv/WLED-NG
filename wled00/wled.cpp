@@ -11,17 +11,49 @@
 #error DMX input is only supported on ESP32
 #endif
 
+// #if !(defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3) || defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32P4) || defined(ARDUINO_ARCH_ESP32C5) || defined(ARDUINO_ARCH_ESP32C6) || defined(ARDUINO_ARCH_ESP32H2))
 #if !defined(ARDUINO_ARCH_ESP32)
   #error "ARDUINO_ARCH_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
-#if !defined(CONFIG_IDF_TARGET_ESP32)
+#if !defined(ESP_PLATFORM)
+  #warning "ESP Platform undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
+#endif
+
+#if !(defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2))
   #error "CONFIG_IDF_TARGET_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
 #if !defined(ESP32)
   #error "ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
+
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0)
+  #error "ESP-IDF version is too old: Please update to ESP-IDF 4.2 or later"
+#endif
+
+// Helper macros to convert integers to strings during preprocessing
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
+// Translate the __cplusplus numeric value
+#if __cplusplus >= 202302L
+  #define CXX_STANDARD "C++23"
+#elif __cplusplus >= 202002L
+  #define CXX_STANDARD "C++20"
+#elif __cplusplus >= 201703L
+  #define CXX_STANDARD "C++17"
+#elif __cplusplus >= 201402L
+  #define CXX_STANDARD "C++14"
+#elif __cplusplus >= 201103L
+  #define CXX_STANDARD "C++11"
+#else
+  #define CXX_STANDARD "C++98 / Pre-C++11"
+#endif
+
+// Print to the compiler output log
+#pragma message("Building with GCC Version: " STR(__GNUC__) "." STR(__GNUC_MINOR__) "." STR(__GNUC_PATCHLEVEL__))
+#pragma message("Active C++ Standard: " CXX_STANDARD " (" STR(__cplusplus) ")")
 
 // #ifdef BOARD_HAS_PSRAM
 
@@ -697,10 +729,11 @@ void WLED::initConnection()
   WiFi.setHostname(hostname);
 #endif
 
-  if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
+  // TODO: use IPAddress(0,0,0,0) ?
+  if (multiWiFi[selectedWiFi].staticIP != static_cast<uint32_t>(0) && multiWiFi[selectedWiFi].staticGW != static_cast<uint32_t>(0)) {
     WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
   } else {
-    WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
+    WiFi.config(IPAddress(static_cast<uint32_t>(0)), IPAddress(static_cast<uint32_t>(0)), IPAddress(static_cast<uint32_t>(0)));
   }
 
   lastReconnectAttempt = millis();

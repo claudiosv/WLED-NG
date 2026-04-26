@@ -6,6 +6,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32 //FS info bare IDF function until FS wrapper is available for ESP32
 #if WLED_FS != LITTLEFS && ESP_IDF_VERSION_MAJOR < 4
+  #error "Please use LittleFs"
   #include "esp_spiffs.h"
 #endif
 #endif

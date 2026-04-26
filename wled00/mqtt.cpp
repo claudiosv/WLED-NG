@@ -232,7 +232,7 @@ bool initMqtt()
   if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
 
   #ifndef USERMOD_SMARTNEST
-  snprintf_P(mqttStatusTopic, sizeof(mqttStatusTopic)-1, sTopicFormat, MQTT_MAX_TOPIC_LEN, mqttDeviceTopic, "status");
+  snprintf(mqttStatusTopic, sizeof(mqttStatusTopic)-1, sTopicFormat, MQTT_MAX_TOPIC_LEN-1, mqttDeviceTopic, "status");
   mqtt->setWill(mqttStatusTopic, 0, true, "offline"); // LWT message
   #endif
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);

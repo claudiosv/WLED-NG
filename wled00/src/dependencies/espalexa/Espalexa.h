@@ -66,7 +66,9 @@ private:
   AsyncWebServer* serverAsync;
   AsyncWebServerRequest* server; //this saves many #defines
   String body = "";
+  #elif defined(ARDUINO_ARCH_ESP32)
   WebServer* server;
+  #endif
   uint8_t currentDeviceCount = 0;
   bool discoverable = true;
   bool udpConnected = false;

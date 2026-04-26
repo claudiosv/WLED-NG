@@ -55,36 +55,6 @@ float sin_approx(float theta) {
 #endif
 }
 
-// 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
-// input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
-// optimized integer implementation by @dedehai
-int16_t sin16_t(uint16_t theta) {
-  int scale = 1;
-  if (theta > 0x7FFF) {
-    theta = 0xFFFF - theta;
-    scale = -1; // second half of the sine function is negative (pi - 2*pi)
-  }
-  uint32_t precal = theta * (0x7FFF - theta);
-  uint64_t numerator = (uint64_t)precal * (4 * 0x7FFF); // 64bit required
-  int32_t denominator = 1342095361 - precal; // 1342095361 is 5 * 0x7FFF^2 / 4
-  int16_t result = numerator / denominator;
-  return result * scale;
-}
-
-int16_t cos16_t(uint16_t theta) {
-  return sin16_t(theta + 0x4000); //cos(x) = sin(x+pi/2)
-}
-
-uint8_t sin8_t(uint8_t theta) {
-  int32_t sin16 = sin16_t((uint16_t)theta * 257); // 255 * 257 = 0xFFFF
-  sin16 += 0x7FFF + 128; //shift result to range 0-0xFFFF, +128 for rounding
-  return min(sin16, int32_t(0xFFFF)) >> 8; // min performs saturation, and prevents overflow
-}
-
-uint8_t cos8_t(uint8_t theta) {
-  return sin8_t(theta + 64); //cos(x) = sin(x+pi/2)
-}
-
 float cos_approx(float theta) {
 #ifdef HAS_HARDWARE_FPU
   return cosf(theta);

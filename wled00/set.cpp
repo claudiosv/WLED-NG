@@ -131,7 +131,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     linked_remotes.clear();  // clear old remotes
     for (size_t n = 0; n < 10; n++) {
       char rm[4];
-      snprintf(rm, sizeof(rm), "RM%d", n); // "RM0" to "RM9"
+      snprintf(rm, sizeof(rm), "RM%c", n); // "RM0" to "RM9"
       if (request->hasArg(rm)) {
         const String& arg = request->arg(rm);
         if (arg.isEmpty()) continue;
