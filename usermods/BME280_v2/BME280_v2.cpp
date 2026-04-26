@@ -13,7 +13,7 @@
 class UsermodBME280 : public Usermod
 {
 private:
-  
+
   // NOTE: Do not implement any compile-time variables, anything the user needs to configure
   // should be configurable from the Usermod menu using the methods below
   // key settings set via usermod menu
@@ -28,10 +28,6 @@ private:
   bool HomeAssistantDiscovery = false;    // Publish Home Assistant Device Information
   bool enabled = true;
 
-  // set the default pins based on the architecture, these get overridden by Usermod menu settings
-  #ifdef ESP8266
-    //uint8_t RST_PIN = 16; // Un-comment for Heltec WiFi-Kit-8
-  #endif
   bool initDone = false;
 
   BME280I2C bme;
@@ -104,7 +100,7 @@ private:
     }
   }
 
-  // Procedure to define all MQTT discovery Topics 
+  // Procedure to define all MQTT discovery Topics
   void _mqttInitialize()
   {
     char mqttTemperatureTopic[128];
@@ -131,9 +127,9 @@ private:
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
   {
     String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
-    
+
     StaticJsonDocument<600> doc;
-    
+
     doc[F("name")] = String(serverDescription) + " " + name;
     doc[F("state_topic")] = topic;
     doc[F("unique_id")] = String(mqttClientID) + name;
@@ -181,7 +177,7 @@ private:
         };
 
       bme.setSettings(settings);
-      
+
       if (!bme.begin())
       {
         sensorType = 0;
@@ -210,7 +206,7 @@ public:
   void setup()
   {
     if (i2c_scl<0 || i2c_sda<0) { enabled = false; sensorType = 0; return; }
-    
+
     initializeBmeComms();
     initDone = true;
   }
@@ -304,7 +300,7 @@ public:
         return (float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       } else {
         return (float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) * 1.8f + 32;
-      }      
+      }
     }
 
     inline float getTemperatureF() {
@@ -360,7 +356,7 @@ public:
   {
     JsonObject user = root[F("u")];
     if (user.isNull()) user = root.createNestedObject(F("u"));
-    
+
     if (sensorType==0) //No Sensor
     {
       // if we sensor not detected, let the user know
@@ -463,7 +459,7 @@ public:
       lastHeatIndex = 0;
       lastDewPoint = 0;
       lastPressure = 0;
-      
+
       initializeBmeComms();
     }
 

@@ -6,8 +6,6 @@
 #ifndef TEMPERATURE_PIN
   #ifdef ARDUINO_ARCH_ESP32
     #define TEMPERATURE_PIN 18
-  #else //ESP8266 boards
-    #define TEMPERATURE_PIN 14
   #endif
 #endif
 
@@ -62,7 +60,7 @@ class UsermodTemperature : public Usermod {
     static const char _temperature[];
     static const char _Temperature[];
     static const char _data_fx[];
-    
+
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas();
     void requestTemperatures();

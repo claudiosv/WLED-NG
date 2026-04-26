@@ -7,16 +7,16 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-//The SCL and SDA pins are defined here. 
-//Lolin32 boards use SCL=5 SDA=4 
+//The SCL and SDA pins are defined here.
+//Lolin32 boards use SCL=5 SDA=4
 #define U8X8_PIN_SCL 5
 #define U8X8_PIN_SDA 4
 // Dallas sensor
-OneWire oneWire(13); 
+OneWire oneWire(13);
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
-#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit 
+#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit
 
 // If display does not work or looks corrupted check the
 // constructor reference:
@@ -32,7 +32,7 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_
 void userSetup() {
   sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
-  //u8x8.setFlipMode(1); //Un-comment if using WLED Wemos shield 
+  //u8x8.setFlipMode(1); //Un-comment if using WLED Wemos shield
   u8x8.setPowerSave(0);
   u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
@@ -63,11 +63,11 @@ bool displayTurnedOff = false;
 void userLoop() {
 
 //----> Dallas temperature sensor MQTT publishing
-  temptimer = millis();  
+  temptimer = millis();
 // Timer to publishe new temperature every 60 seconds
-  if (temptimer - lastMeasure > 60000) 
+  if (temptimer - lastMeasure > 60000)
   {
-    lastMeasure = temptimer;    
+    lastMeasure = temptimer;
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr)
     {
@@ -91,7 +91,7 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
-  
+
   // Turn off display after 3 minutes with no change.
   if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
     u8x8.setPowerSave(1);
@@ -115,7 +115,7 @@ void userLoop() {
     return;
   }
   needRedraw = false;
-  
+
   if (displayTurnedOff)
   {
     u8x8.setPowerSave(0);
@@ -124,11 +124,7 @@ void userLoop() {
   lastRedraw = millis();
 
   // Update last known values.
-  #if defined(ESP8266)
-  knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-  #else
   knownSsid = WiFi.SSID();
-  #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
   knownMode = strip.getMainSegment().mode;

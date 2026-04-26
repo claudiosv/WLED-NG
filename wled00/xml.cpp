@@ -49,11 +49,7 @@ static void fillWLEDVersion(char *buf, size_t len)
     versionString,
     VERSION,
     releaseString,
-  #if defined(ARDUINO_ARCH_ESP32)
     ESP.getChipModel()
-  #else
-    "ESP8266"
-  #endif
   );
 }
 
@@ -459,7 +455,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
 #ifndef WLED_DISABLE_INFRARED
     printSetFormValue(settingsScript,PSTR("IR"),irPin);
     printSetFormValue(settingsScript,PSTR("IT"),irEnabled);
-#endif    
+#endif
     printSetFormCheckbox(settingsScript,PSTR("MSO"),!irApplyToAllSelected);
   }
 

@@ -34,7 +34,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     // data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     if(info->final && info->index == 0 && info->len == len){
-      // the whole message is in a single frame and we got all of its data (max. 1428 bytes / ESP8266: 528 bytes)
+      // the whole message is in a single frame and we got all of its data (max. 1428 bytes)
       if(info->opcode == WS_TEXT)
       {
         if (len > 0 && len < 10 && data[0] == 'p') {
@@ -162,12 +162,8 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t heap1 = getFreeHeapSize();
   DEBUG_PRINTF_P(PSTR("heap %u\n"), getFreeHeapSize());
   AsyncWebSocketBuffer buffer(len);
-  #ifdef ESP8266
-  size_t heap2 = getFreeHeapSize();
-  DEBUG_PRINTF_P(PSTR("heap %u\n"), getFreeHeapSize());
-  #else
-  size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
-  #endif
+  size_t heap2 = 0;
+
   if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
     DEBUG_PRINTLN(F("WS buffer allocation failed."));
@@ -195,11 +191,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
   size_t used = strip.getLengthTotal();
-#ifdef ESP8266
-  const size_t MAX_LIVE_LEDS_WS = 256U;
-#else
   const size_t MAX_LIVE_LEDS_WS = 1024U;
-#endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = 2;  // start of data
 #ifndef WLED_DISABLE_2D
@@ -252,11 +244,7 @@ void handleWs()
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {
-    #ifdef ESP8266
-    ws.cleanupClients(3);
-    #else
     ws.cleanupClients();
-    #endif
     bool success = true;
     if (wsLiveClientId) success = sendLiveLedsWs(wsLiveClientId);
     wsLastLiveTime = millis();

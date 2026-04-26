@@ -38,11 +38,7 @@ static inline int32_t limitSpeed(const int32_t speed) {
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation (based on reasonable segment size and available FX memory)
-#ifdef ESP8266
-  #define MAXPARTICLES_2D 256
-  #define MAXSOURCES_2D 24
-  #define SOURCEREDUCTIONFACTOR 8
-#elif ARDUINO_ARCH_ESP32S2
+#if ARDUINO_ARCH_ESP32S2
   #define MAXPARTICLES_2D 1024
   #define MAXSOURCES_2D 64
   #define SOURCEREDUCTIONFACTOR 6
@@ -255,10 +251,7 @@ inline uint8_t calculateEllipseBrightness(int32_t dx, int32_t dy, int32_t rxsq, 
 ////////////////////////
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 // memory allocation
-#ifdef ESP8266
-  #define MAXPARTICLES_1D 320
-  #define MAXSOURCES_1D 16
-#elif ARDUINO_ARCH_ESP32S2
+#if ARDUINO_ARCH_ESP32S2
   #define MAXPARTICLES_1D 1300
   #define MAXSOURCES_1D 32
 #else

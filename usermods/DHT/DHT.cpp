@@ -36,8 +36,6 @@
 #else
 #ifdef ARDUINO_ARCH_ESP32
 #define DHTPIN 21
-#else //ESP8266 boards
-#define DHTPIN 4
 #endif
 #endif
 

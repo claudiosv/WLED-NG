@@ -189,7 +189,6 @@ function connectWs(onOpen) {
 function sendDDP(ws, start, len, colors) {
 	if (!colors || colors.length < len * 3) return false; // not enough color data
 	let maxDDPpx = 472; // must fit into one WebSocket frame of 1428 bytes, DDP header is 10+1 bytes -> 472 RGB pixels
-	//let maxDDPpx = 172; // ESP8266: must fit into one WebSocket frame of 528 bytes -> 172 RGB pixels TODO: add support for ESP8266?
 	if (!ws || ws.readyState !== WebSocket.OPEN) return false;
 	// send in chunks of maxDDPpx
 	for (let i = 0; i < len; i += maxDDPpx) {

@@ -13,10 +13,10 @@
  * I use the button to cycle between presets.
  * The Pin 35 button is the one on the RIGHT side of the USB-C port on the board,
  * when the port is oriented downwards.  See readme.md file for photo.
- * The display is set up to turn off after 5 minutes, and turns on automatically 
+ * The display is set up to turn off after 5 minutes, and turns on automatically
  * when a change in the dipslayed info is detected (within a 5 second interval).
  */
- 
+
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 
@@ -61,7 +61,7 @@ void userSetup() {
 
     if (TFT_BL > 0) { // TFT_BL has been set in the TFT_eSPI library in the User Setup file TTGO_T_Display.h
          pinMode(TFT_BL, OUTPUT); // Set backlight pin to output mode
-         digitalWrite(TFT_BL, HIGH); // Turn backlight on. 
+         digitalWrite(TFT_BL, HIGH); // Turn backlight on.
     }
 
     // tft.setRotation(3);
@@ -96,12 +96,12 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
-  
+
   // Turn off display after 5 minutes with no change.
    if(!displayTurnedOff && millis() - lastRedraw > 5*60*1000) {
-    digitalWrite(TFT_BL, LOW); // Turn backlight off. 
+    digitalWrite(TFT_BL, LOW); // Turn backlight off.
     displayTurnedOff = true;
-  } 
+  }
 
   // Check if values which are shown on display changed from the last time.
   if (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) {
@@ -120,7 +120,7 @@ void userLoop() {
     return;
   }
   needRedraw = false;
-  
+
   if (displayTurnedOff)
   {
     digitalWrite(TFT_BL, TFT_BACKLIGHT_ON); // Turn backlight on.
@@ -129,11 +129,7 @@ void userLoop() {
   lastRedraw = millis();
 
   // Update last known values.
-  #if defined(ESP8266)
-  knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-  #else
   knownSsid = WiFi.SSID();
-  #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
   knownMode = strip.getMainSegment().mode;
@@ -191,5 +187,5 @@ void userLoop() {
   // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
   tft.print(strip.currentMilliamps);
   tft.print("mA (estimated)");
-  
+
 }

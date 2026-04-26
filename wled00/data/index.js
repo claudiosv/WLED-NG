@@ -2009,7 +2009,7 @@ function plM(p)
 	plJson[p].dur.forEach((e,i)=>{
 		const d = gId(`pl${p}du${i}`);
 		plJson[p].dur[i] = e = man ? 0 : 100;
-		d.value = e/10; // 10s default 
+		d.value = e/10; // 10s default
 		d.readOnly = man;
 	});
 }
@@ -3276,7 +3276,7 @@ function simplifyUI() {
 	gId("buttonSr").style.display = "none";
 	gId("buttonPcm").style.display = "none";
 
-	// Hide bottom bar 
+	// Hide bottom bar
 	gId("bot").style.display = "none";
 	d.documentElement.style.setProperty('--bh', '0px');
 

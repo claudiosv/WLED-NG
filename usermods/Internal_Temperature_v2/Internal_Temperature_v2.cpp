@@ -40,10 +40,7 @@ public:
     lastTime = millis();
 
 // Measure the temperature
-#ifdef ESP8266 // ESP8266
-    // does not seem possible
-    temperature = -1;
-#elif defined(CONFIG_IDF_TARGET_ESP32S2) // ESP32S2
+#if defined(CONFIG_IDF_TARGET_ESP32S2) // ESP32S2
     temperature = -1;
 #else                                    // ESP32 ESP32S3 and ESP32C3
     temperature = roundf(temperatureRead() * 10) / 10;

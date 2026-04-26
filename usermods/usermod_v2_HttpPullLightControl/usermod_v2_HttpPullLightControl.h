@@ -14,16 +14,13 @@
  *           number of lights that should turn on. Each light is a friend who did contact your server in the past 5 minutes.
  *           So on each of your friends LED rings, the number of lights will be the number of friends who have it turned on.
  * Features: It sends a unique ID (has of MAC and salt) to the URL, so you can define each client without a need to map their IP address.
- * Tested: Tested on WLED v0.14 with ESP32-S3 (M5Stack Atom S3 Lite), but should also workd for other ESPs and ESP8266.
+ * Tested: Tested on WLED v0.14 with ESP32-S3 (M5Stack Atom S3 Lite), but should also workd for other ESPs.
  */
 
 #include "wled.h"
 
 // Use the following for SHA1 computation of our HASH, unfortunatelly PlatformIO doesnt recognize Hash.h while its already in the Core.
-// We use Hash.h for ESP8266 (in the core) and mbedtls/sha256.h for ESP32 (in the core).
-#ifdef ESP8266
-  #include <Hash.h>
-#endif
+// We use mbedtls/sha256.h for ESP32 (in the core).
 #ifdef ESP32
   #include "mbedtls/sha1.h"
 #endif
@@ -88,7 +85,7 @@ public:
   uint16_t getId() { return USERMOD_ID_HTTP_PULL_LIGHT_CONTROL; }
   inline void enable(bool enable) { enabled = enable; }   // Enable or Disable the usermod
   inline bool isEnabled() { return enabled; }             // Get usermod enabled or disabled state
-  virtual ~HttpPullLightControl() { 
+  virtual ~HttpPullLightControl() {
    // Remove the cached client if needed
     if (client) {
       client->onDisconnect(nullptr);

@@ -4,11 +4,7 @@
  * Registers pins so there is no attempt for two interfaces to use the same pin
  */
 
-#ifdef ESP8266
-#define WLED_NUM_PINS (GPIO_PIN_COUNT+1) // somehow they forgot GPIO 16 (0-16==17)
-#else
 #define WLED_NUM_PINS (GPIO_PIN_COUNT)
-#endif
 
 // Pin capability flags - only "special" capabilities useful for debugging (note: touch capability is provided by appendGPIOinfo() via d.touch)
 #define PIN_CAP_ADC          0x02   // has ADC capability (analog input)
@@ -28,7 +24,6 @@ typedef struct PinManagerPinType {
  * a pin it hasn't allocated.  Also enhances debugging.
  *
  * RAM Cost:
- *     17 bytes on ESP8266
  *     40 bytes on ESP32
  */
 enum struct PinOwner : uint8_t {

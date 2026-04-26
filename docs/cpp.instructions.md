@@ -83,7 +83,7 @@ uint8_t gammaCorrect(uint8_t value, float gamma);
 ## Preprocessor & Feature Flags
 
 - Prefer compile-time feature flags (`#ifdef` / `#ifndef`) over runtime checks where possible
-- Platform differentiation: `ARDUINO_ARCH_ESP32` vs `ESP8266`
+- Platform differentiation: `ARDUINO_ARCH_ESP32`
 - PSRAM availability: `BOARD_HAS_PSRAM`
 
 ## Error Handling
@@ -95,11 +95,10 @@ uint8_t gammaCorrect(uint8_t value, float gamma);
 
 - Use `const char*` for temporary/parsed strings
 - Avoid `String` (Arduino heap-allocated string) in hot paths; acceptable in config/setup code
-- Use `F("string")` for string constants (major RAM win on ESP8266; mostly overload/type compatibility on ESP32)
 - Store repeated strings as `static const char[] PROGMEM`
 <!-- HUMAN_ONLY_START -->
 
-  On **ESP8266** this explicitly stores the string in flash (PROGMEM), saving precious RAM — every byte counts on that platform. 
+  On **ESP8266** this explicitly stores the string in flash (PROGMEM), saving precious RAM — every byte counts on that platform.
   On **ESP32**, `PROGMEM` is a no-op and string literals already reside in flash/rodata, so `F()` yields little RAM benefit but remains harmless (it satisfies `__FlashStringHelper*` overloads that some APIs expect).
 <!-- HUMAN_ONLY_END -->
 
@@ -181,7 +180,7 @@ BusManager::add(const BusConfig &bc, bool placeholder) {
 ```
 
 <!-- HUMAN_ONLY_END -->
-- Class **Data Members:** Avoid reference data members (`T&` or `const T&`) in a class. 
+- Class **Data Members:** Avoid reference data members (`T&` or `const T&`) in a class.
   A reference member can outlive the object it refers to, causing **dangling reference** bugs that are hard to diagnose. Prefer value storage or use a pointer and document the expected lifetime.
 
 <!-- HUMAN_ONLY_START -->
@@ -274,7 +273,7 @@ static uint32_t colorBalance(uint32_t color, uint8_t r, uint8_t g, uint8_t b);
 The hot path is the per-frame pixel pipeline: **Segment → Strip → BusManager → Bus(Digital,HUB75,Network) or PolyBus → LED driver, plus ``WS2812FX::show()`` and below**.
 Speed is the priority here. The patterns below are taken from existing hot-path code (`FX_fcn.cpp`, `FX_2Dfcn.cpp`, `bus_manager.cpp`, `colors.cpp`) and should be followed when modifying these files.
 
-Note: `FX.cpp` (effect functions) is written by many contributors and has diverse styles — that is acceptable. 
+Note: `FX.cpp` (effect functions) is written by many contributors and has diverse styles — that is acceptable.
 
 ### Function Attributes
 
@@ -336,8 +335,8 @@ if (unsigned(i) >= vLength()) return;    // bounds check (catches negative i too
 Avoid calling non-inline functions or making complex decisions inside per-pixel hot-path code. When a function has both a common simple case and a rare complex case, split it into two variants and choose once per frame rather than per pixel.
 
 General rules:
-- Keep fast-path functions free of non-inline calls, multi-way branches, and complex switch-case decisions. 
-- Hoist per-frame decisions (e.g. simple vs. complex segment) out of the per-pixel loop. 
+- Keep fast-path functions free of non-inline calls, multi-way branches, and complex switch-case decisions.
+- Hoist per-frame decisions (e.g. simple vs. complex segment) out of the per-pixel loop.
 - Code duplication between fast/slow variants is acceptable to keep the fast path lean.
 
 ### Function Pointers to Eliminate Repeated Decisions
@@ -423,8 +422,8 @@ return rb | wg;
 
 ### Bit Shifts Over Division (mainly for RISC-V boards)
 
-ESP32 and ESP32-S3 (Xtensa core) have a fast "integer divide" instruction, so manual shifts rarely help. 
-On RISC-V targets (ESP32-C3/C6/P4) and ESP8266, prefer explicit bit-shifts for power-of-two arithmetic — the compiler does **not** always convert divisions to shifts. 
+ESP32 and ESP32-S3 (Xtensa core) have a fast "integer divide" instruction, so manual shifts rarely help.
+On RISC-V targets (ESP32-C3/C6/P4) and ESP8266, prefer explicit bit-shifts for power-of-two arithmetic — the compiler does **not** always convert divisions to shifts.
 Always use unsigned operands for right shifts; signed right-shift is implementation-defined.
 
 <!-- HUMAN_ONLY_START -->
@@ -475,7 +474,7 @@ if (lastKelvin != kelvin) {
 
 ## `delay()` vs `yield()` in ESP32 Tasks
 <!-- HUMAN_ONLY_START -->
-* On ESP32, `delay(ms)` calls `vTaskDelay(ms / portTICK_PERIOD_MS)`, which **suspends only the calling task**. The FreeRTOS scheduler immediately runs all other ready tasks. 
+* On ESP32, `delay(ms)` calls `vTaskDelay(ms / portTICK_PERIOD_MS)`, which **suspends only the calling task**. The FreeRTOS scheduler immediately runs all other ready tasks.
 * The Arduino `loop()` function runs inside `loopTask`. Calling `delay()` there does *not* block the network stack, audio FFT, LED DMA, nor any other FreeRTOS task.
 * This differs from ESP8266, where `delay()` stalls the entire system unless `yield()` was called inside.
 <!-- HUMAN_ONLY_END -->
@@ -487,7 +486,7 @@ if (lastKelvin != kelvin) {
 
 ### IDLE Watchdog and Custom Tasks on ESP32
 
-- In arduino-esp32, `yield()` calls `vTaskDelay(0)`, which only switches to tasks at equal or higher priority — the IDLE task (priority 0) is never reached. 
+- In arduino-esp32, `yield()` calls `vTaskDelay(0)`, which only switches to tasks at equal or higher priority — the IDLE task (priority 0) is never reached.
 - **Do not use `yield()` to pace ESP32 tasks or assume it feeds any watchdog**.
 - **Custom `xTaskCreate()` tasks must call `delay(1)` in their loop, not `yield()`.** Without a real blocking call, the IDLE task is starved. The IDLE watchdog panic is the first visible symptom — but the damage starts earlier: deleted task memory leaks, software timers stop firing, light sleep is disabled, and Wi-Fi/BT idle hooks don't run. Structure custom tasks like this:
 ```cpp
@@ -519,7 +518,7 @@ void myTask(void*) {
   ```cpp
   // Undefined behavior — avoid:
   uint8_t angle = 40.74f * atan2f(dy, dx);   // negative float → uint8_t is UB
-  
+
   // Correct — cast through int first:
   // atan2f returns [-π..+π], scaled ≈ [-128..+128] as int; uint8_t wraps negative ints via 2's complement (e.g. -1 → 255)
   uint8_t angle = int(40.74f * atan2f(dy, dx));  // float→int (defined), int→uint8_t (defined)

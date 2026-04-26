@@ -27,11 +27,6 @@
   #ifdef WLED_DISABLE_PARTICLESYSTEM1D
     #define WLED_PS_DONT_REPLACE_1D_FX
   #endif
-  #ifdef ESP8266
-    #if !defined(WLED_DISABLE_PARTICLESYSTEM2D) && !defined(WLED_DISABLE_PARTICLESYSTEM1D)
-      #error ESP8266 does not support 1D and 2D particle systems simultaneously. Please disable one of them.
-    #endif
-  #endif
 #else
   #define WLED_PS_DONT_REPLACE_1D_FX
   #define WLED_PS_DONT_REPLACE_2D_FX
@@ -1954,7 +1949,7 @@ void mode_colorwaves_pride_base(bool isPride2015) {
   unsigned msmultiplier = beatsin88_t(147, 23, 60);
 
   unsigned hue16 = sHue16;
-  unsigned hueinc16 = isPride2015 ? beatsin88_t(113, 1, 3000) : 
+  unsigned hueinc16 = isPride2015 ? beatsin88_t(113, 1, 3000) :
                                      beatsin88_t(113, 60, 300) * SEGMENT.intensity * 10 / 255;
 
   sPseudotime += duration * msmultiplier;
@@ -2028,17 +2023,6 @@ static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=
 
 void mode_palette() {
   // Set up some compile time constants so that we can handle integer and float based modes using the same code base.
-#ifdef ESP8266
-  using mathType = int32_t;
-  using wideMathType = int64_t;
-  using angleType = unsigned;
-  constexpr mathType sInt16Scale             = 0x7FFF;
-  constexpr mathType maxAngle                = 0x8000;
-  constexpr mathType staticRotationScale     = 256;
-  constexpr mathType animatedRotationScale   = 1;
-  constexpr int16_t (*sinFunction)(uint16_t) = &sin16_t;
-  constexpr int16_t (*cosFunction)(uint16_t) = &cos16_t;
-#else
   using mathType = float;
   using wideMathType = float;
   using angleType = float;
@@ -2048,7 +2032,6 @@ void mode_palette() {
   constexpr mathType animatedRotationScale = M_TWOPI / double(0xFFFF);
   constexpr float (*sinFunction)(float)    = &sin_t;
   constexpr float (*cosFunction)(float)    = &cos_t;
-#endif
   const bool isMatrix = strip.isMatrix;
   const int cols = SEG_W;
   const int rows = isMatrix ? SEG_H : strip.getActiveSegmentsNum();
@@ -2482,11 +2465,8 @@ typedef struct Ripple {
   uint16_t pos;
 } ripple;
 
-#ifdef ESP8266
-  #define MAX_RIPPLES   56
-#else
-  #define MAX_RIPPLES  100
-#endif
+#define MAX_RIPPLES  100
+
 static void ripple_base(uint8_t blurAmount = 0) {
   unsigned maxRipples = min(1 + (int)(SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 16 segment ESP8266
   unsigned dataSize = sizeof(ripple) * maxRipples;
@@ -3594,11 +3574,8 @@ static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@!,!;!,!;!
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
 / Speed sets frequency of new starbursts, intensity is the intensity of the burst
 */
-#ifdef ESP8266
-  #define STARBURST_MAX_FRAG   8 //52 bytes / star
-#else
-  #define STARBURST_MAX_FRAG  10 //60 bytes / star
-#endif
+#define STARBURST_MAX_FRAG  10 //60 bytes / star
+
 //each needs 20+STARBURST_MAX_FRAG*4 bytes
 typedef struct particle {
   CRGB     color;
@@ -4285,7 +4262,7 @@ void mode_sunrise() {
 
   for (unsigned i = 0; i <= SEGLEN/2; i++)
   {
-    //default palette is Fire    
+    //default palette is Fire
     unsigned wave = triwave16((i * stage) / SEGLEN);
     wave = (wave >> 8) + ((wave * SEGMENT.intensity) >> 15);
     uint32_t c;
@@ -4477,11 +4454,7 @@ static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!"
 #define SPOT_TYPE_3X_DOT      4
 #define SPOT_TYPE_4X_DOT      5
 #define SPOT_TYPES_COUNT      6
-#ifdef ESP8266
-  #define SPOT_MAX_COUNT 17          //Number of simultaneous waves
-#else
-  #define SPOT_MAX_COUNT 49          //Number of simultaneous waves
-#endif
+#define SPOT_MAX_COUNT 49          //Number of simultaneous waves
 
 #ifdef WLED_PS_DONT_REPLACE_1D_FX
 //13 bytes
@@ -4810,11 +4783,7 @@ static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;!;01
 */
 
 //CONFIG
-#ifdef ESP8266
-  #define W_MAX_COUNT  9          //Number of simultaneous waves
-#else
-  #define W_MAX_COUNT 20          //Number of simultaneous waves
-#endif
+#define W_MAX_COUNT 20          //Number of simultaneous waves
 #define W_MAX_SPEED 6             //Higher number, higher speed
 #define W_WIDTH_FACTOR 6          //Higher number, smaller waves
 
@@ -4976,13 +4945,13 @@ void mode_ColorClouds()
 
   // Higher values make the clouds move faster.
   const uint32_t volSpeed = 1 + SEGMENT.speed;
-  
+
   // Higher values make the color change faster.
   const uint32_t hueSpeed = 1 + SEGMENT.intensity;
-  
+
   // Higher values make more clouds (but smaller ones).
   const uint32_t volSqueeze = 8 + SEGMENT.custom1;
-  
+
   // Higher values make the clouds more colorful.
   const uint32_t hueSqueeze = SEGMENT.custom2;
 
@@ -5352,7 +5321,7 @@ void mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline. Ye
   for (int j=0; j < cols; j++) {
     for (int i=0; i < rows; i++) {
       indexx = perlin8(j*yscale*rows/255, i*xscale+strip.now/4);                                               // We're moving along our Perlin map.
-      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*indexx/11, 225U), i*255/rows, LINEARBLEND));   // With that value, look up the 8 bit colour palette value and assign it to the current LED.    
+      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*indexx/11, 225U), i*255/rows, LINEARBLEND));   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 } // mode_2Dfirenoise()
@@ -5386,7 +5355,7 @@ typedef struct Cell {
     uint8_t alive : 1, faded : 1, toggleStatus : 1, edgeCell: 1, oscillatorCheck : 1, spaceshipCheck : 1, unused : 2;
 } Cell;
 
-void mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ 
+void mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/
                                    // and https://github.com/DougHaber/nlife-color , Modified By: Brandon Butler
   if (!strip.isMatrix || !SEGMENT.is2D()) FX_FALLBACK_STATIC; // not a 2D set-up
   const int cols = SEG_W, rows = SEG_H;
@@ -6607,7 +6576,7 @@ void mode_2Dplasmarotozoom() {
   float *a = reinterpret_cast<float*>(SEGENV.data);
   byte *plasma = reinterpret_cast<byte*>(SEGENV.data+sizeof(float));
 
-  unsigned ms = strip.now/15;  
+  unsigned ms = strip.now/15;
 
   // plasma
   for (int j = 0; j < rows; j++) {
@@ -6837,7 +6806,7 @@ void mode_gravcenter_base(unsigned mode) {
   if(mode == 2) offset = 0;  // Gravimeter
   if (tempsamp >= gravcen->topLED) gravcen->topLED = tempsamp-offset;
   else if (gravcen->gravityCounter % gravity == 0) gravcen->topLED--;
-  
+
   if(mode == 1) {  //Gravcentric
     for (int i=0; i<tempsamp; i++) {
       uint8_t index = segmentSampleAvg*24+strip.now/200;
@@ -6881,7 +6850,7 @@ void mode_gravcenter_base(unsigned mode) {
       SEGMENT.setPixelColor(gravcen->topLED+SEGLEN/2, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
       SEGMENT.setPixelColor(SEGLEN/2-1-gravcen->topLED, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
     }
-  } 
+  }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 }
 
@@ -7143,13 +7112,13 @@ void mode_puddles_base(bool peakdetect) {
       if (pos+size>= SEGLEN) size = SEGLEN - pos;
     }
   }
-  else {                                                    // puddles  
+  else {                                                    // puddles
     if (volumeRaw > 1) {
       size = volumeRaw * SEGMENT.intensity /256 /8 + 1;     // Determine size of the flash based on the volume.
       if (pos+size >= SEGLEN) size = SEGLEN - pos;
-    } 
+    }
   }
-  
+
   for (unsigned i=0; i<size; i++) {                          // Flash the LED's.
     SEGMENT.setPixelColor(pos+i, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
   }
@@ -7157,12 +7126,12 @@ void mode_puddles_base(bool peakdetect) {
 
 void mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   mode_puddles_base(true);
-} 
+}
 static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixels, Beatsin
 
 void mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   mode_puddles_base(false);
-} 
+}
 static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
 
 
@@ -8029,11 +7998,7 @@ void mode_particlevortex(void) {
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES))
       FX_FALLBACK_STATIC; // allocation failed
-    #ifdef ESP8266
-    PartSys->setMotionBlur(180);
-    #else
     PartSys->setMotionBlur(130);
-    #endif
     for (i = 0; i < min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); i++) {
       PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
       PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
@@ -8050,17 +8015,6 @@ void mode_particlevortex(void) {
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   uint32_t spraycount = min(PartSys->numSources, (uint32_t)(1 + (SEGMENT.custom1 >> 5))); // number of sprays to display, 1-8
-  #ifdef ESP8266
-  for (i = 1; i < 4; i++) { // need static particles in the center to reduce blinking (would be black every other frame without this hack), just set them there fixed
-    int partindex = (int)PartSys->usedParticles - (int)i;
-    if (partindex >= 0) {
-      PartSys->particles[partindex].x = (PartSys->maxX + 1) >> 1; // center
-      PartSys->particles[partindex].y = (PartSys->maxY + 1) >> 1; // center
-      PartSys->particles[partindex].sat = 230;
-      PartSys->particles[partindex].ttl = 256; //keep alive
-    }
-  }
-  #endif
 
   if (SEGMENT.check1)
     PartSys->setSmearBlur(90); // enable smear blur
@@ -8115,9 +8069,6 @@ void mode_particlevortex(void) {
     j = hw_random16(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
     for (i = 0; i < spraycount; i++) { // emit one particle per spray (if available)
       PartSys->sources[j].var = (SEGMENT.custom3 >> 1); //update speed variation
-      #ifdef ESP8266
-      if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
-      #endif
       PartSys->angleEmit(PartSys->sources[j], SEGENV.aux0 + angleoffset * j, (SEGMENT.intensity >> 2)+1);
       j = (j + 1) % spraycount;
     }
@@ -8213,11 +8164,7 @@ void mode_particlefireworks(void) {
       PartSys->sources[j].source.ttl = hw_random16((2000 - ((uint32_t)SEGMENT.speed << 2))) + 550 - (SEGMENT.speed << 1); // standby time til next launch
       PartSys->sources[j].var = ((SEGMENT.intensity >> 4) + 5); // speed variation around vx,vy (+/- var)
       PartSys->sources[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch
-      #ifdef ESP8266
-      emitparticles = hw_random16(SEGMENT.intensity >> 3) + (SEGMENT.intensity >> 3) + 5; // defines the size of the explosion
-      #else
       emitparticles = hw_random16(SEGMENT.intensity >> 2) + (SEGMENT.intensity >> 2) + 5; // defines the size of the explosion
-      #endif
 
       if (hw_random() & 1) { // 50% chance for circular explosion
         circularexplosion = true;
@@ -8536,13 +8483,8 @@ void mode_particlewaterfall(void) {
     for (i = 0; i < PartSys->numSources; i++) {
       PartSys->sources[i].source.hue = i*90;
       PartSys->sources[i].sourceFlags.collide = true; // seeded particles will collide
-    #ifdef ESP8266
-      PartSys->sources[i].maxLife = 250; // lifetime in frames (ESP8266 has less particles, make them short lived to keep the water flowing)
-      PartSys->sources[i].minLife = 100;
-    #else
       PartSys->sources[i].maxLife = 400; // lifetime in frames
       PartSys->sources[i].minLife = 150;
-    #endif
     }
   }
   else
@@ -8802,13 +8744,8 @@ void mode_particleimpact(void) {
           PartSys->sources[i].source.vy = 0; // set speed zero so it will explode
           PartSys->sources[i].source.vx = 0;
           PartSys->sources[i].sourceFlags.collide = true;
-          #ifdef ESP8266
-          PartSys->sources[i].maxLife = 900;
-          PartSys->sources[i].minLife = 100;
-          #else
           PartSys->sources[i].maxLife = 1250;
           PartSys->sources[i].minLife = 250;
-          #endif
           PartSys->sources[i].source.ttl = hw_random16((768 - (SEGMENT.speed << 1))) + 40; // standby time til next launch (in frames)
           PartSys->sources[i].vy = (SEGMENT.custom1 >> 2);  // emitting speed y
           PartSys->sources[i].var = (SEGMENT.custom1 >> 2); // speed variation around vx,vy (+/- var)
@@ -8860,13 +8797,8 @@ void mode_particleattractor(void) {
     PartSys->sources[0].source.vx = -7; // will collied with wall and get random bounce direction
     PartSys->sources[0].sourceFlags.collide = true; // seeded particles will collide
     PartSys->sources[0].sourceFlags.perpetual = true; //source does not age
-    #ifdef ESP8266
-    PartSys->sources[0].maxLife = 200; // lifetime in frames (ESP8266 has less particles)
-    PartSys->sources[0].minLife = 30;
-    #else
     PartSys->sources[0].maxLife = 350; // lifetime in frames
     PartSys->sources[0].minLife = 50;
-    #endif
     PartSys->sources[0].var = 4; // emiting variation
     PartSys->setWallHardness(255);  //bounce forever
     PartSys->setWallRoughness(200); //randomize wall bounce
@@ -11054,7 +10986,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_COLORTWINKLE, &mode_colortwinkle, _data_FX_MODE_COLORTWINKLE);
   addEffect(FX_MODE_LAKE, &mode_lake, _data_FX_MODE_LAKE);
   addEffect(FX_MODE_METEOR, &mode_meteor, _data_FX_MODE_METEOR);
-  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor 
+  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor
   addEffect(FX_MODE_RAILWAY, &mode_railway, _data_FX_MODE_RAILWAY);
   addEffect(FX_MODE_RIPPLE, &mode_ripple, _data_FX_MODE_RIPPLE);
   addEffect(FX_MODE_TWINKLEFOX, &mode_twinklefox, _data_FX_MODE_TWINKLEFOX);
@@ -11072,7 +11004,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SPARKLE, &mode_sparkle, _data_FX_MODE_SPARKLE);
   addEffect(FX_MODE_GLITTER, &mode_glitter, _data_FX_MODE_GLITTER);
   addEffect(FX_MODE_SOLID_GLITTER, &mode_solid_glitter, _data_FX_MODE_SOLID_GLITTER);
-  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);  
+  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);
   #ifdef WLED_PS_DONT_REPLACE_1D_FX
   addEffect(FX_MODE_ROLLINGBALLS, &mode_rolling_balls, _data_FX_MODE_ROLLINGBALLS);
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
@@ -11098,7 +11030,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SINEWAVE, &mode_sinewave, _data_FX_MODE_SINEWAVE);
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
-  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);  
+  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);

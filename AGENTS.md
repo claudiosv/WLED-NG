@@ -1,6 +1,6 @@
 # AGENTS.md — WLED Coding Agent Reference
 
-WLED is C++ firmware for ESP32/ESP8266 microcontrollers controlling addressable LEDs,
+WLED is C++ firmware for ESP32 microcontrollers controlling addressable LEDs,
 with a web UI (HTML/JS/CSS). Built with PlatformIO (Arduino framework) and Node.js tooling.
 
 See also: `.github/copilot-instructions.md`, `.github/agent-build.instructions.md`,
@@ -15,7 +15,6 @@ See also: `.github/copilot-instructions.md`, `.github/agent-build.instructions.m
 | `npm test` | Run test suite (Node.js built-in `node --test`) | 2 min |
 | `npm run dev` | Watch mode — auto-rebuilds web UI on changes | continuous |
 | `pio run -e esp32dev` | Build firmware (ESP32, most common target) | 5 min |
-| `pio run -e nodemcuv2` | Build firmware (ESP8266) | 5 min |
 
 **Always run `npm ci && npm run build` before `pio run`.** The web UI build generates
 required C headers for firmware compilation.
@@ -35,7 +34,7 @@ target environments. Always build after code changes: `pio run -e esp32dev`.
 
 ### Common Firmware Environments
 
-`esp32dev`, `nodemcuv2`, `esp8266_2m`, `esp32c3dev`, `esp32s3dev_8MB_opi`, `lolin_s2_mini`
+`esp32dev`, `esp32c3dev`, `esp32s3dev_8MB_opi`, `lolin_s2_mini`
 
 ### Recovery / Troubleshooting
 
@@ -82,7 +81,7 @@ docs/                # Coding convention docs
 ### Includes
 - Include `"wled.h"` as the primary project header
 - Project headers first, then platform/Arduino, then third-party
-- Platform-conditional includes wrapped in `#ifdef ARDUINO_ARCH_ESP32` / `#ifdef ESP8266`
+- Platform-conditional includes wrapped in `#ifdef ARDUINO_ARCH_ESP32`
 
 ### Types and Const
 - Prefer `const &` for read-only function parameters
@@ -98,7 +97,7 @@ docs/                # Coding convention docs
 - Debug output: `DEBUG_PRINTF()` / `DEBUG_PRINTLN()` (compiled out unless `-D WLED_DEBUG`)
 
 ### Strings and Memory
-- Use `F("string")` for string constants (saves RAM on ESP8266)
+- Use `F("string")` for string constants
 - Use `PSTR()` with `DEBUG_PRINTF_P()` for format strings
 - Avoid `String` in hot paths; acceptable in config/setup code
 - Use `d_malloc()` (DRAM-preferred) / `p_malloc()` (PSRAM-preferred) for allocation
@@ -109,7 +108,7 @@ docs/                # Coding convention docs
 - Feature toggling: `WLED_DISABLE_*` and `WLED_ENABLE_*` flags (exact names matter!)
 - `WLED_DISABLE_*`: `2D`, `ADALIGHT`, `ALEXA`, `MQTT`, `OTA`, `INFRARED`, `WEBSOCKETS`, etc.
 - `WLED_ENABLE_*`: `DMX`, `GIF`, `HUB75MATRIX`, `JSONLIVE`, `WEBSOCKETS`, etc.
-- Platform: `ARDUINO_ARCH_ESP32`, `ESP8266`, `CONFIG_IDF_TARGET_ESP32S3`
+- Platform: `ARDUINO_ARCH_ESP32`, `CONFIG_IDF_TARGET_ESP32S3`
 
 ### Comments
 - `//` for inline (always space after), `/* */` for block comments

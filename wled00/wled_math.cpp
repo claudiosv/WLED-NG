@@ -7,6 +7,161 @@
  */
 
 #include <Arduino.h> //PI constant
+//#include <math.h>
+
+// Detect ESP32 variants with Xtensa hardware Floating Point Units (FPU)
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+  #define HAS_HARDWARE_FPU
+#endif
+
+// 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
+// input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
+// optimized integer implementation by @dedehai
+int16_t sin16_t(uint16_t theta) {
+  int scale = 1;
+  if (theta > 0x7FFF) {
+    theta = 0xFFFF - theta;
+    scale = -1; // second half of the sine function is negative (pi - 2*pi)
+  }
+  uint32_t precal = theta * (0x7FFF - theta);
+  uint64_t numerator = (uint64_t)precal * (4 * 0x7FFF); // 64bit required
+  int32_t denominator = 1342095361 - precal; // 1342095361 is 5 * 0x7FFF^2 / 4
+  int16_t result = numerator / denominator;
+  return result * scale;
+}
+
+int16_t cos16_t(uint16_t theta) {
+  return sin16_t(theta + 0x4000); //cos(x) = sin(x+pi/2)
+}
+
+uint8_t sin8_t(uint8_t theta) {
+  int32_t sin16 = sin16_t((uint16_t)theta * 257); // 255 * 257 = 0xFFFF
+  sin16 += 0x7FFF + 128; //shift result to range 0-0xFFFF, +128 for rounding
+  return min(sin16, int32_t(0xFFFF)) >> 8; // min performs saturation, and prevents overflow
+}
+
+uint8_t cos8_t(uint8_t theta) {
+  return sin8_t(theta + 64); //cos(x) = sin(x+pi/2)
+}
+
+// Float approximations: Hardware FPU bypasses the float->int->float conversion overhead
+float sin_approx(float theta) {
+#ifdef HAS_HARDWARE_FPU
+  return sinf(theta);
+#else
+  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
+  int32_t result = sin16_t(scaled_theta);
+  return float(result) / 0x7FFF;
+#endif
+}
+
+// 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
+// input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
+// optimized integer implementation by @dedehai
+int16_t sin16_t(uint16_t theta) {
+  int scale = 1;
+  if (theta > 0x7FFF) {
+    theta = 0xFFFF - theta;
+    scale = -1; // second half of the sine function is negative (pi - 2*pi)
+  }
+  uint32_t precal = theta * (0x7FFF - theta);
+  uint64_t numerator = (uint64_t)precal * (4 * 0x7FFF); // 64bit required
+  int32_t denominator = 1342095361 - precal; // 1342095361 is 5 * 0x7FFF^2 / 4
+  int16_t result = numerator / denominator;
+  return result * scale;
+}
+
+int16_t cos16_t(uint16_t theta) {
+  return sin16_t(theta + 0x4000); //cos(x) = sin(x+pi/2)
+}
+
+uint8_t sin8_t(uint8_t theta) {
+  int32_t sin16 = sin16_t((uint16_t)theta * 257); // 255 * 257 = 0xFFFF
+  sin16 += 0x7FFF + 128; //shift result to range 0-0xFFFF, +128 for rounding
+  return min(sin16, int32_t(0xFFFF)) >> 8; // min performs saturation, and prevents overflow
+}
+
+uint8_t cos8_t(uint8_t theta) {
+  return sin8_t(theta + 64); //cos(x) = sin(x+pi/2)
+}
+
+float cos_approx(float theta) {
+#ifdef HAS_HARDWARE_FPU
+  return cosf(theta);
+#else
+  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
+  int32_t result = sin16_t(scaled_theta + 0x4000);
+  return float(result) / 0x7FFF;
+#endif
+}
+
+float tan_approx(float x) {
+#ifdef HAS_HARDWARE_FPU
+  return tanf(x);
+#else
+  float c = cos_approx(x);
+  if (c==0.0f) return 0;
+  return sin_approx(x) / c;
+#endif
+}
+
+// Basic operations: Hardware FPU instructions handle these inherently faster
+float floor_t(float x) {
+#ifdef HAS_HARDWARE_FPU
+  return floorf(x);
+#else
+  bool neg = x < 0;
+  int val = x;
+  if (neg) val--;
+  #ifdef WLED_DEBUG_MATH
+  Serial.printf("floor: %f,%f,%f,%f\n",x,(float)val,floor(x),floorf(x));
+  #endif
+  return val;
+#endif
+}
+
+float fmod_t(float num, float denom) {
+#ifdef HAS_HARDWARE_FPU
+  return fmodf(num, denom);
+#else
+  int tquot = num / denom;
+  float res = num - tquot * denom;
+  #ifdef WLED_DEBUG_MATH
+  Serial.printf("fmod: %f,%f,(%f)\n",res,fmod(num,denom),res-fmod(num,denom));
+  #endif
+  return res;
+#endif
+}
+
+uint32_t sqrt32_bw(uint32_t x) {
+#ifdef HAS_HARDWARE_FPU
+  // Cast to float, use single-cycle hardware square root, cast back to int.
+  // Avoids the heavy pipeline branching of the while loop below.
+  return (uint32_t)sqrtf((float)x);
+#else
+  // bit-wise integer square root calculation (exact)
+  uint32_t res = 0;
+  uint32_t bit;
+  uint32_t num = x; // use 32bit for faster calculation
+
+  if(num < 1 << 10)  bit = 1 << 10; // speed optimization for small numbers < 32^2
+  else if (num < 1 << 20) bit = 1 << 20; // speed optimization for medium numbers < 1024^2
+  else bit = 1 << 30; // start with highest power of 4 <= 2^32
+
+  while (bit > num) bit >>= 2; // reduce iterations
+
+  while (bit != 0) {
+    if (num >= res + bit) {
+      num -= res + bit;
+      res = (res >> 1) + bit;
+    } else {
+      res >>= 1;
+    }
+    bit >>= 2;
+  }
+  return res;
+#endif
+}
 
 //#define WLED_DEBUG_MATH
 
@@ -59,56 +214,6 @@ float tan_t(float x) {
 }
 */
 
-// 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
-// input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
-// optimized integer implementation by @dedehai
-int16_t sin16_t(uint16_t theta) {
-  int scale = 1;
-  if (theta > 0x7FFF) {
-    theta = 0xFFFF - theta;
-    scale = -1; // second half of the sine function is negative (pi - 2*pi)
-  }
-  uint32_t precal = theta * (0x7FFF - theta);
-  uint64_t numerator = (uint64_t)precal * (4 * 0x7FFF); // 64bit required
-  int32_t denominator = 1342095361 - precal; // 1342095361 is 5 * 0x7FFF^2 / 4
-  int16_t result = numerator / denominator;
-  return result * scale;
-}
-
-int16_t cos16_t(uint16_t theta) {
-  return sin16_t(theta + 0x4000); //cos(x) = sin(x+pi/2)
-}
-
-uint8_t sin8_t(uint8_t theta) {
-  int32_t sin16 = sin16_t((uint16_t)theta * 257); // 255 * 257 = 0xFFFF
-  sin16 += 0x7FFF + 128; //shift result to range 0-0xFFFF, +128 for rounding
-  return min(sin16, int32_t(0xFFFF)) >> 8; // min performs saturation, and prevents overflow
-}
-
-uint8_t cos8_t(uint8_t theta) {
-  return sin8_t(theta + 64); //cos(x) = sin(x+pi/2)
-}
-
-float sin_approx(float theta) {
-  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
-  int32_t result = sin16_t(scaled_theta);
-  float sin = float(result) / 0x7FFF;
-  return sin;
-}
-
-float cos_approx(float theta) {
-  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
-  int32_t result = sin16_t(scaled_theta + 0x4000);
-  float cos = float(result) / 0x7FFF;
-  return cos;
-}
-
-float tan_approx(float x) {
-  float c = cos_approx(x);
-  if (c==0.0f) return 0;
-  float res = sin_approx(x) / c;
-  return res;
-}
 
 #define ATAN2_CONST_A 0.1963f
 #define ATAN2_CONST_B 0.9817f
@@ -199,48 +304,5 @@ float atan_t(float x) {
   #ifdef WLED_DEBUG_MATH
   Serial.printf("atan: %f,%f,%f,(%f)\n",xinput,res,atan(xinput),res-atan(xinput));
   #endif
-  return res;
-}
-
-float floor_t(float x) {
-  bool neg = x < 0;
-  int val = x;
-  if (neg) val--;
-  #ifdef WLED_DEBUG_MATH
-  Serial.printf("floor: %f,%f,%f\n",x,(float)val,floor(x));
-  #endif
-  return val;
-}
-
-float fmod_t(float num, float denom) {
-  int tquot = num / denom;
-  float res = num - tquot * denom;
-  #ifdef WLED_DEBUG_MATH
-  Serial.printf("fmod: %f,%f,(%f)\n",res,fmod(num,denom),res-fmod(num,denom));
-  #endif
-  return res;
-}
-
-// bit-wise integer square root calculation (exact)
-uint32_t sqrt32_bw(uint32_t x) {
-  uint32_t res = 0;
-  uint32_t bit;
-  uint32_t num = x; // use 32bit for faster calculation
-
-  if(num < 1 << 10)  bit = 1 << 10; // speed optimization for small numbers < 32^2
-  else if (num < 1 << 20) bit = 1 << 20; // speed optimization for medium numbers < 1024^2
-  else bit = 1 << 30; // start with highest power of 4 <= 2^32
-
-  while (bit > num) bit >>= 2; // reduce iterations
-
-  while (bit != 0) {
-    if (num >= res + bit) {
-      num -= res + bit;
-      res = (res >> 1) + bit;
-    } else {
-      res >>= 1;
-    }
-    bit >>= 2;
-  }
   return res;
 }

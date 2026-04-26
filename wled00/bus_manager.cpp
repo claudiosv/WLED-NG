@@ -10,9 +10,6 @@
 #include "driver/ledc.h"
 #include "soc/ledc_struct.h"
 #endif
-#ifdef ESP8266
-#include "core_esp8266_waveform.h"
-#endif
 #include "bus_manager.h"
 #include "bus_wrapper.h"
 #include "wled.h"
@@ -394,29 +391,20 @@ void BusDigital::cleanup() {
 }
 
 
-#ifdef ESP8266
-  // 1 MHz clock
-  #define CLOCK_FREQUENCY 1000000UL
+// Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
+// https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
+#ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+  #define CLOCK_FREQUENCY 40000000UL
 #else
-  // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
-  // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
-  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
-    #define CLOCK_FREQUENCY 40000000UL
-  #else
-    #define CLOCK_FREQUENCY 80000000UL
-  #endif
+  #define CLOCK_FREQUENCY 80000000UL
 #endif
 
-#ifdef ESP8266
-  #define MAX_BIT_WIDTH 10
+#ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
+  // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
+  #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM
 #else
-  #ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
-    // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
-    #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM
-  #else
-    // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
-    #define MAX_BIT_WIDTH 14
-  #endif
+  // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
+  #define MAX_BIT_WIDTH 14
 #endif
 
 BusPwm::BusPwm(const BusConfig &bc)
@@ -432,10 +420,6 @@ BusPwm::BusPwm(const BusConfig &bc)
   managed_pin_type pins[numPins];
   for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
   if (PinManager::allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) {
-    #ifdef ESP8266
-    analogWriteRange((1<<_depth)-1);
-    analogWriteFreq(_frequency);
-    #else
     // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
     _ledcStart = PinManager::allocateLedc(numPins);
     if (_ledcStart == 255) { //no more free LEDC channels
@@ -445,20 +429,15 @@ BusPwm::BusPwm(const BusConfig &bc)
     }
     // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
     if (dithering) _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
-    #endif
 
     for (unsigned i = 0; i < numPins; i++) {
       _pins[i] = bc.pins[i]; // store only after allocateMultiplePins() succeeded
-      #ifdef ESP8266
-      pinMode(_pins[i], OUTPUT);
-      #else
       unsigned channel = _ledcStart + i;
       ledcSetup(channel, _frequency, _depth - (dithering*4)); // with dithering _frequency doesn't really matter as resolution is 8 bit
       ledcAttachPin(_pins[i], channel);
       // LEDC timer reset credit @dedehai
       uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
       ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so all timers are almost in sync (for phase shift)
-      #endif
     }
     _hasRgb = hasRGB(bc.type);
     _hasWhite = hasWhite(bc.type);
@@ -531,18 +510,12 @@ uint32_t BusPwm::getPixelColor(unsigned pix) const {
 void BusPwm::show() {
   if (!_valid) return;
   const size_t   numPins = getPins();
-#ifdef ESP8266
-   const unsigned analogPeriod = F_CPU / _frequency;
-   const unsigned maxBri = analogPeriod;  // compute to clock cycle accuracy
-   constexpr bool dithering = false;
-   constexpr unsigned bitShift = 8;  // 256 clocks for dead time, ~3us at 80MHz
-#else
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/wled/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
   const bool     dithering = _needsRefresh; // avoid working with bitfield
   const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
   const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
-#endif
+
   // use CIE brightness formula (linear + cubic) to approximate human eye perceived brightness
   // see: https://en.wikipedia.org/wiki/Lightness
   unsigned pwmBri = _bri;
@@ -577,10 +550,7 @@ void BusPwm::show() {
       if (i) hPoint += duty;  // align start at time zero
       duty = maxBri - duty;
     }
-    #ifdef ESP8266
-    //stopWaveform(_pins[i]);  // can cause the waveform to miss a cycle. instead we risk crossovers.
-    startWaveformClockCycles(_pins[i], duty, analogPeriod - duty, 0, i ? _pins[0] : -1, hPoint, false);
-    #else
+
     unsigned channel = _ledcStart + i;
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
@@ -589,7 +559,6 @@ void BusPwm::show() {
     LEDC.channel_group[gr].channel[ch].duty.duty = duty << ((!dithering)*4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
     LEDC.channel_group[gr].channel[ch].hpoint.hpoint = hPoint >> bitShift;    // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
-    #endif
 
     if (!_reversed) hPoint += duty;
     hPoint += deadTime;        // offset to cascade the signals
@@ -621,11 +590,7 @@ void BusPwm::deallocatePins() {
   for (unsigned i = 0; i < numPins; i++) {
     PinManager::deallocatePin(_pins[i], PinOwner::BusPwm);
     if (!PinManager::isPinOk(_pins[i])) continue;
-    #ifdef ESP8266
-    digitalWrite(_pins[i], LOW); //turn off PWM interrupt
-    #else
     if (_ledcStart < WLED_MAX_ANALOG_CHANNELS) ledcDetachPin(_pins[i]);
-    #endif
   }
   #ifdef ARDUINO_ARCH_ESP32
   PinManager::deallocateLedc(_ledcStart, numPins);
@@ -1078,7 +1043,7 @@ uint32_t BusHub75Matrix::getPixelColor(unsigned pix) const {
 
 void BusHub75Matrix::setBrightness(uint8_t b) {
   _bri = b;
-  display->setBrightness(_bri); 
+  display->setBrightness(_bri);
 }
 
 void BusHub75Matrix::show(void) {
@@ -1253,10 +1218,8 @@ void BusManager::removeAll() {
   //prevents crashes due to deleting busses while in use.
   while (!canAllShow()) yield();
   busses.clear();
-  #ifndef ESP8266
   // Reset channel tracking for fresh allocation
   PolyBus::resetChannelTracking();
-  #endif
 }
 
 #ifdef ESP32_DATA_IDLE_HIGH
@@ -1287,21 +1250,6 @@ void BusManager::esp32RMTInvertIdle() {
 #endif
 
 void BusManager::on() {
-  #ifdef ESP8266
-  //Fix for turning off onboard LED breaking bus
-  if (PinManager::getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
-    for (auto &bus : busses) {
-      uint8_t pins[2] = {255,255};
-      if (bus->isDigital() && bus->getPins(pins) && bus->isOk()) {
-        if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
-          BusDigital &b = static_cast<BusDigital&>(*bus);
-          b.begin();
-          break;
-        }
-      }
-    }
-  }
-  #else
   static uint32_t nextResolve = 0;  // initial resolve is done on bus creation
   bool resolveNow = (millis() - nextResolve >= 600000); // wait at least 10 minutes between hostname resolutions (blocking call)
   for (auto &bus : busses) if (bus->isVirtual()) {
@@ -1313,22 +1261,13 @@ void BusManager::on() {
   }
   if (resolveNow)
     nextResolve = millis();
-  #endif
-  #ifdef ESP32_DATA_IDLE_HIGH
+
+    #ifdef ESP32_DATA_IDLE_HIGH
   esp32RMTInvertIdle();
   #endif
 }
 
 void BusManager::off() {
-  #ifdef ESP8266
-  // turn off built-in LED if strip is turned off
-  // this will break digital bus so will need to be re-initialised on On
-  if (PinManager::getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
-    for (const auto &bus : busses) if (bus->isOffRefreshRequired()) return;
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
-  }
-  #endif
   #ifdef ESP32_DATA_IDLE_HIGH
   esp32RMTInvertIdle();
   #endif
@@ -1452,7 +1391,6 @@ void BusManager::applyABL() {
 
 ColorOrderMap& BusManager::getColorOrderMap() { return _colorOrderMap; }
 
-#ifndef ESP8266
 // PolyBus channel tracking for dynamic allocation
 bool PolyBus::_useParallelI2S = false;
 uint8_t PolyBus::_rmtChannelsAssigned = 0; // number of RMT channels assigned durig getI() check
@@ -1460,7 +1398,7 @@ uint8_t PolyBus::_rmtChannel = 0;     // number of RMT channels actually used du
 uint8_t PolyBus::_i2sChannelsAssigned = 0; // number of I2S channels assigned durig getI() check
 uint8_t PolyBus::_parallelBusItype = 0;    // type I_NONE
 uint8_t PolyBus::_2PchannelsAssigned = 0;
-#endif
+
 // Bus static member definition
 int16_t Bus::_cct = -1;     // -1 means use approximateKelvinFromRGB(), 0-255 is standard, >1900 use colorBalanceFromKelvin()
 int8_t  Bus::_cctBlend = 0; // -128 to +127

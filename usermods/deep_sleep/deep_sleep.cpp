@@ -3,9 +3,6 @@
 #ifndef CONFIG_IDF_TARGET_ESP32C3
   #include "soc/touch_sensor_periph.h"
 #endif
-#ifdef ESP8266
-#error The "Deep Sleep" usermod does not support ESP8266
-#endif
 
 #ifndef DEEPSLEEP_WAKEUPPIN
 #define DEEPSLEEP_WAKEUPPIN 0

@@ -1,9 +1,5 @@
-#ifdef ESP8266
-  #include <ESP8266WiFi.h>
-#else // ESP32
-  #include <WiFi.h>
-  #include <ETH.h>
-#endif
+#include <WiFi.h>
+#include <ETH.h>
 
 #ifndef Network_h
 #define Network_h

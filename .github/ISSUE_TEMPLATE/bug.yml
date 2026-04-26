@@ -57,7 +57,6 @@ body:
       label: Which microcontroller/board are you seeing the problem on?
       multiple: true
       options:
-        - ESP8266
         - ESP32
         - ESP32 with ethernet
         - ESP32-S2

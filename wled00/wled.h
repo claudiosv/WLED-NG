@@ -12,10 +12,6 @@
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
 
-// ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
-
-// ESP8266-01 (black) has 1MB flash and can thus fit the whole program, although OTA update is not possible. Use 1M(128K SPIFFS).
-// 2-step OTA may still be possible: https://github.com/wled-dev/WLED/issues/2040#issuecomment-981111096
 // Uncomment some of the following lines to disable features:
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio_override.ini
 
@@ -31,7 +27,7 @@
 // You can choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
-//#define WLED_DISABLE_INFRARED    // saves 12kb, there is no pin left for this on ESP8266-01
+//#define WLED_DISABLE_INFRARED    // saves 12kb
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
@@ -75,45 +71,26 @@
 
 // Library inclusions.
 #include <Arduino.h>
-#ifdef ESP8266
-  #include <ESP8266WiFi.h>
-  #ifdef WLED_ENABLE_WPA_ENTERPRISE
-    #include "wpa2_enterprise.h"
+// ESP32
+#include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
+#include <WiFi.h>
+#include <ETH.h>
+#include "esp_wifi.h"
+#include <ESPmDNS.h>
+#include <AsyncTCP.h>
+#if LOROL_LITTLEFS
+  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+    #define CONFIG_LITTLEFS_FOR_IDF_3_2
   #endif
-  #include <ESP8266mDNS.h>
-  #include <ESPAsyncTCP.h>
+  #include <LITTLEFS.h>
+#else
   #include <LittleFS.h>
-  extern "C"
-  {
-  #include <user_interface.h>
-  }
-  #ifndef WLED_DISABLE_ESPNOW
-    #include <espnow.h>
-    #define WIFI_MODE_STA WIFI_STA
-    #define WIFI_MODE_AP WIFI_AP
-    #include <QuickEspNow.h>
-  #endif
-#else // ESP32
-  #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
-  #include <WiFi.h>
-  #include <ETH.h>
-  #include "esp_wifi.h"
-  #include <ESPmDNS.h>
-  #include <AsyncTCP.h>
-  #if LOROL_LITTLEFS
-    #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
-      #define CONFIG_LITTLEFS_FOR_IDF_3_2
-    #endif
-    #include <LITTLEFS.h>
-  #else
-    #include <LittleFS.h>
-  #endif
-  #include "esp_task_wdt.h"
+#endif
+#include "esp_task_wdt.h"
 
-  #ifndef WLED_DISABLE_ESPNOW
-    #include <esp_now.h>
-    #include <QuickEspNow.h>
-  #endif
+#ifndef WLED_DISABLE_ESPNOW
+  #include <esp_now.h>
+  #include <QuickEspNow.h>
 #endif
 #include <Wire.h>
 #include <SPI.h>
@@ -142,7 +119,7 @@
 #endif
 
 #ifdef WLED_ENABLE_DMX
- #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
+ #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
@@ -240,15 +217,11 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #include <IRutils.h>
 #endif
 
-//Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32 (now using LITTLEFS port by lorol)
-#ifdef ESP8266
-  #define WLED_FS LittleFS
+//Filesystem to use for preset and config files. SPIFFS only on ESP32 (now using LITTLEFS port by lorol)
+#if LOROL_LITTLEFS
+  #define WLED_FS LITTLEFS
 #else
-  #if LOROL_LITTLEFS
-    #define WLED_FS LITTLEFS
-  #else
-    #define WLED_FS LittleFS
-  #endif
+  #define WLED_FS LittleFS
 #endif
 
 // GLOBAL VARIABLES
@@ -399,11 +372,7 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 //if true, a segment per bus will be created on boot and LED settings save
 //if false, only one segment spanning the total LEDs is created,
 //but not on LED settings save if there is more than one segment currently
-#ifdef ESP8266
-WLED_GLOBAL bool useGlobalLedBuffer _INIT(false); // double buffering disabled on ESP8266
-#else
 WLED_GLOBAL bool useGlobalLedBuffer _INIT(true);  // double buffering enabled on ESP32
-#endif
 #ifdef WLED_USE_IC_CCT
 WLED_GLOBAL bool cctICused          _INIT(true);  // CCT IC used (Athom 15W bulbs)
 #else
@@ -454,7 +423,7 @@ WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
 #ifdef WLED_ENABLE_DMX
- #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
+ #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
   WLED_GLOBAL SparkFunDMX dmx;
@@ -919,9 +888,7 @@ WLED_GLOBAL std::vector<BusConfig> busConfigs;    //temporary, to remember value
 WLED_GLOBAL bool       doInitBusses  _INIT(false);
 WLED_GLOBAL int8_t     loadLedmap    _INIT(-1);
 WLED_GLOBAL uint8_t    currentLedmap _INIT(0);
-#ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
-#endif
 #if WLED_MAX_LEDMAPS>16
 WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 #else
@@ -990,9 +957,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 
 #ifdef WLED_DEBUG
-  #ifndef ESP8266
   #include <rom/rtc.h>
-  #endif
   #define DEBUG_PRINT(x) DEBUGOUT.print(x)
   #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)

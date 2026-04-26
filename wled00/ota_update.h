@@ -1,19 +1,13 @@
 //  WLED OTA update interface
 
 #include <Arduino.h>
-#ifdef ESP8266
-  #include <Updater.h>
-#else
-   #include <Update.h>
-#endif
+#include <Update.h>
 
 #pragma once
 
 // Platform-specific metadata locations
 #ifdef ESP32
 #define BUILD_METADATA_SECTION ".rodata_custom_desc"
-#elif defined(ESP8266)
-#define BUILD_METADATA_SECTION ".ver_number"
 #endif
 
 

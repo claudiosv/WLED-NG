@@ -7,6 +7,24 @@
   #include <ArduinoOTA.h>
 #endif
 
+#if defined(ESP8266)
+#error DMX input is only supported on ESP32
+#endif
+
+#if !defined(ARDUINO_ARCH_ESP32)
+  #error "ARDUINO_ARCH_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
+#endif
+
+#if !defined(CONFIG_IDF_TARGET_ESP32)
+  #error "CONFIG_IDF_TARGET_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
+#endif
+
+#if !defined(ESP32)
+  #error "ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
+#endif
+
+// #ifdef BOARD_HAS_PSRAM
+
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
@@ -59,7 +77,7 @@ void WLED::loop()
 
   handleTime();
   #ifndef WLED_DISABLE_INFRARED
-  handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
+  handleIR();        // 2nd call to function needed for ESP32 to return valid results
   #endif
   handleConnection();
   #ifdef WLED_ENABLE_ADALIGHT
@@ -129,10 +147,6 @@ void WLED::loop()
 
     if (!offMode || strip.isOffRefreshRequired() || strip.needsUpdate())
       strip.service();
-    #ifdef ESP8266
-    else if (!noWifiSleep)
-      delay(1); //required to make sure ESP enters modem sleep (see #1184)
-    #endif
   }
   #ifdef WLED_DEBUG
   stripMillis = millis() - stripMillis;
@@ -141,9 +155,6 @@ void WLED::loop()
   #endif
 
   yield();
-#ifdef ESP8266
-  MDNS.update();
-#endif
 
   //millis() rolls over every 50 days
   if (lastMqttReconnectAttempt > millis()) {
@@ -171,9 +182,6 @@ void WLED::loop()
 
    // free memory and reconnect WiFi to clear stale allocations if heap is too low for too long, check once every 5s
   if ((uint16_t)(millis() - heapTime) > 5000) {
-    #ifdef ESP8266
-    uint32_t heap = getFreeHeapSize(); // ESP8266 needs ~8k of free heap for UI to work properly
-    #else
     #ifdef CONFIG_IDF_TARGET_ESP32C3
     // calling getContiguousFreeHeap() during led update causes glitches on C3
     // this can (probably) be removed once RMT driver for C3 is fixed
@@ -181,7 +189,7 @@ void WLED::loop()
     while (strip.isUpdating() && (millis() - t0 < 15)) delay(1);    // be nice, but not too nice. Waits up to 15ms
     #endif
     uint32_t heap = getContiguousFreeHeap(); // ESP32 family needs ~10k of contiguous free heap for UI to work properly
-    #endif
+
     if (heap < MIN_HEAP_SIZE - 1024) heapDanger+=5; // allow 1k of "wiggle room" for things that do not respect min heap limits
     else heapDanger = 0;
     switch (heapDanger) {
@@ -298,8 +306,6 @@ void WLED::loop()
     #endif
     }
     DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
-    #else // ESP8266
-    DEBUG_PRINTF_P(PSTR("Free heap/contiguous: %u/%u\n"), getFreeHeapSize(), getContiguousFreeHeap());
     #endif
     DEBUG_PRINTF_P(PSTR("Wifi state: %d\n"), WiFi.status());
     #ifndef WLED_DISABLE_ESPNOW
@@ -416,10 +422,6 @@ void WLED::setup()
   }
   #endif
   DEBUG_PRINTF_P(PSTR(", speed %u MHz.\n"), ESP.getFlashChipSpeed()/1000000);
-
-#else
-  DEBUG_PRINTF_P(PSTR("esp8266 @ %u MHz.\nCore: %s\n"), ESP.getCpuFreqMHz(), ESP.getCoreVersion());
-  DEBUG_PRINTF_P(PSTR("FLASH: %u MB\n"), (ESP.getFlashChipSize()/1024)/1024);
 #endif
   DEBUG_PRINTF_P(PSTR("heap %u\n"), getFreeHeapSize());
 
@@ -436,10 +438,6 @@ void WLED::setup()
 
 #if defined(ARDUINO_ARCH_ESP32)
   DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
-#endif
-
-#ifdef ESP8266
-  usePWMFixedNMI(); // link the NMI fix
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
@@ -506,23 +504,19 @@ void WLED::setup()
   if (strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) == 0 && !configBackupExists())
     showWelcomePage = true;
 
-  #ifndef ESP8266
   WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
   WiFi.persistent(true); // storing credentials in NVM fixes boot-up pause as connection is much faster, is disabled after first connection
   // ESP32 DNS name must be set before the first connection to the DHCP server; otherwise, the default ESP name (such as "esp32s3-267D0C") will be used.
   char hostname[64] = {'\0'};
   getWLEDhostname(hostname, sizeof(hostname), true);   // create DNS name based on mDNS name if set, or fall back to standard WLED server name
   WiFi.setHostname(hostname);
-  #else
-  WiFi.persistent(false); // on ESP8266 using NVM for wifi config has no benefit of faster connection
-  #endif
   WiFi.onEvent(WiFiEvent);
   WiFi.mode(WIFI_STA); // enable scanning
   findWiFi(true);      // start scanning for available WiFi-s
 
   // all GPIOs are allocated at this point
-  serialCanRX = !PinManager::isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32 and ESP8266)
-  serialCanTX = !PinManager::isPinAllocated(hardwareTX) || PinManager::getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
+  serialCanRX = !PinManager::isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32)
+  serialCanTX = !PinManager::isPinAllocated(hardwareTX) || PinManager::getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32)
 
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
@@ -542,9 +536,6 @@ void WLED::setup()
 #ifdef WLED_ENABLE_AOTA
   if (aOtaEnabled) {
     ArduinoOTA.onStart([]() {
-      #ifdef ESP8266
-      wifi_set_sleep_type(NONE_SLEEP_T);
-      #endif
       #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
       #endif
@@ -693,9 +684,6 @@ void WLED::initConnection()
 
   WiFi.disconnect(true); // close old connections
   delay(5);              // wait for hardware to be ready
-#ifdef ESP8266
-  WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
-#endif
 
   char hostname[64] = {'\0'};
   getWLEDhostname(hostname, sizeof(hostname), true); // create DNS name based on mDNS name if set, or fall back to standard WLED server name
@@ -733,20 +721,13 @@ void WLED::initConnection()
 
   if (WLED_WIFI_CONFIGURED) {
     showWelcomePage = false;
-    
+
     DEBUG_PRINTF_P(PSTR("Connecting to %s...\n"), multiWiFi[selectedWiFi].clientSSID);
 
 #ifdef WLED_ENABLE_WPA_ENTERPRISE
     if (multiWiFi[selectedWiFi].encryptionType == WIFI_ENCRYPTION_TYPE_PSK) {
       DEBUG_PRINTLN(F("Using PSK"));
-#ifdef ESP8266
-      wifi_station_set_wpa2_enterprise_auth(0);
-      wifi_station_clear_enterprise_ca_cert();
-      wifi_station_clear_enterprise_cert_key();
-      wifi_station_clear_enterprise_identity();
-      wifi_station_clear_enterprise_username();
-      wifi_station_clear_enterprise_password();
-#endif
+
       uint8_t *bssid = nullptr;
       // check if user BSSID is non zero for current WiFi config
       for (int i = 0; i < sizeof(multiWiFi[selectedWiFi].bssid); i++) {
@@ -758,20 +739,7 @@ void WLED::initConnection()
       WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass, 0, bssid); // no harm if called multiple times
     } else { // WIFI_ENCRYPTION_TYPE_ENTERPRISE
       DEBUG_PRINTF_P(PSTR("Using WPA2_AUTH_PEAP (Anon: %s, Ident: %s)\n"), multiWiFi[selectedWiFi].enterpriseAnonIdentity, multiWiFi[selectedWiFi].enterpriseIdentity);
-#ifdef ESP8266
-      struct station_config sta_conf;
-      os_memset(&sta_conf, 0, sizeof(sta_conf));
-      os_memcpy(sta_conf.ssid, multiWiFi[selectedWiFi].clientSSID, 32);
-      os_memcpy(sta_conf.password, multiWiFi[selectedWiFi].clientPass, 64);
-      wifi_station_set_config(&sta_conf);
-      wifi_station_set_wpa2_enterprise_auth(1);
-      wifi_station_set_enterprise_identity((u8*)(void*)multiWiFi[selectedWiFi].enterpriseAnonIdentity, os_strlen(multiWiFi[selectedWiFi].enterpriseAnonIdentity));
-      wifi_station_set_enterprise_username((u8*)(void*)multiWiFi[selectedWiFi].enterpriseIdentity, os_strlen(multiWiFi[selectedWiFi].enterpriseIdentity));
-      wifi_station_set_enterprise_password((u8*)(void*)multiWiFi[selectedWiFi].clientPass, os_strlen(multiWiFi[selectedWiFi].clientPass));
-      wifi_station_connect();
-#else
       WiFi.begin(multiWiFi[selectedWiFi].clientSSID, WPA2_AUTH_PEAP, multiWiFi[selectedWiFi].enterpriseAnonIdentity, multiWiFi[selectedWiFi].enterpriseIdentity, multiWiFi[selectedWiFi].clientPass);
-#endif
     }
 #else // WLED_ENABLE_WPA_ENTERPRISE
     uint8_t *bssid = nullptr;
@@ -785,13 +753,8 @@ void WLED::initConnection()
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass, 0, bssid); // no harm if called multiple times
 #endif // WLED_ENABLE_WPA_ENTERPRISE
 
-#ifdef ARDUINO_ARCH_ESP32
     WiFi.setTxPower(wifi_power_t(txPower));
     WiFi.setSleep(!noWifiSleep);
-#else // ESP8266 accepts a hostname set after WiFi interface initialization
-    wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
-    WiFi.hostname(hostname);
-#endif
   }
 
 #ifndef WLED_DISABLE_ESPNOW
@@ -895,13 +858,10 @@ void WLED::handleConnection()
 
   byte stac = 0;
   if (apActive) {
-#ifdef ESP8266
-    stac = wifi_softap_get_station_num();
-#else
     wifi_sta_list_t stationList;
     esp_wifi_ap_get_sta_list(&stationList);
     stac = stationList.num;
-#endif
+
     if (stac != stacO) {
       stacO = stac;
       DEBUG_PRINTF_P(PSTR("Connected AP clients: %d\n"), (int)stac);

@@ -17,14 +17,14 @@
 /**
  * WLED Custom Description Structure
  * This structure is embedded in platform-specific sections at an approximately
- * fixed offset in ESP32/ESP8266 binaries, where it can be found and validated 
+ * fixed offset in ESP32 binaries, where it can be found and validated
  * by the OTA process.
  */
 typedef struct {
     uint32_t magic;               // Magic number to identify WLED custom description
     uint32_t desc_version;        // Structure version for future compatibility
     char wled_version[WLED_VERSION_MAX_LEN];
-    char release_name[WLED_RELEASE_NAME_MAX_LEN]; // Release name (null-terminated)    
+    char release_name[WLED_RELEASE_NAME_MAX_LEN]; // Release name (null-terminated)
     uint32_t hash;               // Structure sanity check
     uint8_t safe_update_version[3]; // Indicates version it's known to be safe to install this update from: major, minor, patch
 } __attribute__((packed)) wled_metadata_t;
@@ -55,7 +55,7 @@ bool findWledMetadata(const uint8_t* binaryData, size_t dataSize, wled_metadata_
 /**
  * Check if OTA should be allowed based on release compatibility
  * @param firmwareDescription Pointer to firmware description
- * @param errorMessage Buffer to store error message if validation fails 
+ * @param errorMessage Buffer to store error message if validation fails
  * @param errorMessageLen Maximum length of error message buffer
  * @return true if OTA should proceed, false if it should be blocked
  */

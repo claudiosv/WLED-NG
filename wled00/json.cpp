@@ -782,9 +782,7 @@ void serializeInfo(JsonObject root)
     if ((ledMaps>>i) & 0x00000001U) {
       JsonObject ledmaps0 = ledmaps.createNestedObject();
       ledmaps0["id"] = i;
-      #ifndef ESP8266
       if (i && ledmapNames[i-1]) ledmaps0["n"] = ledmapNames[i-1];
-      #endif
     }
   }
 
@@ -825,25 +823,15 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_OTA
   root[F("bootloaderSHA256")] = getBootloaderSHA256Hex();
   #endif
-#else
-  root[F("arch")] = "esp8266";
-  root[F("core")] = ESP.getCoreVersion();
-  root[F("clock")] = ESP.getCpuFreqMHz();
-  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
-  #ifdef WLED_DEBUG
-  root[F("maxalloc")] = getContiguousFreeHeap();
-  root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
-  #endif
-  root[F("lwip")] = LWIP_VERSION_MAJOR;
 #endif
 
   root[F("freeheap")] = getFreeHeapSize();
   #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
   // Report PSRAM information
   // Free PSRAM in bytes (backward compatibility)
-  root[F("psram")] = ESP.getFreePsram(); 
+  root[F("psram")] = ESP.getFreePsram();
   // Total PSRAM size in MB, round up to correct for allocator overhead
-  root[F("psrSz")] = (ESP.getPsramSize() + (1024U * 1024U - 1)) / (1024U * 1024U); 
+  root[F("psrSz")] = (ESP.getPsramSize() + (1024U * 1024U - 1)) / (1024U * 1024U);
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
@@ -939,11 +927,7 @@ static void setPaletteColors(JsonArray json, byte* tcp)
 void serializePalettes(JsonObject root, int page)
 {
   byte tcp[72];
-  #ifdef ESP8266
-  constexpr int itemPerPage = 5;
-  #else
   constexpr int itemPerPage = 8;
-  #endif
 
   const int customPalettesCount = customPalettes.size();
   const int palettesCount = FIXED_PALETTE_COUNT; // palettesCount is number of palettes, not palette index
@@ -1050,11 +1034,8 @@ void serializeNodes(JsonObject root)
 void serializePins(JsonObject root)
 {
   JsonArray pins = root.createNestedArray(F("pins"));
-  #ifdef ESP8266
-  constexpr int ENUM_PINS = WLED_NUM_PINS; // GPIO0-16 (A0 (17) is analog input only and always assigned to any analog input, even if set "unused") TODO: can currently not be handled
-  #else
   constexpr int ENUM_PINS = WLED_NUM_PINS;
-  #endif
+
   for (int gpio = 0; gpio < ENUM_PINS; gpio++) {
     bool canInput = PinManager::isPinOk(gpio, false);
     bool canOutput = PinManager::isPinOk(gpio, true);
@@ -1092,13 +1073,6 @@ void serializePins(JsonObject root)
     if (gpio == 0) caps |= PIN_CAP_BOOT; // pull low to enter bootloader mode
     if (gpio == 2 || gpio == 12) caps |= PIN_CAP_BOOTSTRAP; // note: if GPIO12 must be low at boot, (high=1.8V flash mode), GPIO 2 must be low or floating to enter bootloader mode
     #endif
-    #else
-    // ESP8266: GPIO 0-16 + GPIO17=A0
-    // if (gpio < 16) caps |= PIN_CAP_PWM;  // software PWM available on all GPIO except GPIO16
-    // ESP8266 strapping pins
-    if (gpio == 0) caps |= PIN_CAP_BOOT;
-    if (gpio == 2 || gpio == 15) caps |= PIN_CAP_BOOTSTRAP; // GPIO2 must be high, GPIO15 low to boot normally
-    if (gpio == 17) caps = PIN_CAP_INPUT_ONLY | PIN_CAP_ADC; // TODO: display as A0 pin
     #endif
 
     pinObj["c"] = caps;  // capabilities
@@ -1141,13 +1115,9 @@ void serializePins(JsonObject root)
         // for analog buttons, get raw reading value
         if (buttons[buttonIndex].type == BTN_TYPE_ANALOG || buttons[buttonIndex].type == BTN_TYPE_ANALOG_INVERTED) {
           int analogRaw = 0;
-          #ifdef ESP8266
-          analogRaw = analogRead(A0) >> 2;   // convert 10bit read to 8bit, ESP8266 only has one analog pin
-          #else
           if (digitalPinToAnalogChannel(gpio) >= 0) {
             analogRaw = (analogRead(gpio)>>4); // right shift to match button value (8bit) see button.cpp
           }
-          #endif
           if (buttons[buttonIndex].type == BTN_TYPE_ANALOG_INVERTED) analogRaw = 255 - analogRaw;
           pinObj["r"] = analogRaw; // send raw value
         }
@@ -1236,7 +1206,7 @@ void respondModeData(AsyncWebServerRequest* request) {
           len -= mode_bytes;
           bytes_written += mode_bytes;
         }
-        ++fx_index;        
+        ++fx_index;
       }
 
       if ((fx_index == strip.getModeCount()) && (len >= 1)) {
@@ -1259,7 +1229,7 @@ class LockedJsonResponse: public AsyncJsonResponse {
   // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
   inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
 
-  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) { 
+  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) {
     size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
     // Release lock as soon as we're done filling content
     if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
@@ -1307,7 +1277,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   if (!requestJSONBufferLock(JSON_LOCK_SERVEJSON)) {
-    request->deferResponse();    
+    request->deferResponse();
     return;
   }
   // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
@@ -1382,7 +1352,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   }
 #endif
 
-  DynamicBuffer buffer(9 + (9*(1+(used/n))) + 7 + 5 + 6 + 5 + 6 + 5 + 2);  
+  DynamicBuffer buffer(9 + (9*(1+(used/n))) + 7 + 5 + 6 + 5 + 6 + 5 + 2);
   char* buf = buffer.data();      // assign buffer for oappnd() functions
   strncpy_P(buffer.data(), PSTR("{\"leds\":["), buffer.size());
   buf += 9; // sizeof(PSTR()) from last line
@@ -1412,7 +1382,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 #endif
   (*buf++) = '}';
   (*buf++) = 0;
-  
+
   if (request) {
     request->send(200, FPSTR(CONTENT_TYPE_JSON), toString(std::move(buffer)));
   }
@@ -1420,7 +1390,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   else {
     wsc->text(toString(std::move(buffer)));
   }
-  #endif  
+  #endif
   return true;
 }
 #endif

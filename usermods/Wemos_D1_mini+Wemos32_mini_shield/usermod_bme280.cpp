@@ -6,21 +6,17 @@
 
 void UpdateBME280Data();
 
-#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit 
+#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
                   // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
 #ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
 uint8_t SCL_PIN = 22;
 uint8_t SDA_PIN = 21;
-#else //ESP8266 boards
-uint8_t SCL_PIN = 5;
-uint8_t SDA_PIN = 4;
-// uint8_t RST_PIN = 16; // Un-comment for Heltec WiFi-Kit-8
 #endif
 
 //The SCL and SDA pins are defined here.
-//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
+//ESP32 Wemos32 mini board use SCL=22 SDA=21
 #define U8X8_PIN_SCL SCL_PIN
 #define U8X8_PIN_SDA SDA_PIN
 //#define U8X8_PIN_RESET RST_PIN // Un-comment for Heltec WiFi-Kit-8
@@ -97,11 +93,11 @@ bool displayTurnedOff = false;
 void userLoop() {
 
 // BME280 sensor MQTT publishing
-  tempTimer = millis();  
+  tempTimer = millis();
 // Timer to publish new sensor data every 60 seconds
-  if (tempTimer - lastMeasure > 60000) 
+  if (tempTimer - lastMeasure > 60000)
   {
-    lastMeasure = tempTimer;    
+    lastMeasure = tempTimer;
 
 #ifndef WLED_DISABLE_MQTT
 // Check if MQTT Connected, otherwise it will crash the 8266
@@ -131,7 +127,7 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
-  
+
   // Turn off display after 3 minutes with no change.
   if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
     u8x8.setPowerSave(1);
@@ -155,7 +151,7 @@ void userLoop() {
     return;
   }
   needRedraw = false;
-  
+
   if (displayTurnedOff)
   {
     u8x8.setPowerSave(0);
@@ -164,11 +160,7 @@ void userLoop() {
   lastRedraw = millis();
 
   // Update last known values.
-  #if defined(ESP8266)
-  knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-  #else
   knownSsid = WiFi.SSID();
-  #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
   knownMode = strip.getMainSegment().mode;

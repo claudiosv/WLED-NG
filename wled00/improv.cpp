@@ -195,9 +195,6 @@ void sendImprovIPRPCResult(ImprovRPCType type) {
 
 void sendImprovInfoResponse() {
   char bString[32];
-  #ifdef ESP8266
-  strcpy(bString, "esp8266");
-  #else // ESP32
   strncpy(bString, ESP.getChipModel(), 31);
   #if CONFIG_IDF_TARGET_ESP32
   bString[5] = '\0'; // disregard chip revision for classic ESP32
@@ -205,7 +202,7 @@ void sendImprovInfoResponse() {
   bString[31] = '\0'; // just in case
   #endif
   strlwr(bString);
-  #endif
+
   //Use serverDescription if it has been changed from the default "WLED", else mDNS name
   bool useMdnsName = (strcmp(serverDescription, "WLED") == 0 && strlen(cmDNS) > 0);
   char vString[32];
@@ -232,11 +229,7 @@ void handleImprovWifiScan() {
   for (int i = 0; i < status; i++) {
     char rssiStr[8];
     sprintf(rssiStr, "%d", WiFi.RSSI(i));
-    #ifdef ESP8266
-    bool isOpen = WiFi.encryptionType(i) == ENC_TYPE_NONE;
-    #else
     bool isOpen = WiFi.encryptionType(i) == WIFI_AUTH_OPEN;
-    #endif
 
     char ssidStr[33];
     strcpy(ssidStr, WiFi.SSID(i).c_str());

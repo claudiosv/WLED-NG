@@ -11,12 +11,12 @@
  * Created at: 25.12.2022
  * If you have any questions, please feel free to contact me.
  */
-class UsermodBattery : public Usermod 
+class UsermodBattery : public Usermod
 {
   private:
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
-    
+
     UMBattery* bat = new UnkownUMBattery();
     batteryConfig cfg;
 
@@ -61,9 +61,9 @@ class UsermodBattery : public Usermod
     static const char _haDiscovery[];
 
     /**
-     * Helper for rounding floating point values 
+     * Helper for rounding floating point values
      */
-    float dot2round(float x) 
+    float dot2round(float x)
     {
       float nx = (int)(x * 100 + .5);
       return (float)(nx / 100);
@@ -109,26 +109,21 @@ class UsermodBattery : public Usermod
         lowPowerIndicationDone = true;
         lowPowerActivationTime = 0;
         applyPreset(lastPreset);
-      }      
+      }
     }
 
     /**
-     * read the battery voltage in different ways depending on the architecture 
+     * read the battery voltage in different ways depending on the architecture
      */
     float readVoltage()
     {
-      #ifdef ARDUINO_ARCH_ESP32
-        // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
-        return (analogReadMilliVolts(batteryPin) / 1000.0f) * bat->getVoltageMultiplier()  + bat->getCalibration();
-      #else
-        // use analog read on esp8266 ( 0V ~ 1V no attenuation options) and divide by ADC precision 1023 and multiply by voltage multiplier and apply calibration value
-        return (analogRead(batteryPin) / 1023.0f) * bat->getVoltageMultiplier() + bat->getCalibration();
-      #endif
+      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
+      return (analogReadMilliVolts(batteryPin) / 1000.0f) * bat->getVoltageMultiplier()  + bat->getCalibration();
     }
 
 #ifndef WLED_DISABLE_MQTT
     void addMqttSensor(const String &name, const String &type, const String &topic, const String &deviceClass, const String &unitOfMeasurement = "", const bool &isDiagnostic = false)
-    {      
+    {
       StaticJsonDocument<600> doc;
       char uid[128], json_str[1024], buf[128];
 
@@ -182,7 +177,7 @@ class UsermodBattery : public Usermod
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() 
+    void setup()
     {
       // plug in the right battery type
       if(cfg.type == (batteryType)lipo) {
@@ -197,7 +192,7 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         bool success = false;
         DEBUG_PRINTLN(F("Allocating battery pin..."));
-        if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0) 
+        if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0)
           if (PinManager::allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
@@ -209,8 +204,6 @@ class UsermodBattery : public Usermod
         } else {
           pinMode(batteryPin, INPUT);
         }
-      #else //ESP8266 boards have only one analog input pin A0
-        pinMode(batteryPin, INPUT);
       #endif
 
       // First voltage reading is delayed to allow voltage stabilization after powering up
@@ -225,7 +218,7 @@ class UsermodBattery : public Usermod
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() 
+    void connected()
     {
       //Serial.println("Connected to WiFi!");
     }
@@ -233,9 +226,9 @@ class UsermodBattery : public Usermod
 
     /*
      * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
+     *
      */
-    void loop() 
+    void loop()
     {
       if(strip.isUpdating()) return;
 
@@ -313,7 +306,7 @@ class UsermodBattery : public Usermod
 
       infoNextUpdate.add((nextReadTime - millis()) / 1000);
       infoNextUpdate.add(F(" sec"));
-      
+
       if (initializing) {
         infoPercentage.add(FPSTR(_init));
         infoVoltage.add(FPSTR(_init));
@@ -351,7 +344,7 @@ class UsermodBattery : public Usermod
 
       JsonObject lp = battery.createNestedObject(F("indicator")); // low power section
       lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
-      lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
+      lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset;
       lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
       lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
     }
@@ -376,8 +369,8 @@ class UsermodBattery : public Usermod
       setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
       lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
       setLowPowerIndicatorDuration(lp[FPSTR(_duration)] | lowPowerIndicatorDuration);
-      
-      if(initDone) 
+
+      if(initDone)
         bat->update(cfg);
     }
 
@@ -391,9 +384,9 @@ class UsermodBattery : public Usermod
 
       if (battery.isNull())
         battery = root.createNestedObject(FPSTR(_name));
-      
+
       addBatteryToJsonObject(battery, true);
-      
+
       DEBUG_PRINTLN(F("Battery state exposed in JSON API."));
     }
 
@@ -411,7 +404,7 @@ class UsermodBattery : public Usermod
 
       if (!battery.isNull()) {
         getUsermodConfigFromJsonObject(battery);
-      
+
         DEBUG_PRINTLN(F("Battery state read from JSON API."));
       }
     }
@@ -422,11 +415,11 @@ class UsermodBattery : public Usermod
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * If you want to force saving the current state, use serializeConfig() in your loop().
-     * 
+     *
      * CAUTION: serializeConfig() will initiate a filesystem write operation.
      * It might cause the LEDs to stutter and will cause flash wear if called too often.
      * Use it sparingly and always in the loop, never in network callbacks!
-     * 
+     *
      * addToConfig() will make your settings editable through the Usermod Settings page automatically.
      *
      * Usermod Settings Overview:
@@ -446,17 +439,17 @@ class UsermodBattery : public Usermod
      *   - Tip: use int8_t to store the pin value in the Usermod, so a -1 value (pin not set) can be used
      *
      * See usermod_v2_auto_save.h for an example that saves Flash space by reusing ArduinoJson key name strings
-     * 
-     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.  
+     *
+     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.
      * You will have to add the setting to the HTML, xml.cpp and set.cpp manually.
      * See the WLED Soundreactive fork (code and wiki) for reference.  https://github.com/atuline/WLED
-     * 
+     *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root)
     {
       JsonObject battery = root.createNestedObject(FPSTR(_name));
-      
+
       if (battery.isNull()) {
         battery = root.createNestedObject(FPSTR(_name));
       }
@@ -464,7 +457,7 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         battery[F("pin")] = batteryPin;
       #endif
-      
+
       addBatteryToJsonObject(battery, false);
 
       // read voltage in case calibration or voltage multiplier changed to see immediate effect
@@ -488,7 +481,7 @@ class UsermodBattery : public Usermod
       oappend(F("addInfo('Battery:auto-off:threshold',1,'%');"));   // 45 Bytes
       oappend(F("addInfo('Battery:indicator:threshold',1,'%');"));  // 46 Bytes
       oappend(F("addInfo('Battery:indicator:duration',1,'s');"));   // 45 Bytes
-      
+
       // this option list would exeed the oappend() buffer
       // a list of all presets to select one from
       // oappend(F("bd=addDropdown('Battery:low-power-indicator', 'preset');"));
@@ -506,16 +499,16 @@ class UsermodBattery : public Usermod
     /**
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
-     * 
+     *
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-     * 
+     *
      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
-     * 
+     *
      * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
      * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
-     * 
+     *
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
     bool readFromConfig(JsonObject& root)
@@ -523,9 +516,9 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         int8_t newBatteryPin = batteryPin;
       #endif
-      
+
       JsonObject battery = root[FPSTR(_name)];
-      if (battery.isNull()) 
+      if (battery.isNull())
       {
         DEBUG_PRINT(FPSTR(_name));
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
@@ -545,18 +538,18 @@ class UsermodBattery : public Usermod
       getUsermodConfigFromJsonObject(battery);
 
       #ifdef ARDUINO_ARCH_ESP32
-        if (!initDone) 
+        if (!initDone)
         {
           // first run: reading from cfg.json
           batteryPin = newBatteryPin;
           DEBUG_PRINTLN(F(" config loaded."));
-        } 
-        else 
+        }
+        else
         {
           DEBUG_PRINTLN(F(" config (re)loaded."));
 
           // changing parameters from settings page
-          if (newBatteryPin != batteryPin) 
+          if (newBatteryPin != batteryPin)
           {
             // deallocate pin
             PinManager::deallocatePin(batteryPin, PinOwner::UM_Battery);
@@ -587,7 +580,7 @@ class UsermodBattery : public Usermod
       snprintf_P(mqttVoltageTopic, 127, PSTR("%s/voltage"), mqttDeviceTopic);
       this->addMqttSensor(F("Voltage"), "sensor", mqttVoltageTopic, "voltage", "V", true);
     }
-#endif   
+#endif
 
     /*
      *
@@ -613,7 +606,7 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * 
+     *
      */
     unsigned long getReadingInterval()
     {
@@ -621,7 +614,7 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * minimum repetition is 3000ms (3s) 
+     * minimum repetition is 3000ms (3s)
      */
     void setReadingInterval(unsigned long newReadingInterval)
     {
@@ -652,7 +645,7 @@ class UsermodBattery : public Usermod
     {
       return bat->getMaxVoltage();
     }
-    
+
     /**
      * Set highest battery voltage
      * can't be below minBatteryVoltage
@@ -727,13 +720,13 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * Set auto-off feature status 
+     * Set auto-off feature status
      */
     void setAutoOffEnabled(bool enabled)
     {
       autoOffEnabled = enabled;
     }
-    
+
     /**
      * Get auto-off threshold in percent (0-100)
      */
@@ -743,7 +736,7 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * Set auto-off threshold in percent (0-100) 
+     * Set auto-off threshold in percent (0-100)
      */
     void setAutoOffThreshold(int8_t threshold)
     {
@@ -762,7 +755,7 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * Set low-power-indicator feature status 
+     * Set low-power-indicator feature status
      */
     void setLowPowerIndicatorEnabled(bool enabled)
     {
@@ -777,7 +770,7 @@ class UsermodBattery : public Usermod
       return lowPowerIndicatorPreset;
     }
 
-    /** 
+    /**
      * Set low-power-indicator preset to activate when low power is detected
      */
     void setLowPowerIndicatorPreset(int8_t presetId)

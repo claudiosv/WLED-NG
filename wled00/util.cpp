@@ -2,10 +2,6 @@
 #include "fcn_declare.h"
 #include "const.h"
 #include "src/dependencies/fastled_slim/fastled_slim.h"
-#ifdef ESP8266
-#include "user_interface.h" // for bootloop detection
-#include <Hash.h>            // for SHA1 on ESP8266
-#else
 #include <Update.h>
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
   #include "esp32/rtc.h"    // for bootloop detection
@@ -14,7 +10,6 @@
 #endif
 #include "mbedtls/sha1.h"   // for SHA1 on ESP32
 #include "esp_efuse.h"
-#endif
 
 
 //helper to get int value at a position in string
@@ -260,16 +255,9 @@ bool requestJSONBufferLock(uint8_t moduleID)
   // This can happen during large JSON web transactions.  In this case, we continue immediately
   // and then will return out below if the lock is still held.
   if (xSemaphoreTakeRecursive(jsonBufferLockMutex, 250) == pdFALSE) return false;  // timed out waiting
-#elif defined(ARDUINO_ARCH_ESP8266)
-  // If we're in system context, delay() won't return control to the user context, so there's
-  // no point in waiting.
-  if (can_yield()) {
-    unsigned long now = millis();
-    while (jsonBufferLock && (millis()-now < 250)) delay(1); // wait for fraction for buffer lock
-  }
 #else
   #error Unsupported task framework - fix requestJSONBufferLock
-#endif  
+#endif
   // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
     DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), moduleID, jsonBufferLock);
@@ -292,7 +280,7 @@ void releaseJSONBufferLock()
   jsonBufferLock = 0;
 #ifdef ARDUINO_ARCH_ESP32
   xSemaphoreGiveRecursive(jsonBufferLockMutex);
-#endif  
+#endif
 }
 
 
@@ -654,17 +642,14 @@ void enumerateLedmaps() {
     sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
-    #ifndef ESP8266
     if (ledmapNames[i-1]) { //clear old name
       free(ledmapNames[i-1]);
       ledmapNames[i-1] = nullptr;
     }
-    #endif
 
     if (isFile) {
       ledMaps |= 1 << i;
 
-      #ifndef ESP8266
       if (requestJSONBufferLock(JSON_LOCK_LEDMAP_ENUM)) {
         if (readObjectFromFile(fileName, nullptr, pDoc, &filter)) {
           size_t len = 0;
@@ -688,7 +673,6 @@ void enumerateLedmaps() {
         }
         releaseJSONBufferLock();
       }
-      #endif
     }
 
   }
@@ -737,8 +721,8 @@ int32_t hw_random(int32_t lowerlimit, int32_t upperlimit) {
 
 // PSRAM compile time checks to provide info for misconfigured env
 #if defined(BOARD_HAS_PSRAM)
-  #if defined(IDF_TARGET_ESP32C3) || defined(ESP8266)
-    #error "ESP32-C3 and ESP8266 with PSRAM is not supported, please remove BOARD_HAS_PSRAM definition"
+  #if defined(IDF_TARGET_ESP32C3)
+    #error "ESP32-C3 with PSRAM is not supported, please remove BOARD_HAS_PSRAM definition"
   #else
   #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) // PSRAM fix only needed for classic esp32
     // BOARD_HAS_PSRAM also means that compiler flag "-mfix-esp32-psram-cache-issue" has to be used for old "rev.1" esp32
@@ -753,39 +737,6 @@ int32_t hw_random(int32_t lowerlimit, int32_t upperlimit) {
 #endif
 
 // memory allocation functions with minimum free heap size check
-#ifdef ESP8266
-static void *validateFreeHeap(void *buffer) {
-  // make sure there is enough free heap left if buffer was allocated in DRAM region, free it if not
-  // note: ESP826 needs very little contiguous heap for webserver, checking total free heap works better
-  if (getFreeHeapSize() < MIN_HEAP_SIZE) {
-    free(buffer);
-    return nullptr;
-  }
-  return buffer;
-}
-
-void *d_malloc(size_t size) {
-  // note: using "if (getContiguousFreeHeap() > MIN_HEAP_SIZE + size)" did perform worse in tests with regards to keeping heap healthy and UI working
-  void *buffer = malloc(size);
-  return validateFreeHeap(buffer);
-}
-
-void *d_calloc(size_t count, size_t size) {
-  void *buffer = calloc(count, size);
-  return validateFreeHeap(buffer);
-}
-
-// realloc with malloc fallback, note: on ESPS8266 there is no safe way to ensure MIN_HEAP_SIZE during realloc()s, free buffer and allocate new one
-void *d_realloc_malloc(void *ptr, size_t size) {
-  //void *buffer = realloc(ptr, size);
-  //buffer = validateFreeHeap(buffer);
-  //if (buffer) return buffer; // realloc successful
-  //d_free(ptr); // free old buffer if realloc failed (or min heap was exceeded)
-  //return d_malloc(size); // fallback to malloc
-  free(ptr);
-  return d_malloc(size);
-}
-#else
 static void *validateFreeHeap(void *buffer) {
   // make sure there is enough free heap left if buffer was allocated in DRAM region, free it if not
   // TODO: between allocate and free, heap can run low (async web access), only IDF V5 allows for a pre-allocation-check of all free blocks
@@ -857,7 +808,6 @@ void *p_realloc_malloc(void *ptr, size_t size) {
   return p_malloc(size); // fallback to malloc
 }
 #endif
-#endif
 
 // allocation function for buffers like pixel-buffers and segment data
 // optimises the use of memory types to balance speed and heap availability, always favours DRAM if possible
@@ -920,7 +870,7 @@ void *allocate_buffer(size_t size, uint32_t type) {
       DEBUG_PRINTLN(F(" in ???")); // unknown (check soc.h for other memory regions)
   } else
     DEBUG_PRINTF_P(PSTR("Buffer allocation failed: size:%d\n"), size);
-  #endif 
+  #endif
   */
   return buffer;
 }
@@ -944,28 +894,6 @@ enum class ResetReason {
   Brownout
 };
 
-#ifdef ESP8266
-// Place variables in RTC memory via references, since RTC memory is not exposed via the linker in the Non-OS SDK
-// Use an offset of 32 as there's some hints that the first 128 bytes of "user" memory are used by the OTA system
-// Ref: https://github.com/esp8266/Arduino/blob/78d0d0aceacc1553f45ad8154592b0af22d1eede/cores/esp8266/Esp.cpp#L168
-static volatile uint32_t& bl_last_boottime = *(RTC_USER_MEM + 32);
-static volatile uint32_t& bl_crashcounter = *(RTC_USER_MEM + 33);
-static volatile uint32_t& bl_actiontracker = *(RTC_USER_MEM + 34);
-
-static inline ResetReason rebootReason() {
-  uint32_t resetReason = system_get_rst_info()->reason;
-  if (resetReason == REASON_EXCEPTION_RST
-      || resetReason == REASON_WDT_RST
-      || resetReason == REASON_SOFT_WDT_RST)
-      return ResetReason::Crash;
-  if (resetReason == REASON_SOFT_RESTART)
-    return ResetReason::Software;
-  return ResetReason::Power;
-}
-
-static inline uint32_t getRtcMillis() { return system_get_rtc_time() / 160; };  // rtc ticks ~160000Hz
-
-#else
 // variables in RTC_NOINIT memory persist between reboots (but not on hardware reset)
 RTC_NOINIT_ATTR static uint32_t bl_last_boottime;
 RTC_NOINIT_ATTR static uint32_t bl_crashcounter;
@@ -986,8 +914,6 @@ static inline uint32_t getRtcMillis() { return rtc_time_slowclk_to_us(rtc_time_g
 #endif
 
 void bootloopCheckOTA() { bl_actiontracker = BOOTLOOP_ACTION_OTA; } // swap boot image if bootloop is detected instead of restoring config
-
-#endif
 
 // detect bootloop by checking the reset reason and the time since last boot
 static bool detectBootLoop() {
@@ -1011,7 +937,7 @@ static bool detectBootLoop() {
         bl_crashcounter++;
         if (bl_crashcounter >= BOOTLOOP_THRESHOLD) {
           DEBUG_PRINTLN(F("!BOOTLOOP DETECTED!"));
-          bl_crashcounter = 0;  
+          bl_crashcounter = 0;
           if(bl_actiontracker > BOOTLOOP_ACTION_DUMP) bl_actiontracker = BOOTLOOP_ACTION_RESTORE; // reset action tracker if out of bounds
           result = true;
         }
@@ -1049,16 +975,12 @@ void handleBootLoop() {
       ++bl_actiontracker;
       break;
     case BOOTLOOP_ACTION_OTA:
-#ifndef ESP8266
       if(Update.canRollBack()) {
         DEBUG_PRINTLN(F("Swapping boot partition..."));
         Update.rollBack(); // swap boot partition
       }
       ++bl_actiontracker;
       break;
-#else
-      // fall through
-#endif
     case BOOTLOOP_ACTION_DUMP:
       dumpFilesToSerial();
       break;
@@ -1244,28 +1166,24 @@ uint8_t perlin8(uint16_t x, uint16_t y, uint16_t z) {
 
 // Platform-agnostic SHA1 computation from String input
 String computeSHA1(const String& input) {
-  #ifdef ESP8266
-    return sha1(input); // ESP8266 has built-in sha1() function
-  #else
-    // ESP32: Compute SHA1 hash using mbedtls
-    unsigned char shaResult[20]; // SHA1 produces 20 bytes
-    mbedtls_sha1_context ctx;
+  // ESP32: Compute SHA1 hash using mbedtls
+  unsigned char shaResult[20]; // SHA1 produces 20 bytes
+  mbedtls_sha1_context ctx;
 
-    mbedtls_sha1_init(&ctx);
-    mbedtls_sha1_starts_ret(&ctx);
-    mbedtls_sha1_update_ret(&ctx, (const unsigned char*)input.c_str(), input.length());
-    mbedtls_sha1_finish_ret(&ctx, shaResult);
-    mbedtls_sha1_free(&ctx);
+  mbedtls_sha1_init(&ctx);
+  mbedtls_sha1_starts_ret(&ctx);
+  mbedtls_sha1_update_ret(&ctx, (const unsigned char*)input.c_str(), input.length());
+  mbedtls_sha1_finish_ret(&ctx, shaResult);
+  mbedtls_sha1_free(&ctx);
 
-    // Convert to hexadecimal string
-    char hexString[41];
-    for (int i = 0; i < 20; i++) {
-      sprintf(&hexString[i*2], "%02x", shaResult[i]);
-    }
-    hexString[40] = '\0';
+  // Convert to hexadecimal string
+  char hexString[41];
+  for (int i = 0; i < 20; i++) {
+    sprintf(&hexString[i*2], "%02x", shaResult[i]);
+  }
+  hexString[40] = '\0';
 
-    return String(hexString);
-  #endif
+  return String(hexString);
 }
 
 #ifdef ESP32
@@ -1297,16 +1215,6 @@ String generateDeviceFingerprint() {
       fp[1] ^= ch.high_curve[i];
     }
   }
-  char fp_string[17];  // 16 hex chars + null terminator
-  sprintf(fp_string, "%08X%08X", fp[1], fp[0]);
-  return String(fp_string);
-}
-#else // ESP8266
-String generateDeviceFingerprint() {
-  uint32_t fp[2] = {0, 0}; // create 64 bit fingerprint
-  WiFi.macAddress((uint8_t*)&fp); // use MAC address as fingerprint base
-  fp[0] ^= ESP.getFlashChipId();
-  fp[1] ^= ESP.getFlashChipSize() | ESP.getFlashChipVendorId() << 16;
   char fp_string[17];  // 16 hex chars + null terminator
   sprintf(fp_string, "%08X%08X", fp[1], fp[0]);
   return String(fp_string);

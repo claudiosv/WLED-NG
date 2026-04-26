@@ -62,7 +62,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
 #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
-  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive 
+  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive
 #elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
   #define MIN_FRAME_DELAY  3                                              // S2/C3 are slower than normal esp32, and only have one core
 #else
@@ -80,11 +80,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FPS_CALC_SHIFT 7 // bit shift for fixed point math
 
 // heap memory limit for effects data, pixel buffers try to reserve it if PSRAM is available
-#ifdef ESP8266
-  #define MAX_NUM_SEGMENTS  16
-  /* How much data bytes all segments combined may allocate */
-  #define MAX_SEGMENT_DATA  (6*1024) // 6k by default
-#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#if defined(CONFIG_IDF_TARGET_ESP32S2)
   #define MAX_NUM_SEGMENTS  32
   #define MAX_SEGMENT_DATA  (20*1024) // 20k by default (S2 is short on free RAM), limit does not apply if PSRAM is available
 #else
@@ -729,7 +725,7 @@ class Segment {
     #ifndef WLED_DISABLE_2D
       if (is2D()) return virtualWidth() * virtualHeight();
     #endif
-      return virtualLength();    
+      return virtualLength();
     }
 
   #ifndef WLED_DISABLE_2D

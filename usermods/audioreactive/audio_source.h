@@ -22,7 +22,7 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
   // there are two things in these MCUs that could lead to problems with audio processing:
   // * no floating point hardware (FPU) support - FFT uses float calculations. If done in software, a strong slow-down can be expected (between 8x and 20x)
   // * single core, so FFT task might slow down other things like LED updates
@@ -42,7 +42,7 @@
 
 // Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
 // benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
-// WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
+// WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed;
 //          for example if you want to read "analog buttons"
 //#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continuously sample analog ADC microphone. WARNING will cause analogRead() lock-up
 
@@ -57,7 +57,7 @@
 #undef  I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #else
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_32BIT
-//#define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_24BIT 
+//#define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_24BIT
 #define I2S_datatype int32_t
 #define I2S_unsigned_datatype uint32_t
 #define I2S_data_size I2S_BITS_PER_CHAN_32BIT
@@ -72,7 +72,7 @@
 */
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 5, 0))
-// espressif bug: only_left has no sound, left and right are swapped 
+// espressif bug: only_left has no sound, left and right are swapped
 // https://github.com/espressif/esp-idf/issues/9635  I2S mic not working since 4.4 (IDFGH-8138)
 // https://github.com/espressif/esp-idf/issues/8538  I2S channel selection issue? (IDFGH-6918)
 // https://github.com/espressif/esp-idf/issues/6625  I2S: left/right channels are swapped for read (IDFGH-4826)
@@ -142,7 +142,7 @@ class AudioSource {
     /* identify Audiosource type - I2S-ADC or I2S-digital */
     typedef enum{Type_unknown=0, Type_I2SAdc=1, Type_I2SDigital=2} AudioSourceType;
     virtual AudioSourceType getType(void) {return(Type_I2SDigital);}               // default is "I2S digital source" - ADC type overrides this method
- 
+
   protected:
     /* Post-process audio sample - currently on needed for I2SAdcSource*/
     virtual I2S_datatype postProcessSample(I2S_datatype sample_in) {return(sample_in);}   // default method can be overriden by instances (ADC) that need sample postprocessing
@@ -196,7 +196,7 @@ class I2SSource : public AudioSource {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!PinManager::allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !PinManager::allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: ws=%d, sd=%d\n",  i2swsPin, i2ssdPin); 
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: ws=%d, sd=%d\n",  i2swsPin, i2ssdPin);
           return;
         }
       }
@@ -204,7 +204,7 @@ class I2SSource : public AudioSource {
       // i2ssckPin needs special treatment, since it might be unused on PDM mics
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
         if (!PinManager::allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) {
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: sck=%d\n",  i2sckPin); 
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: sck=%d\n",  i2sckPin);
           return;
         }
       } else {
@@ -218,7 +218,7 @@ class I2SSource : public AudioSource {
         // data line, to make it simpler to debug, use the WS pin as CLK and SD pin as DATA
         // example from espressif: https://github.com/espressif/esp-idf/blob/release/v4.4/examples/peripherals/i2s/i2s_audio_recorder_sdcard/main/i2s_recorder_main.c
 
-        // note to self: PDM has known bugs on S3, and does not work on C3 
+        // note to self: PDM has known bugs on S3, and does not work on C3
         //  * S3: PDM sample rate only at 50% of expected rate: https://github.com/espressif/esp-idf/issues/9893
         //  * S3: I2S PDM has very low amplitude: https://github.com/espressif/esp-idf/issues/8660
         //  * C3: does not support PDM to PCM input. SoC would allow PDM RX, but there is no hardware to directly convert to PCM so it will not work. https://github.com/espressif/esp-idf/issues/8796
@@ -237,7 +237,7 @@ class I2SSource : public AudioSource {
         // //_config.fixed_mclk = 256 * _sampleRate;
         #endif
       }
-      
+
       #if !defined(SOC_I2S_SUPPORTS_APLL)
         #warning this MCU does not have an APLL high accuracy clock for audio
         // S3: not supported; S2: supported; C3: not supported
@@ -251,8 +251,8 @@ class I2SSource : public AudioSource {
       // Reserve the master clock pin if provided
       _mclkPin = mclkPin;
       if (mclkPin != I2S_PIN_NO_CHANGE) {
-        if(!PinManager::allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) { 
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pin: MCLK=%d\n",  mclkPin); 
+        if(!PinManager::allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) {
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pin: MCLK=%d\n",  mclkPin);
           return;
         } else
         _routeMclk(mclkPin);
@@ -280,7 +280,7 @@ class I2SSource : public AudioSource {
       DEBUGSR_PRINTF("AR: %d bits, Sample scaling factor = %6.4f\n",  _config.bits_per_sample, _sampleScale);
       if (_config.mode & I2S_MODE_PDM) {
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in PDM MASTER mode."));
-      } else { 
+      } else {
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
       }
 
@@ -434,7 +434,7 @@ public:
     void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
       DEBUGSR_PRINTLN(F("ES7243:: initialize();"));
       if ((i2sckPin < 0) || (mclkPin < 0)) {
-        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin);
         return;
       }
 
@@ -450,7 +450,7 @@ public:
 
 /* ES8388 Sound Module
    This is an I2S sound processing unit that requires initialization over
-   I2C before I2S data can be received. 
+   I2C before I2S data can be received.
 */
 class ES8388Source : public I2SSource {
   private:
@@ -472,7 +472,7 @@ class ES8388Source : public I2SSource {
 
     void _es8388InitAdc() {
       // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
-      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear. 
+      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear.
       // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
       // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
       // Registries are decimal, settings are binary as that's how everything is listed in the docs
@@ -492,18 +492,18 @@ class ES8388Source : public I2SSource {
 
     #ifdef use_es8388_mic
       // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
-      // so there's no way to completely eliminate the mics. It's also hella noisy. 
+      // so there's no way to completely eliminate the mics. It's also hella noisy.
       // Line-in works OK on the AudioKit, generally speaking, as the mics really need
-      // amplification to be noticeable in a quiet room. If you're in a very loud room, 
-      // the mics on the AudioKit WILL pick up sound even in line-in mode. 
-      // TL;DR: Don't use the AudioKit for anything, use the LyraT. 
+      // amplification to be noticeable in a quiet room. If you're in a very loud room,
+      // the mics on the AudioKit WILL pick up sound even in line-in mode.
+      // TL;DR: Don't use the AudioKit for anything, use the LyraT.
       //
       // The LyraT does a reasonable job with mic input as configured below.
 
       // Pick one of these. If you have to use the mics, use a LyraT over an AudioKit if you can:
       _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on LyraT)
       //_es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input (mic *and* line-in on AudioKit)
-      
+
       _es8388I2cWrite( 9,0b10001000); // Select Analog Input PGA Gain for ADC to +24dB (L+R)
       _es8388I2cWrite(16,0b00000000); // Set ADC digital volume attenuation to 0dB (left)
       _es8388I2cWrite(17,0b00000000); // Set ADC digital volume attenuation to 0dB (right)
@@ -519,11 +519,11 @@ class ES8388Source : public I2SSource {
       // Music ALC - the mics like Auto Level Control
       // You can also use this for line-in, but it's not really needed.
       //
-      _es8388I2cWrite(18,0b11111000); // ALC: stereo, max gain +35.5dB, min gain -12dB 
+      _es8388I2cWrite(18,0b11111000); // ALC: stereo, max gain +35.5dB, min gain -12dB
       _es8388I2cWrite(19,0b00110000); // ALC: target -1.5dB, 0ms hold time
       _es8388I2cWrite(20,0b10100110); // ALC: gain ramp up = 420ms/93ms, gain ramp down = check manual for calc
       _es8388I2cWrite(21,0b00000110); // ALC: use "ALC" mode, no zero-cross, window 96 samples
-      _es8388I2cWrite(22,0b01011001); // ALC: noise gate threshold, PGA gain constant, noise gate enabled 
+      _es8388I2cWrite(22,0b01011001); // ALC: noise gate threshold, PGA gain constant, noise gate enabled
     #else
       _es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input ("line-in")
       _es8388I2cWrite( 9,0b00000000); // Select Analog Input PGA Gain for ADC to 0dB (L+R)
@@ -550,7 +550,7 @@ class ES8388Source : public I2SSource {
     void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
       DEBUGSR_PRINTLN(F("ES8388Source:: initialize();"));
       if ((i2sckPin < 0) || (mclkPin < 0)) {
-        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin);
         return;
       }
 
@@ -598,7 +598,7 @@ class I2SAdcSource : public I2SSource {
         .dma_buf_len = _blockSize,
         .use_apll = false,
         .tx_desc_auto_clear = false,
-        .fixed_mclk = 0        
+        .fixed_mclk = 0
       };
     }
 
@@ -684,7 +684,7 @@ class I2SAdcSource : public I2SSource {
       uint16_t the_sample  =  rawData & 0x0FFF;                  // lower 12bit -> ADC sample (unsigned)
       I2S_datatype finalSample = (int(the_sample) - 2048);       // convert unsigned sample to signed (centered at 0);
 
-      if ((the_channel != _myADCchannel) && (_myADCchannel != 0x0F)) { // 0x0F means "don't know what my channel is" 
+      if ((the_channel != _myADCchannel) && (_myADCchannel != 0x0F)) { // 0x0F means "don't know what my channel is"
         // fix bad sample
         finalSample = lastGoodSample;                             // replace with last good ADC sample
         broken_samples_counter ++;
@@ -739,7 +739,7 @@ class I2SAdcSource : public I2SSource {
       PinManager::deallocatePin(_audioPin, PinOwner::UM_Audioreactive);
       _initialized = false;
       _myADCchannel = 0x0F;
-      
+
       esp_err_t err;
       #if defined(I2S_GRAB_ADC1_COMPLETELY)
         // according to docs from espressif, the ADC needs to be stopped explicitly

@@ -41,7 +41,7 @@ void longPressAction(uint8_t b)
   if (!buttons[b].macroLongPress) {
     switch (b) {
       case 0: setRandomColor(colPri); colorUpdated(CALL_MODE_BUTTON); break;
-      case 1: 
+      case 1:
         if(buttonBriDirection) {
           if (bri == 255) break; // avoid unnecessary updates to brightness
           if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
@@ -51,8 +51,8 @@ void longPressAction(uint8_t b)
           if (bri <= WLED_LONG_BRI_STEPS) bri = 1;
           else bri -= WLED_LONG_BRI_STEPS;
         }
-        stateUpdated(CALL_MODE_BUTTON); 
-        buttons[b].pressedTime = millis();         
+        stateUpdated(CALL_MODE_BUTTON);
+        buttons[b].pressedTime = millis();
         break; // repeatable action
     }
   } else {
@@ -175,13 +175,9 @@ void handleAnalog(uint8_t b)
 
   DEBUG_PRINTF_P(PSTR("Analog: Reading button %u\n"), b);
 
-  #ifdef ESP8266
-  rawReading = analogRead(A0) << 2;   // convert 10bit read to 12bit
-  #else
   if ((buttons[b].pin < 0) /*|| (digitalPinToAnalogChannel(buttons[b].pin) < 0)*/) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
   rawReading = analogRead(buttons[b].pin); // collect at full 12bit resolution
-  #endif
-  yield();                            // keep WiFi task running - analog read may take several millis on ESP8266
+  yield();                            // keep WiFi task running
 
   filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]); // filter raw input, and scale to [0..255]
   unsigned aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
@@ -265,11 +261,7 @@ void handleButton()
   lastRun = now;
 
   for (unsigned b = 0; b < buttons.size(); b++) {
-    #ifdef ESP8266
-    if ((buttons[b].pin < 0 && !(buttons[b].type == BTN_TYPE_ANALOG || buttons[b].type == BTN_TYPE_ANALOG_INVERTED)) || buttons[b].type == BTN_TYPE_NONE) continue;
-    #else
     if (buttons[b].pin < 0 || buttons[b].type == BTN_TYPE_NONE) continue;
-    #endif
 
     if (UsermodManager::handleButton(b)) continue; // did usermod handle buttons
 
@@ -365,7 +357,7 @@ void handleIO()
 {
   handleButton();
 
-  // if we want to control on-board LED (ESP8266) or relay we have to do it here as the final show() may not happen until
+  // if we want to control relay we have to do it here as the final show() may not happen until
   // next loop() cycle
   handleOnOff();
 }

@@ -42,9 +42,7 @@ make_unique(Args&&... args)
 #endif
 
 #ifdef WLED_DEBUG_BUS
-  #ifndef ESP8266
   #include <rom/rtc.h>
-  #endif
   #define DEBUGBUS_PRINT(x) DEBUGOUT.print(x)
   #define DEBUGBUS_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUGBUS_PRINTF(x...) DEBUGOUT.printf(x)
@@ -204,7 +202,7 @@ class Bus {
     static inline void     setGlobalAWMode(uint8_t m) { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
     static inline uint8_t  getGlobalAWMode()          { return _gAWM; }
     static inline void     setCCT(int16_t cct)        { _cct = cct; }
-    static inline int8_t   getCCTBlend()              { return (_cctBlend * 100 + (_cctBlend >= 0 ? 64 : -64)) / 127; } // returns -100 to +100, +/-100% = +/-127. +/-64 for rounding 
+    static inline int8_t   getCCTBlend()              { return (_cctBlend * 100 + (_cctBlend >= 0 ? 64 : -64)) / 127; } // returns -100 to +100, +/-100% = +/-127. +/-64 for rounding
     static inline void     setCCTBlend(int8_t b) {    // input is -100 to +100
       _cctBlend = (std::max(-100, std::min(100, (int)b)) * 127 + (b >= 0 ? 50 : -50)) / 100; // +/-50 for rounding, b=+/-100% -> +/-127
       //compile-time limiter for hardware that can't power both white channels at max
@@ -519,11 +517,7 @@ struct BusConfig {
 // milliamps used by ESP (for power estimation)
 // you can set it to 0 if the ESP is powered by USB and the LEDs by external
 #ifndef MA_FOR_ESP
-  #ifdef ESP8266
-    #define MA_FOR_ESP         80 //how much mA does the ESP use (Wemos D1 about 80mA)
-  #else
-    #define MA_FOR_ESP        120 //how much mA does the ESP use (ESP32 about 120mA)
-  #endif
+  #define MA_FOR_ESP        120 //how much mA does the ESP use (ESP32 about 120mA)
 #endif
 
 namespace BusManager {

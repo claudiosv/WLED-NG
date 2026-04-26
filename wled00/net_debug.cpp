@@ -6,14 +6,10 @@ size_t NetworkDebugPrinter::write(uint8_t c) {
   if (!WLED_CONNECTED || !netDebugEnabled) return 0;
 
   if (!debugPrintHostIP && !debugPrintHostIP.fromString(netDebugPrintHost)) {
-    #ifdef ESP8266
-      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP, 750);
+    #ifdef WLED_USE_ETHERNET
+      ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
     #else
-      #ifdef WLED_USE_ETHERNET
-        ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #else
-        WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #endif
+      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
     #endif
   }
 
@@ -27,14 +23,10 @@ size_t NetworkDebugPrinter::write(const uint8_t *buf, size_t size) {
   if (!WLED_CONNECTED || buf == nullptr || !netDebugEnabled) return 0;
 
   if (!debugPrintHostIP && !debugPrintHostIP.fromString(netDebugPrintHost)) {
-    #ifdef ESP8266
-      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP, 750);
+    #ifdef WLED_USE_ETHERNET
+      ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
     #else
-      #ifdef WLED_USE_ETHERNET
-        ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #else
-        WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #endif
+      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
     #endif
   }
 

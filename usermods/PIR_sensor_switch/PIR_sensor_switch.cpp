@@ -4,8 +4,6 @@
   // compatible with QuinLED-Dig-Uno
   #ifdef ARDUINO_ARCH_ESP32
     #define PIR_SENSOR_PIN 23 // Q4
-  #else //ESP8266 boards
-    #define PIR_SENSOR_PIN 13 // Q4 (D7 on D1 mini)
   #endif
 #endif
 
@@ -19,13 +17,13 @@
 
 /*
  * This usermod handles PIR sensor states.
- * The strip will be switched on and the off timer will be resetted when the sensor goes HIGH. 
- * When the sensor state goes LOW, the off timer is started and when it expires, the strip is switched off. 
+ * The strip will be switched on and the off timer will be resetted when the sensor goes HIGH.
+ * When the sensor state goes LOW, the off timer is started and when it expires, the strip is switched off.
  * Maintained by: @blazoncek
- * 
+ *
  * Usermods allow you to add own functionality to WLED more easily
  * See: https://github.com/wled-dev/WLED/wiki/Add-own-functionality
- * 
+ *
  * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
  * Multiple v2 usermods can be added to one compilation easily.
  */
@@ -40,7 +38,7 @@ public:
 
   //Enable/Disable the PIR sensor
   inline void EnablePIRsensor(bool en) { enabled = en; }
-  
+
   // Get PIR sensor enabled/disabled state
   inline bool PIRsensorEnabled() { return enabled; }
 
@@ -111,7 +109,7 @@ private:
   bool updatePIRsensorState();
 
   /**
-   * switch off the strip if the delay has elapsed 
+   * switch off the strip if the delay has elapsed
    */
   bool handleOffTimer();
 
@@ -142,7 +140,7 @@ public:
 
   /**
    * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-   * 
+   *
    * Add PIR sensor state and switch off timer duration to jsoninfo
    */
   void addToJsonInfo(JsonObject &root) override;
@@ -317,7 +315,7 @@ void PIRsensorSwitch::publishHomeAssistantAutodiscovery()
     device[F("mf")]   = F(WLED_BRAND);
     device[F("mdl")]  = F(WLED_PRODUCT_NAME);
     device[F("sw")]   = versionString;
-    
+
     sprintf_P(buf, PSTR("homeassistant/binary_sensor/%s/config"), uid);
     DEBUG_PRINTLN(buf);
     size_t payload_size = serializeJson(doc, json_str);
@@ -375,11 +373,7 @@ void PIRsensorSwitch::setup()
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
     if (PinManager::allocatePin(PIRsensorPin[i], false, PinOwner::UM_PIR)) {
       // PIR Sensor mode INPUT_PULLDOWN
-      #ifdef ESP8266
-      pinMode(PIRsensorPin[i], PIRsensorPin[i]==16 ? INPUT_PULLDOWN_16 : INPUT_PULLUP); // ESP8266 has INPUT_PULLDOWN on GPIO16 only
-      #else
       pinMode(PIRsensorPin[i], INPUT_PULLDOWN);
-      #endif
       sensorPinState[i] = digitalRead(PIRsensorPin[i]);
     } else {
       DEBUG_PRINT(F("PIRSensorSwitch pin ")); DEBUG_PRINTLN(i); DEBUG_PRINTLN(F(" allocation failed."));

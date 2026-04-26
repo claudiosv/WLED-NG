@@ -2,7 +2,7 @@
 /*
   Original file at: https://github.com/baggior/ESPAsyncWebServer/blob/master/src/AsyncJson.h
   Only changes are ArduinoJson lib path and removed content-type check
-  
+
   Async Response to use with ArduinoJson and AsyncWebServer
   Written by Andrew Melvin (SticilFace) with help from me-no-dev and BBlanchon.
 
@@ -15,11 +15,7 @@
 #include "ArduinoJson-v6.h"
 #include <Print.h>
 
-#ifdef ESP8266
-  #define DYNAMIC_JSON_DOCUMENT_SIZE 8192
-#else
-  #define DYNAMIC_JSON_DOCUMENT_SIZE 16384
-#endif
+#define DYNAMIC_JSON_DOCUMENT_SIZE 16384
 
 /*
  * Json Response
@@ -60,7 +56,7 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
     JsonVariant _root;
     bool _isValid;
 
-  public:    
+  public:
 
     AsyncJsonResponse(JsonDocument *ref, bool isArray=false) : _jsonBuffer(1), _isValid{false} {
       _code = 200;
@@ -114,9 +110,9 @@ protected:
   int _maxContentLength;
 public:
 
-  AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest, size_t maxJsonBufferSize=DYNAMIC_JSON_DOCUMENT_SIZE) 
+  AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest, size_t maxJsonBufferSize=DYNAMIC_JSON_DOCUMENT_SIZE)
   : _uri(uri), _method(HTTP_POST|HTTP_PUT|HTTP_PATCH), _onRequest(onRequest), maxJsonBufferSize(maxJsonBufferSize), _maxContentLength(16384) {}
-  
+
   void setMethod(WebRequestMethodComposite method){ _method = method; }
   void setMaxContentLength(int maxContentLength){ _maxContentLength = maxContentLength; }
   void onRequest(ArJsonRequestHandlerFunction fn){ _onRequest = fn; }

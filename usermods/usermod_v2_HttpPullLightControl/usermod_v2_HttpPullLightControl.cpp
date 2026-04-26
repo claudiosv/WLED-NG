@@ -60,11 +60,6 @@ String HttpPullLightControl::generateUniqueId() {
   DEBUG_PRINTLN(salt);
   String input = macString + salt;
 
-  #ifdef ESP8266
-    // For ESP8266 we use the Hash.h library which is built into the ESP8266 Core
-    return sha1(input);
-  #endif
-
   #ifdef ESP32
     // For ESP32 we use the mbedtls library which is built into the ESP32 core
     int status = 0;

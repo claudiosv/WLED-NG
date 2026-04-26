@@ -3,7 +3,7 @@
 
 /*
  * Alexa Voice On/Off/Brightness/Color Control. Emulates a Philips Hue bridge to Alexa.
- * 
+ *
  * This was put together from these two excellent projects:
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
@@ -41,9 +41,6 @@
  #ifdef ARDUINO_ARCH_ESP32
   #include <WiFi.h>
   #include <WebServer.h> //if you get an error here please update to ESP32 arduino core 1.0.0
- #else
-  #include <ESP8266WebServer.h>
-  #include <ESP8266WiFi.h>
  #endif
 #endif
 #include <WiFiUdp.h>
@@ -69,24 +66,20 @@ private:
   AsyncWebServer* serverAsync;
   AsyncWebServerRequest* server; //this saves many #defines
   String body = "";
-  #elif defined ARDUINO_ARCH_ESP32
   WebServer* server;
-  #else
-  ESP8266WebServer* server;
-  #endif
   uint8_t currentDeviceCount = 0;
   bool discoverable = true;
   bool udpConnected = false;
 
   EspalexaDevice* devices[ESPALEXA_MAXDEVICES] = {};
   //Keep in mind that Device IDs go from 1 to DEVICES, cpp arrays from 0 to DEVICES-1!!
-  
+
   WiFiUDP espalexaUdp;
   IPAddress ipMulti;
   uint32_t mac24; //bottom 24 bits of mac
   String escapedMac=""; //lowercase mac address
   String bridgeId="";   //uppercase EUI-64 bridge ID (16 hex chars)
-  
+
   //private member functions
   const char* modeString(EspalexaColorMode m)
   {
@@ -94,7 +87,7 @@ private:
     if (m == EspalexaColorMode::hs) return "hs";
     return "ct";
   }
-  
+
   const char* typeString(EspalexaDeviceType t)
   {
     switch (t)
@@ -106,7 +99,7 @@ private:
       default: return "";
     }
   }
-  
+
   const char* modelidString(EspalexaDeviceType t)
   {
     switch (t)
@@ -118,7 +111,7 @@ private:
       default: return "";
     }
   }
-  
+
   void encodeLightId(uint8_t idx, char* out)
   {
     String mymac = WiFi.macAddress();
@@ -145,7 +138,7 @@ private:
   {
     char buf_lightid[27];
     encodeLightId(dev->getId() + 1, buf_lightid);
-    
+
     char buf_col[80] = "";
     //color support
     if (static_cast<uint8_t>(dev->getType()) > 2)
@@ -154,24 +147,24 @@ private:
       //  ,dev->getHue(), dev->getSat(), dev->getX(), dev->getY());
       snprintf_P(buf_col, sizeof(buf_col), PSTR(",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%s,%s]"),dev->getHue(), dev->getSat(),
         ((String)dev->getX()).c_str(), ((String)dev->getY()).c_str());
-      
+
     char buf_ct[16] = "";
     //white spectrum support
     if (static_cast<uint8_t>(dev->getType()) > 1 && dev->getType() != EspalexaDeviceType::color)
       snprintf(buf_ct, sizeof(buf_ct), ",\"ct\":%u", dev->getCt());
-    
+
     char buf_cm[20] = "";
     if (static_cast<uint8_t>(dev->getType()) > 1)
       snprintf(buf_cm, sizeof(buf_cm), PSTR("\",\"colormode\":\"%s"), modeString(dev->getColorMode()));
-    
+
     snprintf_P(buf, maxBuf, PSTR("{\"state\":{\"on\":%s,\"bri\":%u%s%s,\"alert\":\"none%s\",\"mode\":\"homeautomation\",\"reachable\":true},"
                    "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"productname\":\"E%u"
                    "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.7.0\"}")
-                   
+
     , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
     dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), buf_lightid);
   }
-  
+
   //Espalexa status page /espalexa
   #ifndef ESPALEXA_NO_SUBPAGE
   void servePage()
@@ -220,7 +213,7 @@ private:
     char s[16];
     snprintf(s, sizeof(s), "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
     char buf[1024];
-    
+
     snprintf_P(buf, sizeof(buf), PSTR("<?xml version=\"1.0\" ?>"
         "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
         "<specVersion><major>1</major><minor>0</minor></specVersion>"
@@ -239,13 +232,13 @@ private:
           "<presentationURL>index.html</presentationURL>"
         "</device>"
         "</root>"),s,s,escapedMac.c_str(),escapedMac.c_str());
-          
+
     server->send(200, "text/xml", buf);
-    
+
     EA_DEBUGLN("Send setup.xml");
     EA_DEBUGLN(buf);
   }
-  
+
   //init the server
   void startHttpServer()
   {
@@ -254,7 +247,7 @@ private:
       serverAsync = new AsyncWebServer(80);
       serverAsync->onNotFound([=](AsyncWebServerRequest *request){server = request; serveNotFound();});
     }
-    
+
     serverAsync->onRequestBody([=](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       char b[len +1];
       b[len] = 0;
@@ -268,14 +261,10 @@ private:
     #endif
     serverAsync->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; serveDescription();});
     serverAsync->begin();
-    
+
     #else
     if (server == nullptr) {
-      #ifdef ARDUINO_ARCH_ESP32
       server = new WebServer(80);
-      #else
-      server = new ESP8266WebServer(80);  
-      #endif
       server->onNotFound([=](){serveNotFound();});
     }
 
@@ -312,7 +301,7 @@ private:
     #else
     espalexaUdp.write(buf);
     #endif
-    espalexaUdp.endPacket();                    
+    espalexaUdp.endPacket();
   }
 
 public:
@@ -323,8 +312,6 @@ public:
   bool begin(AsyncWebServer* externalServer = nullptr)
   #elif defined ARDUINO_ARCH_ESP32
   bool begin(WebServer* externalServer = nullptr)
-  #else
-  bool begin(ESP8266WebServer* externalServer = nullptr)
   #endif
   {
     EA_DEBUGLN("Espalexa Begin...");
@@ -354,7 +341,7 @@ public:
     #endif
 
     if (udpConnected){
-      
+
       startHttpServer();
       EA_DEBUGLN("Done");
       return true;
@@ -374,20 +361,20 @@ public:
     if (server == nullptr) return; //only if begin() was not called
     server->handleClient();
     #endif
-    
-    if (!udpConnected) return;   
-    int packetSize = espalexaUdp.parsePacket();    
+
+    if (!udpConnected) return;
+    int packetSize = espalexaUdp.parsePacket();
     if (packetSize < 1) return; //no new udp packet
-    
+
     EA_DEBUGLN("Got UDP!");
 
     unsigned char packetBuffer[packetSize+1]; //buffer to hold incoming udp packet
     espalexaUdp.read(packetBuffer, packetSize);
     packetBuffer[packetSize] = 0;
-  
+
     espalexaUdp.flush();
     if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
-  
+
     const char* request = (const char *) packetBuffer;
     if (strstr(request, "M-SEARCH") == nullptr) return;
 
@@ -420,7 +407,7 @@ public:
     devices[currentDeviceCount] = d;
     return ++currentDeviceCount;
   }
-  
+
   //brightness-only callback
   uint8_t addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
   {
@@ -430,7 +417,7 @@ public:
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
-  
+
   //brightness-only callback
   uint8_t addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0)
   {
@@ -474,7 +461,7 @@ public:
     EA_DEBUGLN(body);
   #else
   bool handleAlexaApiCall(String req, String body)
-  {  
+  {
   #endif
     EA_DEBUG("URL: ");
     EA_DEBUGLN(req);
@@ -501,9 +488,9 @@ public:
       server->send(200, "application/json", buf);
       if (idx >= currentDeviceCount) return true; //return if invalid ID
       EspalexaDevice* dev = devices[idx];
-      
+
       dev->setPropertyChanged(EspalexaDeviceProperty::none);
-      
+
       if (body.indexOf("false")>0) //OFF command
       {
         dev->setValue(0);
@@ -511,13 +498,13 @@ public:
         dev->doCallback();
         return true;
       }
-      
+
       if (body.indexOf("true") >0) //ON command
       {
         dev->setValue(dev->getLastValue());
         dev->setPropertyChanged(EspalexaDeviceProperty::on);
       }
-      
+
       if (body.indexOf("bri")  >0) //BRIGHTNESS command
       {
         uint8_t briL = body.substring(body.indexOf("bri") +5).toInt();
@@ -525,38 +512,38 @@ public:
         {
          dev->setValue(255);
         } else {
-         dev->setValue(briL+1); 
+         dev->setValue(briL+1);
         }
         dev->setPropertyChanged(EspalexaDeviceProperty::bri);
       }
-      
+
       if (body.indexOf("xy")   >0) //COLOR command (XY mode)
       {
         dev->setColorXY(body.substring(body.indexOf("[") +1).toFloat(), body.substring(body.indexOf(",0") +1).toFloat());
         dev->setPropertyChanged(EspalexaDeviceProperty::xy);
       }
-      
+
       if (body.indexOf("hue")  >0) //COLOR command (HS mode)
       {
         dev->setColor(body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt());
         dev->setPropertyChanged(EspalexaDeviceProperty::hs);
       }
-      
+
       if (body.indexOf("ct")   >0) //COLOR TEMP command (white spectrum)
       {
         dev->setColor(body.substring(body.indexOf("ct") +4).toInt());
         dev->setPropertyChanged(EspalexaDeviceProperty::ct);
       }
-      
+
       dev->doCallback();
-      
+
       #ifdef ESPALEXA_DEBUG
       if (dev->getLastChangedProperty() == EspalexaDeviceProperty::none)
         EA_DEBUGLN("STATE REQ WITHOUT BODY (likely Content-Type issue #6)");
       #endif
       return true;
     }
-    
+
     int pos = req.indexOf("lights");
     if (pos > 0) //client wants light info
     {
@@ -595,7 +582,7 @@ public:
         deviceJsonString(devices[idx], buf, sizeof(buf)-1);
         server->send(200, "application/json", buf);
       }
-      
+
       return true;
     }
 
@@ -603,33 +590,33 @@ public:
     server->send(200, "application/json", "{}");
     return true;
   }
-  
+
   //set whether Alexa can discover any devices
   void setDiscoverable(bool d)
   {
     discoverable = d;
   }
-  
+
   //get EspalexaDevice at specific index
   EspalexaDevice* getDevice(uint8_t index)
   {
     if (index >= currentDeviceCount) return nullptr;
     return devices[index];
   }
-  
+
   //is an unique device ID
   String getEscapedMac()
   {
     return escapedMac;
   }
-  
+
   //convert brightness (0-255) to percentage
   uint8_t toPercent(uint8_t bri)
   {
     uint16_t perc = bri * 100;
     return perc / 255;
   }
-  
+
   ~Espalexa(){} //note: Espalexa is NOT meant to be destructed
 };
 

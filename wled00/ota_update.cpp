@@ -27,10 +27,6 @@ constexpr size_t BOOTLOADER_SIZE   = 0x8000; // 32KB, typical bootloader size
 constexpr size_t BOOTLOADER_OFFSET = 0x1000; // esp32 and esp32-s2
 constexpr size_t BOOTLOADER_SIZE   = 0x8000; // 32KB, typical bootloader size
 #endif
-
-#elif defined(ESP8266)
-constexpr size_t METADATA_OFFSET = 0x1000;     // ESP8266: metadata appears at 4KB offset
-#define UPDATE_ERROR getErrorString
 #endif
 
 constexpr size_t METADATA_SEARCH_RANGE = 512;  // bytes
@@ -40,7 +36,7 @@ constexpr size_t METADATA_SEARCH_RANGE = 512;  // bytes
  * Check if OTA should be allowed based on release compatibility using custom description
  * @param binaryData Pointer to binary file data (not modified)
  * @param dataSize Size of binary data in bytes
- * @param errorMessage Buffer to store error message if validation fails 
+ * @param errorMessage Buffer to store error message if validation fails
  * @param errorMessageLen Maximum length of error message buffer
  * @return true if OTA should proceed, false if it should be blocked
  */
@@ -78,7 +74,7 @@ struct UpdateContext {
   String errorMessage;
 
   // Buffer to hold block data across posts, if needed
-  std::vector<uint8_t> releaseMetadataBuffer;  
+  std::vector<uint8_t> releaseMetadataBuffer;
 };
 
 
@@ -93,9 +89,7 @@ static void endOTA(AsyncWebServerRequest *request) {
       // If the upload is incomplete, Update.end(false) should error out.
       if (Update.end(context->uploadComplete)) {
         // Update successful!
-        #ifndef ESP8266
         bootloopCheckOTA(); // let the bootloop-checker know there was an OTA update
-        #endif
         doReboot = true;
         context->needsRestart = false;
       }
@@ -114,10 +108,6 @@ static void endOTA(AsyncWebServerRequest *request) {
 
 static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
 {
-  #ifdef ESP8266
-  Update.runAsync(true);
-  #endif  
-
   if (Update.isRunning()) {
       request->send(503);
       setOTAReplied(request);
@@ -128,7 +118,7 @@ static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
   WLED::instance().disableWatchdog();
   #endif
   UsermodManager::onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
-  
+
   strip.suspend();
   backupConfig(); // backup current config in case the update ends badly
   strip.resetSegments();  // free as much memory as you can
@@ -141,15 +131,15 @@ static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
     context->releaseCheckPassed = true;
     DEBUG_PRINTLN(F("OTA validation skipped by user"));
   }
-  
+
   // Begin update with the firmware size from content length
   size_t updateSize = request->contentLength() > 0 ? request->contentLength() : ((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
-  if (!Update.begin(updateSize)) {    
+  if (!Update.begin(updateSize)) {
     context->errorMessage = Update.UPDATE_ERROR();
     DEBUG_PRINTF_P(PSTR("OTA Failed to begin: %s\n"), context->errorMessage.c_str());
     return false;
   }
-  
+
   context->updateStarted = true;
   return true;
 }
@@ -158,7 +148,7 @@ static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
 // Returns true if successful, false on failure.
 bool initOTA(AsyncWebServerRequest *request) {
   // Allocate update context
-  UpdateContext* context = new (std::nothrow) UpdateContext {};  
+  UpdateContext* context = new (std::nothrow) UpdateContext {};
   if (context) {
     request->_tempObject = context;
     request->onDisconnect([=]() { endOTA(request); });  // ensures we restart on failure
@@ -221,7 +211,7 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
       // We have enough data to validate, one way or another
       const uint8_t* search_data = data;
       size_t search_len = len;
-      
+
       // If we have saved data, use that instead
       if (context->releaseMetadataBuffer.size()) {
         // Add this data
@@ -233,10 +223,10 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
       // Do the checking
       char errorMessage[128];
       bool OTA_ok = validateOTA(search_data, search_len, errorMessage, sizeof(errorMessage));
-      
+
       // Release buffer if there was one
       context->releaseMetadataBuffer = decltype(context->releaseMetadataBuffer){};
-      
+
       if (!OTA_ok) {
         DEBUG_PRINTF_P(PSTR("OTA declined: %s\n"), errorMessage);
         context->errorMessage = errorMessage;
@@ -245,7 +235,7 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
       } else {
         DEBUG_PRINTLN(F("OTA allowed: Release compatibility check passed"));
         context->releaseCheckPassed = true;
-      }        
+      }
     } else {
       // Store the data we just got for next pass
       context->releaseMetadataBuffer.insert(context->releaseMetadataBuffer.end(), data, data+len);
@@ -253,7 +243,7 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
   }
 
   // Check if validation was still pending (shouldn't happen normally)
-  // This is done before writing the last chunk, so endOTA can abort 
+  // This is done before writing the last chunk, so endOTA can abort
   if (isFinal && !context->releaseCheckPassed) {
     DEBUG_PRINTLN(F("OTA failed: Validation never completed"));
     // Don't write the last chunk to the updater: this will trip an error later
@@ -276,7 +266,6 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
 }
 
 void markOTAvalid() {
-  #ifndef ESP8266
   const esp_partition_t* running = esp_ota_get_running_partition();
   esp_ota_img_states_t ota_state;
   if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
@@ -285,7 +274,6 @@ void markOTAvalid() {
       DEBUG_PRINTLN(F("Current firmware validated"));
     }
   }
-  #endif
 }
 
 #if defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DISABLE_OTA)
@@ -331,7 +319,7 @@ public:
           return true;  // needs more bytes for the header
         }
 
-        //DEBUG_PRINTF("BLS parsed segment [%08X %08X=%d], segment count %d, is %d\n", segmentHeader.load_addr, segmentHeader.data_len, segmentHeader.data_len, segmentsLeft, imageSize);        
+        //DEBUG_PRINTF("BLS parsed segment [%08X %08X=%d], segment count %d, is %d\n", segmentHeader.load_addr, segmentHeader.data_len, segmentHeader.data_len, segmentsLeft, imageSize);
 
         // Validate segment size
         if (segmentHeader.data_len > BOOTLOADER_SIZE) {
@@ -345,16 +333,16 @@ public:
         --segmentsLeft;
         if (segmentsLeft == 0) {
           // all done, actually; we don't need to read any more
- 
+
           // Round up to nearest 16 bytes.
           // Always add 1 to account for the checksum byte.
           imageSize = ((imageSize/ 16) + 1) * 16;
 
-          //DEBUG_PRINTF("BLS complete, is %d\n", imageSize);        
+          //DEBUG_PRINTF("BLS complete, is %d\n", imageSize);
           return false;
-        }        
+        }
       }
-      
+
       // If we don't have enough bytes ...
       if (len < segmentHeader.data_len) {
         //DEBUG_PRINTF("Needs more bytes\n");
@@ -393,12 +381,12 @@ static uint8_t bootloaderSHA256Cache[32];
 /**
  * Calculate and cache the bootloader SHA256 digest
  * Reads the bootloader from flash and computes SHA256 hash
- * 
- * Strictly speaking, most bootloader images already contain a hash at the end of the image; 
+ *
+ * Strictly speaking, most bootloader images already contain a hash at the end of the image;
  * we could in theory just read it.  The trouble is that we have to parse the structure anyways
  * to find the actual endpoint, so we might as well always calculate it ourselves rather than
  * handle a special case if the hash isn't stored.
- * 
+ *
  */
 static void calculateBootloaderSHA256() {
   // Calculate SHA256
@@ -537,7 +525,7 @@ static bool verifyBootloaderImage(const uint8_t* &buffer, size_t &len, String& b
   if (imageHeader.hash_appended == 1) {
     actualBootloaderSize += 32;
   }
- 
+
   if (actualBootloaderSize > len) {
     // Same as above
     bootloaderErrorMsg = "Too small";
@@ -635,7 +623,7 @@ bool initBootloaderOTA(AsyncWebServerRequest *request) {
 
   context->bytesBuffered = 0;
   return true;
-#endif  
+#endif
 }
 
 // Set bootloader OTA replied flag

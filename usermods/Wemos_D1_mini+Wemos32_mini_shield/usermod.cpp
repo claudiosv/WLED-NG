@@ -27,18 +27,13 @@ int16_t Dallas(int x, byte start)
       return result;
 }
 #ifdef ARDUINO_ARCH_ESP32
-uint8_t SCL_PIN = 22; 
+uint8_t SCL_PIN = 22;
 uint8_t SDA_PIN = 21;
 uint8_t DALLAS_PIN =23;
-#else
-uint8_t SCL_PIN = 5;
-uint8_t SDA_PIN = 4;
-uint8_t DALLAS_PIN =13;
-// uint8_t RST_PIN = 16; // Un-comment for Heltec WiFi-Kit-8
 #endif
 
 //The SCL and SDA pins are defined here.
-//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
+//ESP32 Wemos32 mini board use SCL=22 SDA=21
 #define U8X8_PIN_SCL SCL_PIN
 #define U8X8_PIN_SDA SDA_PIN
 //#define U8X8_PIN_RESET RST_PIN // Un-comment for Heltec WiFi-Kit-8
@@ -46,7 +41,7 @@ uint8_t DALLAS_PIN =13;
 // Dallas sensor reading timer
 long temptimer = millis();
 long lastMeasure = 0;
-#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit 
+#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit
 
 // If display does not work or looks corrupted check the
 // constructor reference:
@@ -96,11 +91,11 @@ bool displayTurnedOff = false;
 void userLoop() {
 
 //----> Dallas temperature sensor MQTT publishing
-  temptimer = millis();  
+  temptimer = millis();
 // Timer to publish new temperature every 60 seconds
-  if (temptimer - lastMeasure > 60000) 
+  if (temptimer - lastMeasure > 60000)
   {
-    lastMeasure = temptimer;    
+    lastMeasure = temptimer;
 #ifndef WLED_DISABLE_MQTT
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr)
@@ -125,7 +120,7 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
-  
+
   // Turn off display after 3 minutes with no change.
   if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
     u8x8.setPowerSave(1);
@@ -149,7 +144,7 @@ void userLoop() {
     return;
   }
   needRedraw = false;
-  
+
   if (displayTurnedOff)
   {
     u8x8.setPowerSave(0);

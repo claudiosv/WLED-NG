@@ -7,11 +7,7 @@
 // for the esp32 it is best to use the ADC1: GPIO32 - GPIO39
 // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html
 #ifndef USERMOD_BATTERY_MEASUREMENT_PIN
-  #ifdef ARDUINO_ARCH_ESP32
-    #define USERMOD_BATTERY_MEASUREMENT_PIN 35
-  #else //ESP8266 boards
-    #define USERMOD_BATTERY_MEASUREMENT_PIN A0
-  #endif
+  #define USERMOD_BATTERY_MEASUREMENT_PIN 35
 #endif
 
 // The initial delay before the first battery voltage reading after power-on.
@@ -75,11 +71,7 @@
 
 // the default ratio for the voltage divider
 #ifndef USERMOD_BATTERY_VOLTAGE_MULTIPLIER
-  #ifdef ARDUINO_ARCH_ESP32
-    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 2.0f
-  #else //ESP8266 boards
-    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 4.2f
-  #endif
+  #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 2.0f
 #endif
 
 #ifndef USERMOD_BATTERY_AVERAGING_ALPHA
@@ -125,8 +117,8 @@ typedef enum
   lion=2
 } batteryType;
 
-// used for initial configuration after boot 
-typedef struct bconfig_t 
+// used for initial configuration after boot
+typedef struct bconfig_t
 {
   batteryType type;
   float minVoltage;

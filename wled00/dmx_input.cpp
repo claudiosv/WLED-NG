@@ -2,10 +2,6 @@
 
 #ifdef WLED_ENABLE_DMX_INPUT
 
-#ifdef ESP8266
-#error DMX input is only supported on ESP32
-#endif
-
 #include "dmx_input.h"
 #include <rdm/responder.h>
 
