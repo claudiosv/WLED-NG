@@ -5,58 +5,58 @@
 //========================================================================================================================
 
 
-static const char _data_FX_mode_Module_Experiment10[] PROGMEM = "Z💡Module_Experiment10@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment9[] PROGMEM = "Z💡Module_Experiment9@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment8[] PROGMEM = "Z💡Module_Experiment8@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment7[] PROGMEM = "Z💡Module_Experiment7@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment6[] PROGMEM = "Z💡Module_Experiment6@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment5[] PROGMEM = "Z💡Module_Experiment5@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment4[] PROGMEM = "Z💡Module_Experiment4@Speed;;1;2";
-static const char _data_FX_mode_Zoom2[] PROGMEM = "Z💡Zoom2@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment3[] PROGMEM = "Z💡Module_Experiment3@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment2[] PROGMEM = "Z💡Module_Experiment2@Speed;;1;2";
-static const char _data_FX_mode_Module_Experiment1[] PROGMEM = "Z💡Module_Experiment1@Speed;;1;2";
-static const char _data_FX_mode_Parametric_Water[] PROGMEM = "Z💡Parametric_Water@Speed;;1;2";
-static const char _data_FX_mode_Water[] PROGMEM = "Z💡Water@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido_6[] PROGMEM = "Z💡Complex_Kaleido_6@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido_5[] PROGMEM = "Z💡Complex_Kaleido_5@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido_4[] PROGMEM = "Z💡Complex_Kaleido_4@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido_3[] PROGMEM = "Z💡Complex_Kaleido_3@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido_2[] PROGMEM = "Z💡Complex_Kaleido_2@Speed;;1;2";
-static const char _data_FX_mode_Complex_Kaleido[] PROGMEM = "Z💡Complex_Kaleido@Speed;;1;2";
-static const char _data_FX_mode_SM10[] PROGMEM = "Z💡SM10@Speed;;1;2";
-static const char _data_FX_mode_SM9[] PROGMEM = "Z💡SM9@Speed;;1;2";
-static const char _data_FX_mode_SM8[] PROGMEM = "Z💡SM8@Speed;;1;2";
-static const char _data_FX_mode_SM7[] PROGMEM = "Z💡SM7@Speed;;1;2";
-static const char _data_FX_mode_SM6[] PROGMEM = "Z💡SM6@Speed;;1;2";
-static const char _data_FX_mode_SM5[] PROGMEM = "Z💡SM5@Speed;;1;2";
-static const char _data_FX_mode_SM4[] PROGMEM = "Z💡SM4@Speed;;1;2";
-static const char _data_FX_mode_SM3[] PROGMEM = "Z💡SM3@Speed;;1;2";
-static const char _data_FX_mode_SM2[] PROGMEM = "Z💡SM2@Speed;;1;2";
-static const char _data_FX_mode_SM1[] PROGMEM = "Z💡SM1@Speed;;1;2";
-static const char _data_FX_mode_Big_Caleido[] PROGMEM = "Z💡Big_Caleido@Speed;;1;2";
-static const char _data_FX_mode_RGB_Blobs5[] PROGMEM = "Z💡RGB_Blobs5@Speed;;1;2";
-static const char _data_FX_mode_RGB_Blobs4[] PROGMEM = "Z💡RGB_Blobs4@Speed;;1;2";
-static const char _data_FX_mode_RGB_Blobs3[] PROGMEM = "Z💡RGB_Blobs3@Speed;;1;2";
-static const char _data_FX_mode_RGB_Blobs2[] PROGMEM = "Z💡RGB_Blobs2@Speed;;1;2";
-static const char _data_FX_mode_RGB_Blobs[] PROGMEM = "Z💡RGB_Blobs@Speed;;1;2";
-static const char _data_FX_mode_Polar_Waves[] PROGMEM = "Z💡Polar_Waves@Speed;;1;2";
-static const char _data_FX_mode_Slow_Fade[] PROGMEM = "Z💡Slow_Fade@Speed;;1;2";
-static const char _data_FX_mode_Zoom[] PROGMEM = "Z💡Zoom@Speed;;1;2";
-static const char _data_FX_mode_Hot_Blob[] PROGMEM = "Z💡Hot_Blob@Speed;;1;2";
-static const char _data_FX_mode_Spiralus2[] PROGMEM = "Z💡Spiralus2@Speed;;1;2";
-static const char _data_FX_mode_Spiralus[] PROGMEM = "Z💡Spiralus@Speed;;1;2";
-static const char _data_FX_mode_Yves[] PROGMEM = "Z💡Yves@Speed;;1;2";
-static const char _data_FX_mode_Scaledemo1[] PROGMEM = "Z💡Scaledemo1@Speed;;1;2";
-static const char _data_FX_mode_Lava1[] PROGMEM = "Z💡Lava1@Speed;;1;2";
-static const char _data_FX_mode_Caleido3[] PROGMEM = "Z💡Caleido3@Speed;;1;2";
-static const char _data_FX_mode_Caleido2[] PROGMEM = "Z💡Caleido2@Speed;;1;2";
-static const char _data_FX_mode_Caleido1[] PROGMEM = "Z💡Caleido1@Speed;;1;2";
-static const char _data_FX_mode_Distance_Experiment[] PROGMEM = "Z💡Distance_Experiment@Speed;;1;2";
-static const char _data_FX_mode_Center_Field[] PROGMEM = "Z💡Center_Field@Speed;;1;2";
-static const char _data_FX_mode_Waves[] PROGMEM = "Z💡Waves@Speed;;1;2";
-static const char _data_FX_mode_Chasing_Spirals[] PROGMEM = "Z💡Chasing_Spirals@Speed;;1;2";
-static const char _data_FX_mode_Rotating_Blob[] PROGMEM = "Z💡Rotating_Blob@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment10[] = "Z💡Module_Experiment10@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment9[] = "Z💡Module_Experiment9@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment8[] = "Z💡Module_Experiment8@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment7[] = "Z💡Module_Experiment7@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment6[] = "Z💡Module_Experiment6@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment5[] = "Z💡Module_Experiment5@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment4[] = "Z💡Module_Experiment4@Speed;;1;2";
+static const char _data_FX_mode_Zoom2[] = "Z💡Zoom2@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment3[] = "Z💡Module_Experiment3@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment2[] = "Z💡Module_Experiment2@Speed;;1;2";
+static const char _data_FX_mode_Module_Experiment1[] = "Z💡Module_Experiment1@Speed;;1;2";
+static const char _data_FX_mode_Parametric_Water[] = "Z💡Parametric_Water@Speed;;1;2";
+static const char _data_FX_mode_Water[] = "Z💡Water@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido_6[] = "Z💡Complex_Kaleido_6@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido_5[] = "Z💡Complex_Kaleido_5@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido_4[] = "Z💡Complex_Kaleido_4@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido_3[] = "Z💡Complex_Kaleido_3@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido_2[] = "Z💡Complex_Kaleido_2@Speed;;1;2";
+static const char _data_FX_mode_Complex_Kaleido[] = "Z💡Complex_Kaleido@Speed;;1;2";
+static const char _data_FX_mode_SM10[] = "Z💡SM10@Speed;;1;2";
+static const char _data_FX_mode_SM9[] = "Z💡SM9@Speed;;1;2";
+static const char _data_FX_mode_SM8[] = "Z💡SM8@Speed;;1;2";
+static const char _data_FX_mode_SM7[] = "Z💡SM7@Speed;;1;2";
+static const char _data_FX_mode_SM6[] = "Z💡SM6@Speed;;1;2";
+static const char _data_FX_mode_SM5[] = "Z💡SM5@Speed;;1;2";
+static const char _data_FX_mode_SM4[] = "Z💡SM4@Speed;;1;2";
+static const char _data_FX_mode_SM3[] = "Z💡SM3@Speed;;1;2";
+static const char _data_FX_mode_SM2[] = "Z💡SM2@Speed;;1;2";
+static const char _data_FX_mode_SM1[] = "Z💡SM1@Speed;;1;2";
+static const char _data_FX_mode_Big_Caleido[] = "Z💡Big_Caleido@Speed;;1;2";
+static const char _data_FX_mode_RGB_Blobs5[] = "Z💡RGB_Blobs5@Speed;;1;2";
+static const char _data_FX_mode_RGB_Blobs4[] = "Z💡RGB_Blobs4@Speed;;1;2";
+static const char _data_FX_mode_RGB_Blobs3[] = "Z💡RGB_Blobs3@Speed;;1;2";
+static const char _data_FX_mode_RGB_Blobs2[] = "Z💡RGB_Blobs2@Speed;;1;2";
+static const char _data_FX_mode_RGB_Blobs[] = "Z💡RGB_Blobs@Speed;;1;2";
+static const char _data_FX_mode_Polar_Waves[] = "Z💡Polar_Waves@Speed;;1;2";
+static const char _data_FX_mode_Slow_Fade[] = "Z💡Slow_Fade@Speed;;1;2";
+static const char _data_FX_mode_Zoom[] = "Z💡Zoom@Speed;;1;2";
+static const char _data_FX_mode_Hot_Blob[] = "Z💡Hot_Blob@Speed;;1;2";
+static const char _data_FX_mode_Spiralus2[] = "Z💡Spiralus2@Speed;;1;2";
+static const char _data_FX_mode_Spiralus[] = "Z💡Spiralus@Speed;;1;2";
+static const char _data_FX_mode_Yves[] = "Z💡Yves@Speed;;1;2";
+static const char _data_FX_mode_Scaledemo1[] = "Z💡Scaledemo1@Speed;;1;2";
+static const char _data_FX_mode_Lava1[] = "Z💡Lava1@Speed;;1;2";
+static const char _data_FX_mode_Caleido3[] = "Z💡Caleido3@Speed;;1;2";
+static const char _data_FX_mode_Caleido2[] = "Z💡Caleido2@Speed;;1;2";
+static const char _data_FX_mode_Caleido1[] = "Z💡Caleido1@Speed;;1;2";
+static const char _data_FX_mode_Distance_Experiment[] = "Z💡Distance_Experiment@Speed;;1;2";
+static const char _data_FX_mode_Center_Field[] = "Z💡Center_Field@Speed;;1;2";
+static const char _data_FX_mode_Waves[] = "Z💡Waves@Speed;;1;2";
+static const char _data_FX_mode_Chasing_Spirals[] = "Z💡Chasing_Spirals@Speed;;1;2";
+static const char _data_FX_mode_Rotating_Blob[] = "Z💡Rotating_Blob@Speed;;1;2";
 
 
 class ANIMartRIXMod:public ANIMartRIX {
@@ -71,7 +71,7 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  }
 	  else{
 		speedFactor = map(SEGMENT.speed, 128, 255, 10, 100) / 10;
-	  } 
+	  }
 	  setSpeedFactor(speedFactor);
 	}
 	void setPixelColor(int x, int y, rgb pixel) {
@@ -86,212 +86,212 @@ class ANIMartRIXMod:public ANIMartRIX {
 ANIMartRIXMod anim;
 
 void mode_Module_Experiment10() {
-	anim.initEffect(); 
+	anim.initEffect();
 	anim.Module_Experiment10();
 }
-void mode_Module_Experiment9() { 
-	anim.initEffect(); 
+void mode_Module_Experiment9() {
+	anim.initEffect();
 	anim.Module_Experiment9();
 }
-void mode_Module_Experiment8() { 
-	anim.initEffect(); 
+void mode_Module_Experiment8() {
+	anim.initEffect();
 	anim.Module_Experiment8();
 }
-void mode_Module_Experiment7() { 
-	anim.initEffect(); 
+void mode_Module_Experiment7() {
+	anim.initEffect();
 	anim.Module_Experiment7();
 }
-void mode_Module_Experiment6() { 
-	anim.initEffect(); 
+void mode_Module_Experiment6() {
+	anim.initEffect();
 	anim.Module_Experiment6();
 }
-void mode_Module_Experiment5() { 
-	anim.initEffect(); 
+void mode_Module_Experiment5() {
+	anim.initEffect();
 	anim.Module_Experiment5();
 }
-void mode_Module_Experiment4() { 
-	anim.initEffect(); 
+void mode_Module_Experiment4() {
+	anim.initEffect();
 	anim.Module_Experiment4();
 }
-void mode_Zoom2() { 
-	anim.initEffect(); 
+void mode_Zoom2() {
+	anim.initEffect();
 	anim.Zoom2();
 }
-void mode_Module_Experiment3() { 
-	anim.initEffect(); 
+void mode_Module_Experiment3() {
+	anim.initEffect();
 	anim.Module_Experiment3();
 }
-void mode_Module_Experiment2() { 
-	anim.initEffect(); 
+void mode_Module_Experiment2() {
+	anim.initEffect();
 	anim.Module_Experiment2();
 }
-void mode_Module_Experiment1() { 
-	anim.initEffect(); 
+void mode_Module_Experiment1() {
+	anim.initEffect();
 	anim.Module_Experiment1();
 }
-void mode_Parametric_Water() { 
-	anim.initEffect(); 
+void mode_Parametric_Water() {
+	anim.initEffect();
 	anim.Parametric_Water();
 }
-void mode_Water() { 
-	anim.initEffect(); 
+void mode_Water() {
+	anim.initEffect();
 	anim.Water();
 }
-void mode_Complex_Kaleido_6() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido_6() {
+	anim.initEffect();
 	anim.Complex_Kaleido_6();
 }
-void mode_Complex_Kaleido_5() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido_5() {
+	anim.initEffect();
 	anim.Complex_Kaleido_5();
 }
-void mode_Complex_Kaleido_4() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido_4() {
+	anim.initEffect();
 	anim.Complex_Kaleido_4();
 }
-void mode_Complex_Kaleido_3() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido_3() {
+	anim.initEffect();
 	anim.Complex_Kaleido_3();
 }
-void mode_Complex_Kaleido_2() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido_2() {
+	anim.initEffect();
 	anim.Complex_Kaleido_2();
 }
-void mode_Complex_Kaleido() { 
-	anim.initEffect(); 
+void mode_Complex_Kaleido() {
+	anim.initEffect();
 	anim.Complex_Kaleido();
 }
-void mode_SM10() { 
-	anim.initEffect(); 
+void mode_SM10() {
+	anim.initEffect();
 	anim.SM10();
 }
-void mode_SM9() { 
-	anim.initEffect(); 
+void mode_SM9() {
+	anim.initEffect();
 	anim.SM9();
 }
-void mode_SM8() { 
-	anim.initEffect(); 
+void mode_SM8() {
+	anim.initEffect();
 	anim.SM8();
 }
-// void mode_SM7() { 
-//	anim.initEffect(); 
+// void mode_SM7() {
+//	anim.initEffect();
 // 	anim.SM7();
 //
 // }
-void mode_SM6() { 
-	anim.initEffect(); 
+void mode_SM6() {
+	anim.initEffect();
 	anim.SM6();
 }
-void mode_SM5() { 
-	anim.initEffect(); 
+void mode_SM5() {
+	anim.initEffect();
 	anim.SM5();
 }
-void mode_SM4() { 
-	anim.initEffect(); 
+void mode_SM4() {
+	anim.initEffect();
 	anim.SM4();
 }
-void mode_SM3() { 
-	anim.initEffect(); 
+void mode_SM3() {
+	anim.initEffect();
 	anim.SM3();
 }
-void mode_SM2() { 
-	anim.initEffect(); 
+void mode_SM2() {
+	anim.initEffect();
 	anim.SM2();
 }
-void mode_SM1() { 
-	anim.initEffect(); 
+void mode_SM1() {
+	anim.initEffect();
 	anim.SM1();
 }
-void mode_Big_Caleido() { 
-	anim.initEffect(); 	
+void mode_Big_Caleido() {
+	anim.initEffect();
 	anim.Big_Caleido();
 }
-void mode_RGB_Blobs5() { 
-	anim.initEffect(); 	
+void mode_RGB_Blobs5() {
+	anim.initEffect();
 	anim.RGB_Blobs5();
 }
-void mode_RGB_Blobs4() { 
-	anim.initEffect(); 
+void mode_RGB_Blobs4() {
+	anim.initEffect();
 	anim.RGB_Blobs4();
 }
-void mode_RGB_Blobs3() { 
-	anim.initEffect(); 
+void mode_RGB_Blobs3() {
+	anim.initEffect();
 	anim.RGB_Blobs3();
 }
-void mode_RGB_Blobs2() { 
-	anim.initEffect(); 
+void mode_RGB_Blobs2() {
+	anim.initEffect();
 	anim.RGB_Blobs2();
 }
-void mode_RGB_Blobs() { 
-	anim.initEffect(); 
+void mode_RGB_Blobs() {
+	anim.initEffect();
 	anim.RGB_Blobs();
 }
-void mode_Polar_Waves() { 
-	anim.initEffect(); 
+void mode_Polar_Waves() {
+	anim.initEffect();
 	anim.Polar_Waves();
 }
-void mode_Slow_Fade() { 
-	anim.initEffect(); 
+void mode_Slow_Fade() {
+	anim.initEffect();
 	anim.Slow_Fade();
 }
-void mode_Zoom() { 
-	anim.initEffect(); 
+void mode_Zoom() {
+	anim.initEffect();
 	anim.Zoom();
 }
-void mode_Hot_Blob() { 
-	anim.initEffect(); 
+void mode_Hot_Blob() {
+	anim.initEffect();
 	anim.Hot_Blob();
 }
-void mode_Spiralus2() { 
-	anim.initEffect(); 
+void mode_Spiralus2() {
+	anim.initEffect();
 	anim.Spiralus2();
 }
-void mode_Spiralus() { 
-	anim.initEffect(); 
+void mode_Spiralus() {
+	anim.initEffect();
 	anim.Spiralus();
 }
-void mode_Yves() { 
-	anim.initEffect(); 
+void mode_Yves() {
+	anim.initEffect();
 	anim.Yves();
 }
-void mode_Scaledemo1() { 
-	anim.initEffect(); 
+void mode_Scaledemo1() {
+	anim.initEffect();
 	anim.Scaledemo1();
 }
-void mode_Lava1() { 
-	anim.initEffect(); 
+void mode_Lava1() {
+	anim.initEffect();
 	anim.Lava1();
 }
-void mode_Caleido3() { 
-	anim.initEffect(); 
+void mode_Caleido3() {
+	anim.initEffect();
 	anim.Caleido3();
 }
-void mode_Caleido2() { 
-	anim.initEffect(); 
+void mode_Caleido2() {
+	anim.initEffect();
 	anim.Caleido2();
 }
-void mode_Caleido1() { 
-	anim.initEffect(); 
+void mode_Caleido1() {
+	anim.initEffect();
 	anim.Caleido1();
 }
-void mode_Distance_Experiment() { 
-	anim.initEffect(); 
+void mode_Distance_Experiment() {
+	anim.initEffect();
 	anim.Distance_Experiment();
 }
-void mode_Center_Field() { 
-	anim.initEffect(); 
+void mode_Center_Field() {
+	anim.initEffect();
 	anim.Center_Field();
 }
-void mode_Waves() { 
-	anim.initEffect(); 
+void mode_Waves() {
+	anim.initEffect();
 	anim.Waves();
 }
-void mode_Chasing_Spirals() { 
-	anim.initEffect(); 
+void mode_Chasing_Spirals() {
+	anim.initEffect();
 	anim.Chasing_Spirals();
 }
-void mode_Rotating_Blob() { 
-	anim.initEffect(); 
+void mode_Rotating_Blob() {
+	anim.initEffect();
 	anim.Rotating_Blob();
 }
 
@@ -309,7 +309,7 @@ class AnimartrixUsermod : public Usermod {
 		this->_name = name;
 		this->enabled = enabled;
 	} //WLEDMM
-	
+
 
     void setup() {
 
@@ -385,9 +385,9 @@ class AnimartrixUsermod : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
+      JsonArray infoArr = user.createNestedArray(_name);
 
-      String uiDomString = F("Animartrix requires the Creative Commons Attribution License CC BY-NC 3.0");
+      String uiDomString = "Animartrix requires the Creative Commons Attribution License CC BY-NC 3.0";
       infoArr.add(uiDomString);
 	}
 

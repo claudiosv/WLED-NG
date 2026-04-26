@@ -104,7 +104,7 @@ void mode_pscomet() {
   // Slider 4 controls comet length via particle lifetime and fire intensity adjustments
   PartSys->updateFire(max(255U - SEGMENT.custom2, 45U));
 }
-static const char _data_FX_MODE_PSCOMET[] PROGMEM = "PS Comet@Falling Speed,Comet Frequency,Large Comet Probability,Comet Length;;!;2;pal=35,sx=128,ix=255,c1=32,c2=128";
+static const char _data_FX_MODE_PSCOMET[] = "PS Comet@Falling Speed,Comet Frequency,Large Comet Probability,Comet Length;;!;2;pal=35,sx=128,ix=255,c1=32,c2=128";
 
 /////////////////////
 //  UserMod Class  //

@@ -14,7 +14,7 @@ class ElekstubeIPSUsermod : public Usermod {
 
     TFTs tfts;
     void updateClockDisplay(TFTs::show_t show=TFTs::yes) {
-      bool set[6] = {false}; 
+      bool set[6] = {false};
       for (uint8_t i = 0; i<6; i++) {
         char c = cronixieDisplay[i];
         if (c >= '0' && c <= '9') {
@@ -28,7 +28,7 @@ class ElekstubeIPSUsermod : public Usermod {
         }
       }
 
-      
+
       uint8_t hr = hour(localTime);
       uint8_t hrTens = hr/10;
       uint8_t mi = minute(localTime);
@@ -77,7 +77,7 @@ class ElekstubeIPSUsermod : public Usermod {
         fshow=TFTs::force;
         lastCols[0] = 0;
       }
-      
+
       updateClockDisplay(fshow);
       fshow=TFTs::yes;
     }
@@ -87,10 +87,10 @@ class ElekstubeIPSUsermod : public Usermod {
      */
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"EleksTubeIPS": {"tubeSegment": 1, "digitOffset": 0}}
-      JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      top[FPSTR(_tubeSeg)] = tfts.tubeSegment;
-      top[FPSTR(_digitOffset)] = tfts.digitOffset;
-      DEBUG_PRINTLN(F("EleksTube config saved."));
+      JsonObject top = root.createNestedObject(_name); // usermodname
+      top[_tubeSeg] = tfts.tubeSegment;
+      top[_digitOffset] = tfts.digitOffset;
+      DEBUG_PRINTLN("EleksTube config saved.");
     }
 
     /**
@@ -100,22 +100,22 @@ class ElekstubeIPSUsermod : public Usermod {
      */
     bool readFromConfig(JsonObject &root) {
       // we look for JSON object: {"EleksTubeIPS": {"tubeSegment": 1, "digitOffset": 0}}
-      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINT(_name);
 
-      JsonObject top = root[FPSTR(_name)];
+      JsonObject top = root[_name];
       if (top.isNull()) {
-        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        DEBUG_PRINTLN(": No config found. (Using defaults.)");
         return false;
       }
 
-      tfts.tubeSegment = top[FPSTR(_tubeSeg)] | tfts.tubeSegment;
+      tfts.tubeSegment = top[_tubeSeg] | tfts.tubeSegment;
       uint8_t digitOffsetPrev = tfts.digitOffset;
-      tfts.digitOffset = top[FPSTR(_digitOffset)] | tfts.digitOffset;
+      tfts.digitOffset = top[_digitOffset] | tfts.digitOffset;
       if (tfts.digitOffset > 240) tfts.digitOffset = 240;
       if (tfts.digitOffset != digitOffsetPrev) fshow=TFTs::force;
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_digitOffset)].isNull();
+      return !top[_digitOffset].isNull();
     }
 
     /*
@@ -125,7 +125,7 @@ class ElekstubeIPSUsermod : public Usermod {
     void addToJsonState(JsonObject& root)
     {
       root["nx"] = cronixieDisplay;
-      root[FPSTR(_digitOffset)] = tfts.digitOffset;
+      root[_digitOffset] = tfts.digitOffset;
     }
 
 
@@ -140,7 +140,7 @@ class ElekstubeIPSUsermod : public Usermod {
       }
 
       uint8_t digitOffsetPrev = tfts.digitOffset;
-      tfts.digitOffset = root[FPSTR(_digitOffset)] | tfts.digitOffset;
+      tfts.digitOffset = root[_digitOffset] | tfts.digitOffset;
       if (tfts.digitOffset > 240) tfts.digitOffset = 240;
       if (tfts.digitOffset != digitOffsetPrev) fshow=TFTs::force;
     }
@@ -152,9 +152,9 @@ class ElekstubeIPSUsermod : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char ElekstubeIPSUsermod::_name[]         PROGMEM = "EleksTubeIPS";
-const char ElekstubeIPSUsermod::_tubeSeg[]      PROGMEM = "tubeSegment";
-const char ElekstubeIPSUsermod::_digitOffset[]  PROGMEM = "digitOffset";
+const char ElekstubeIPSUsermod::_name[] = "EleksTubeIPS";
+const char ElekstubeIPSUsermod::_tubeSeg[] = "tubeSegment";
+const char ElekstubeIPSUsermod::_digitOffset[] = "digitOffset";
 
 
 static ElekstubeIPSUsermod elekstube_ips;

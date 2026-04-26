@@ -22,12 +22,12 @@ constexpr size_t FIXED_PALETTE_COUNT = DYNAMIC_PALETTE_COUNT + FASTLED_PALETTE_C
 // For example, Home Assistant will still work fine even with this value changed.
 // Use like this:
 // -D WLED_BRAND="\"Custom Brand\""
-// -D WLED_PRODUCT_NAME="\"Custom Product\""
+// -D WLED_RELEASE_NAME="\"Custom Product\""
 #ifndef WLED_BRAND
   #define WLED_BRAND "WLED"
 #endif
-#ifndef WLED_PRODUCT_NAME
-  #define WLED_PRODUCT_NAME "FOSS"
+#ifndef WLED_RELEASE_NAME
+  #define WLED_RELEASE_NAME "FOSS"
 #endif
 
 //Defaults

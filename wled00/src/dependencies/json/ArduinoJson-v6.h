@@ -132,14 +132,15 @@
 #    define ARDUINOJSON_ENABLE_ARDUINO_PRINT 0
 #  endif
 #endif  // ARDUINO
-#ifndef ARDUINOJSON_ENABLE_PROGMEM
-#  if defined(PROGMEM) && defined(pgm_read_byte) && defined(pgm_read_dword) && \
-      defined(pgm_read_ptr) && defined(pgm_read_float)
-#    define ARDUINOJSON_ENABLE_PROGMEM 1
-#  else
+// #ifndef ARDUINOJSON_ENABLE_PROGMEM
+// #  if defined(PROGMEM) && defined(pgm_read_byte) && defined(pgm_read_dword) && \
+//       defined(pgm_read_ptr) && defined(pgm_read_float)
+// #    define ARDUINOJSON_ENABLE_PROGMEM 1
+// #    error "PROGMEM should not be enabled."
+// #  else
 #    define ARDUINOJSON_ENABLE_PROGMEM 0
-#  endif
-#endif
+// #  endif
+// #endif
 #ifndef ARDUINOJSON_DECODE_UNICODE
 #  define ARDUINOJSON_DECODE_UNICODE 1
 #endif
@@ -521,7 +522,7 @@ struct is_pointer : false_type {};
 template <typename T>
 struct is_pointer<T*> : true_type {};
 template <typename T>
-struct is_signed : integral_constant<bool, 
+struct is_signed : integral_constant<bool,
     is_same<typename remove_cv<T>::type, char>::value ||
     is_same<typename remove_cv<T>::type, signed char>::value ||
     is_same<typename remove_cv<T>::type, signed short>::value ||
@@ -811,16 +812,16 @@ struct pgm_p {
   const char* address;
 };
 }  // namespace ARDUINOJSON_NAMESPACE
-#ifndef strlen_P
-inline size_t strlen_P(ARDUINOJSON_NAMESPACE::pgm_p s) {
+#ifndef strlen
+inline size_t strlen(ARDUINOJSON_NAMESPACE::pgm_p s) {
   const char* p = s.address;
   ARDUINOJSON_ASSERT(p != NULL);
   while (pgm_read_byte(p)) p++;
   return size_t(p - s.address);
 }
 #endif
-#ifndef strncmp_P
-inline int strncmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b, size_t n) {
+#ifndef strncmp
+inline int strncmp(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b, size_t n) {
   const char* s1 = a;
   const char* s2 = b.address;
   ARDUINOJSON_ASSERT(s1 != NULL);
@@ -838,8 +839,8 @@ inline int strncmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b, size_t n) {
   return 0;
 }
 #endif
-#ifndef strcmp_P
-inline int strcmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b) {
+#ifndef strcmp
+inline int strcmp(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b) {
   const char* s1 = a;
   const char* s2 = b.address;
   ARDUINOJSON_ASSERT(s1 != NULL);
@@ -879,7 +880,7 @@ class FlashStringAdapter {
       return -1;
     if (!other)
       return 1;
-    return -strcmp_P(other, reinterpret_cast<const char*>(_str));
+    return -strcmp(other, reinterpret_cast<const char*>(_str));
   }
   bool equals(const char* expected) const {
     return compare(expected) == 0;
@@ -893,7 +894,7 @@ class FlashStringAdapter {
   size_t size() const {
     if (!_str)
       return 0;
-    return strlen_P(reinterpret_cast<const char*>(_str));
+    return strlen(reinterpret_cast<const char*>(_str));
   }
   typedef storage_policies::store_by_copy storage_policy;
  private:
@@ -915,7 +916,7 @@ class SizedFlashStringAdapter {
       return -1;
     if (!other)
       return 1;
-    return -strncmp_P(other, reinterpret_cast<const char*>(_str), _size);
+    return -strncmp(other, reinterpret_cast<const char*>(_str), _size);
   }
   bool equals(const char* expected) const {
     return compare(expected) == 0;

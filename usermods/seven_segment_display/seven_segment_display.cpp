@@ -262,7 +262,7 @@ private:
     /* Put the Xor bits back to their original positions */
     Xor = (Xor << p1) | (Xor << p2);
 
-    /* Xor the 'Xor' with the original number so that the 
+    /* Xor the 'Xor' with the original number so that the
         two sets are swapped */
     char result = x ^ Xor;
 
@@ -272,11 +272,11 @@ private:
   void _publishMQTTint_P(const char *subTopic, int value)
   {
     if(mqtt == NULL) return;
-      
+
     char buffer[64];
     char valBuffer[12];
-    sprintf_P(buffer, PSTR("%s/%S/%S"), mqttDeviceTopic, _str_sevenSeg, subTopic);
-    sprintf_P(valBuffer, PSTR("%d"), value);
+    sprintf(buffer, "%s/%S/%S", mqttDeviceTopic, _str_sevenSeg, subTopic);
+    sprintf(valBuffer, "%d", value);
     mqtt->publish(buffer, 2, true, valBuffer);
   }
 
@@ -284,7 +284,7 @@ private:
   {
     if(mqtt == NULL) return;
     char buffer[64];
-    sprintf_P(buffer, PSTR("%s/%S/%S"), mqttDeviceTopic, _str_sevenSeg, subTopic);
+    sprintf(buffer, "%s/%S/%S", mqttDeviceTopic, _str_sevenSeg, subTopic);
     mqtt->publish(buffer, 2, true, Value.c_str(), Value.length());
   }
 
@@ -303,7 +303,7 @@ private:
 
   bool _cmpIntSetting_P(char *topic, char *payload, const char *setting, void *value)
   {
-    if (strcmp_P(topic, setting) == 0)
+    if (strcmp(topic, setting) == 0)
     {
       *((int *)value) = strtol(payload, NULL, 10);
       _publishMQTTint_P(setting, *((int *)value));
@@ -326,14 +326,14 @@ private:
       return true;
     if (_cmpIntSetting_P(topic, payload, _str_scrollSpd, &ssScrollSpeed))
       return true;
-    if (strcmp_P(topic, _str_displayMask) == 0)
+    if (strcmp(topic, _str_displayMask) == 0)
     {
       ssDisplayMask = String(payload);
       ssDisplayBuffer = ssDisplayMask;
       _publishMQTTstr_P(_str_displayMask, ssDisplayMask);
       return true;
     }
-    if (strcmp_P(topic, _str_displayMsg) == 0)
+    if (strcmp(topic, _str_displayMsg) == 0)
     {
       setSevenSegmentMessage(String(payload));
       return true;
@@ -401,14 +401,14 @@ public:
     {
       _updateMQTT();
       //subscribe for sevenseg messages on the device topic
-      sprintf_P(subBuffer, PSTR("%s/%S/+/set"), mqttDeviceTopic, _str_sevenSeg);
+      sprintf(subBuffer, "%s/%S/+/set", mqttDeviceTopic, _str_sevenSeg);
       mqtt->subscribe(subBuffer, 2);
     }
 
     if (mqttGroupTopic[0] != 0)
     {
       //subscribe for sevenseg messages on the group topic
-      sprintf_P(subBuffer, PSTR("%s/%S/+/set"), mqttGroupTopic, _str_sevenSeg);
+      sprintf(subBuffer, "%s/%S/+/set", mqttGroupTopic, _str_sevenSeg);
       mqtt->subscribe(subBuffer, 2);
     }
   }
@@ -416,8 +416,8 @@ public:
   bool onMqttMessage(char *topic, char *payload)
   {
     //If topic beings with sevenSeg cut it off, otherwise not our message.
-    size_t topicPrefixLen = strlen_P(PSTR("/sevenSeg/"));
-    if (strncmp_P(topic, PSTR("/sevenSeg/"), topicPrefixLen) == 0)
+    size_t topicPrefixLen = strlen("/sevenSeg/");
+    if (strncmp(topic, "/sevenSeg/", topicPrefixLen) == 0)
       topic += topicPrefixLen;
     else
       return false;
@@ -438,24 +438,24 @@ public:
 
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root[FPSTR(_str_sevenSeg)];
+    JsonObject top = root[_str_sevenSeg];
     if (top.isNull())
     {
-      top = root.createNestedObject(FPSTR(_str_sevenSeg));
+      top = root.createNestedObject(_str_sevenSeg);
     }
-    top[FPSTR(_str_perSegment)] = ssLEDPerSegment;
-    top[FPSTR(_str_perPeriod)] = ssLEDPerPeriod;
-    top[FPSTR(_str_startIdx)] = ssStartLED;
-    top[FPSTR(_str_displayMask)] = ssDisplayMask;
-    top[FPSTR(_str_displayCfg)] = ssDisplayConfig;
-    top[FPSTR(_str_displayMsg)] = ssDisplayMessage;
-    top[FPSTR(_str_timeEnabled)] = ssTimeEnabled;
-    top[FPSTR(_str_scrollSpd)] = ssScrollSpeed;
+    top[_str_perSegment] = ssLEDPerSegment;
+    top[_str_perPeriod] = ssLEDPerPeriod;
+    top[_str_startIdx] = ssStartLED;
+    top[_str_displayMask] = ssDisplayMask;
+    top[_str_displayCfg] = ssDisplayConfig;
+    top[_str_displayMsg] = ssDisplayMessage;
+    top[_str_timeEnabled] = ssTimeEnabled;
+    top[_str_scrollSpd] = ssScrollSpeed;
   }
 
   bool readFromConfig(JsonObject &root)
   {
-    JsonObject top = root[FPSTR(_str_sevenSeg)];
+    JsonObject top = root[_str_sevenSeg];
 
     bool configComplete = !top.isNull();
 
@@ -463,18 +463,18 @@ public:
     if (!configComplete)
       return configComplete;
 
-    configComplete &= getJsonValue(top[FPSTR(_str_perSegment)], ssLEDPerSegment);
-    configComplete &= getJsonValue(top[FPSTR(_str_perPeriod)], ssLEDPerPeriod);
-    configComplete &= getJsonValue(top[FPSTR(_str_startIdx)], ssStartLED);
-    configComplete &= getJsonValue(top[FPSTR(_str_displayMask)], ssDisplayMask);
-    configComplete &= getJsonValue(top[FPSTR(_str_displayCfg)], ssDisplayConfig);
+    configComplete &= getJsonValue(top[_str_perSegment], ssLEDPerSegment);
+    configComplete &= getJsonValue(top[_str_perPeriod], ssLEDPerPeriod);
+    configComplete &= getJsonValue(top[_str_startIdx], ssStartLED);
+    configComplete &= getJsonValue(top[_str_displayMask], ssDisplayMask);
+    configComplete &= getJsonValue(top[_str_displayCfg], ssDisplayConfig);
 
     String newDisplayMessage;
-    configComplete &= getJsonValue(top[FPSTR(_str_displayMsg)], newDisplayMessage);
+    configComplete &= getJsonValue(top[_str_displayMsg], newDisplayMessage);
     setSevenSegmentMessage(newDisplayMessage);
 
-    configComplete &= getJsonValue(top[FPSTR(_str_timeEnabled)], ssTimeEnabled);
-    configComplete &= getJsonValue(top[FPSTR(_str_scrollSpd)], ssScrollSpeed);
+    configComplete &= getJsonValue(top[_str_timeEnabled], ssTimeEnabled);
+    configComplete &= getJsonValue(top[_str_scrollSpd], ssScrollSpeed);
     return configComplete;
   }
 
@@ -488,15 +488,15 @@ public:
   }
 };
 
-const char SevenSegmentDisplay::_str_perSegment[] PROGMEM = "perSegment";
-const char SevenSegmentDisplay::_str_perPeriod[] PROGMEM = "perPeriod";
-const char SevenSegmentDisplay::_str_startIdx[] PROGMEM = "startIdx";
-const char SevenSegmentDisplay::_str_displayCfg[] PROGMEM = "displayCfg";
-const char SevenSegmentDisplay::_str_timeEnabled[] PROGMEM = "timeEnabled";
-const char SevenSegmentDisplay::_str_scrollSpd[] PROGMEM = "scrollSpd";
-const char SevenSegmentDisplay::_str_displayMask[] PROGMEM = "displayMask";
-const char SevenSegmentDisplay::_str_displayMsg[] PROGMEM = "displayMsg";
-const char SevenSegmentDisplay::_str_sevenSeg[] PROGMEM = "sevenSeg";
+const char SevenSegmentDisplay::_str_perSegment[] = "perSegment";
+const char SevenSegmentDisplay::_str_perPeriod[] = "perPeriod";
+const char SevenSegmentDisplay::_str_startIdx[] = "startIdx";
+const char SevenSegmentDisplay::_str_displayCfg[] = "displayCfg";
+const char SevenSegmentDisplay::_str_timeEnabled[] = "timeEnabled";
+const char SevenSegmentDisplay::_str_scrollSpd[] = "scrollSpd";
+const char SevenSegmentDisplay::_str_displayMask[] = "displayMask";
+const char SevenSegmentDisplay::_str_displayMsg[] = "displayMsg";
+const char SevenSegmentDisplay::_str_sevenSeg[] = "sevenSeg";
 
 static SevenSegmentDisplay seven_segment_display;
 REGISTER_USERMOD(seven_segment_display);

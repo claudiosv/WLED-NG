@@ -14,7 +14,7 @@
 EspalexaDevice::EspalexaDevice(){}
 
 EspalexaDevice::EspalexaDevice(String deviceName, BrightnessCallbackFunction gnCallback, uint8_t initialValue) { //constructor for dimmable device
-  
+
   _deviceName = deviceName;
   _callback = gnCallback;
   _val = initialValue;
@@ -23,7 +23,7 @@ EspalexaDevice::EspalexaDevice(String deviceName, BrightnessCallbackFunction gnC
 }
 
 EspalexaDevice::EspalexaDevice(String deviceName, ColorCallbackFunction gnCallback, uint8_t initialValue) { //constructor for color device
-  
+
   _deviceName = deviceName;
   _callbackCol = gnCallback;
   _val = initialValue;
@@ -32,7 +32,7 @@ EspalexaDevice::EspalexaDevice(String deviceName, ColorCallbackFunction gnCallba
 }
 
 EspalexaDevice::EspalexaDevice(String deviceName, DeviceCallbackFunction gnCallback, EspalexaDeviceType t, uint8_t initialValue) { //constructor for general device
-  
+
   _deviceName = deviceName;
   _callbackDev = gnCallback;
   _type = t;
@@ -126,7 +126,7 @@ uint32_t EspalexaDevice::getRGB()
 {
   if (_rgb != 0) return _rgb; //color has not changed
   byte rgb[4]{0, 0, 0, 0};
-  
+
   if (_mode == EspalexaColorMode::none) return 0;
 
   if (_mode == EspalexaColorMode::ct)
@@ -137,10 +137,10 @@ uint32_t EspalexaDevice::getRGB()
     float r, g, b;
 
 #ifdef ESPALEXA_DEBUG
-  if (_ct == 0) {EA_DEBUGLN(F("EspalexaDevice::getRGB() Warning: ct = 0!"));}
+  if (_ct == 0) {EA_DEBUGLN("EspalexaDevice::getRGB() Warning: ct = 0!");}
 #endif
-    if (temp <= 66) { 
-      r = 255; 
+    if (temp <= 66) {
+      r = 255;
       g = temp;
       g = 99.470802 * logf(g) - 161.119568;
       if (temp <= 19) {
@@ -156,11 +156,11 @@ uint32_t EspalexaDevice::getRGB()
       g = 288.12217 * pow(g, -0.07551485 );
       b = 255;
     }
-    
+
     rgb[0] = (byte)constrain(r,0.1,255.1);
     rgb[1] = (byte)constrain(g,0.1,255.1);
     rgb[2] = (byte)constrain(b,0.1,255.1);
-    
+
   } else if (_mode == EspalexaColorMode::hs)
   {
     float h = ((float)_hue)/65535.0;
@@ -296,7 +296,7 @@ void EspalexaDevice::setValue(uint8_t val)
 
 void EspalexaDevice::setState(bool onoff)
 {
-  if (onoff) 
+  if (onoff)
   {
     setValue(_val_last);
   } else {

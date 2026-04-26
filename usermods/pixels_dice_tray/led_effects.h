@@ -87,7 +87,7 @@ static void simple_roll() {
 // Palette - Not used
 // Flags - Effect is optimized for use on 1D LED strips.
 // Defaults - Selected Die set to 0xFF (USER_ANY_DIE)
-static const char _data_FX_MODE_SIMPLE_DIE[] PROGMEM =
+static const char _data_FX_MODE_SIMPLE_DIE[] =
     "DieSimple@,,Selected Die;!,!;;1;c1=255";
 
 static void pulse_roll() {
@@ -103,7 +103,7 @@ static void pulse_roll() {
     }
   }
 }
-static const char _data_FX_MODE_PULSE_DIE[] PROGMEM =
+static const char _data_FX_MODE_PULSE_DIE[] =
     "DiePulse@!,!,Selected Die;!,!;!;1;sx=24,pal=50,c1=255";
 
 static void check_roll() {
@@ -121,5 +121,5 @@ static void check_roll() {
     }
   }
 }
-static const char _data_FX_MODE_CHECK_DIE[] PROGMEM =
+static const char _data_FX_MODE_CHECK_DIE[] =
     "DieCheck@!,!,Selected Die,Target Roll;1,2,3;!;1;pal=0,ix=128,m12=2,si=0,c1=255,c2=10";

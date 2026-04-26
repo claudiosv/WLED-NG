@@ -30,7 +30,7 @@ class PwmOutput {
       DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
       if (!PinManager::allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
         return;
-      
+
       channel_ = PinManager::allocateLedc(1);
       if (channel_ == 255) {
         DEBUG_PRINTF("pwm_output[%d]: failed to quire ledc\n", pin_);
@@ -74,7 +74,7 @@ class PwmOutput {
     }
 
     void addToJsonState(JsonObject& pwmState) const {
-      pwmState[F("duty")] = duty_;
+      pwmState["duty"] = duty_;
     }
 
     void readFromJsonState(JsonObject& pwmState) {
@@ -82,7 +82,7 @@ class PwmOutput {
         return;
       }
       float duty;
-      if (getJsonValue(pwmState[F("duty")], duty)) {
+      if (getJsonValue(pwmState["duty"], duty)) {
         setDuty(duty);
       }
     }
@@ -91,26 +91,26 @@ class PwmOutput {
       if (!enabled_)
         return;
       char buffer[12];
-      sprintf_P(buffer, PSTR("PWM pin %d"), pin_);
+      sprintf(buffer, "PWM pin %d", pin_);
       JsonArray data = user.createNestedArray(buffer);
       data.add(1e2f * duty_);
-      data.add(F("%"));
+      data.add("%");
     }
 
     void addToConfig(JsonObject& pwmConfig) const {
-      pwmConfig[F("pin")] = pin_;
-      pwmConfig[F("freq")] = freq_;
+      pwmConfig["pin"] = pin_;
+      pwmConfig["freq"] = freq_;
     }
 
     bool readFromConfig(JsonObject& pwmConfig) {
       if (pwmConfig.isNull())
         return false;
-        
+
       bool configComplete = true;
       int8_t newPin = pin_;
       uint32_t newFreq = freq_;
-      configComplete &= getJsonValue(pwmConfig[F("pin")], newPin);  
-      configComplete &= getJsonValue(pwmConfig[F("freq")], newFreq);
+      configComplete &= getJsonValue(pwmConfig["pin"], newPin);
+      configComplete &= getJsonValue(pwmConfig["freq"], newFreq);
 
       open(newPin, newFreq);
 
@@ -147,7 +147,7 @@ class PwmOutputsUsermod : public Usermod {
         if (!pwm.isEnabled())
           continue;
         char buffer[4];
-        sprintf_P(buffer, PSTR("%d"), i);
+        sprintf(buffer, "%d", i);
         JsonObject pwmState = pwmStates.createNestedObject(buffer);
         pwm.addToJsonState(pwmState);
       }
@@ -163,16 +163,16 @@ class PwmOutputsUsermod : public Usermod {
         if (!pwm.isEnabled())
           continue;
         char buffer[4];
-        sprintf_P(buffer, PSTR("%d"), i);
+        sprintf(buffer, "%d", i);
         JsonObject pwmState = pwmStates[buffer];
         pwm.readFromJsonState(pwmState);
       }
     }
 
     void addToJsonInfo(JsonObject& root) {
-      JsonObject user = root[F("u")];
+      JsonObject user = root["u"];
       if (user.isNull())
-        user = root.createNestedObject(F("u"));
+        user = root.createNestedObject("u");
 
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
@@ -185,7 +185,7 @@ class PwmOutputsUsermod : public Usermod {
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
         char buffer[8];
-        sprintf_P(buffer, PSTR("PWM %d"), i);
+        sprintf(buffer, "PWM %d", i);
         JsonObject pwmConfig = top.createNestedObject(buffer);
         pwm.addToConfig(pwmConfig);
       }
@@ -200,7 +200,7 @@ class PwmOutputsUsermod : public Usermod {
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
         char buffer[8];
-        sprintf_P(buffer, PSTR("PWM %d"), i);
+        sprintf(buffer, "PWM %d", i);
         JsonObject pwmConfig = top[buffer];
         configComplete &= pwm.readFromConfig(pwmConfig);
       }
@@ -216,8 +216,8 @@ class PwmOutputsUsermod : public Usermod {
 
 };
 
-const char PwmOutputsUsermod::USERMOD_NAME[] PROGMEM = "PwmOutputs";
-const char PwmOutputsUsermod::PWM_STATE_NAME[] PROGMEM = "pwm";
+const char PwmOutputsUsermod::USERMOD_NAME[] = "PwmOutputs";
+const char PwmOutputsUsermod::PWM_STATE_NAME[] = "pwm";
 
 
 static PwmOutputsUsermod pwm_outputs;

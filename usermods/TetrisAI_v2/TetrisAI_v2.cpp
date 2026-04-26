@@ -41,7 +41,7 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
       uint8_t gridPixel = *tetris->grid.getPixel(index_x, index_y);
       if (isRowClearing) {
         if (noFlashOnClear) {
-          color = CRGB::Gray; 
+          color = CRGB::Gray;
         } else {
           //flash color white and black every 200ms
           color = (strip.now % 200) < 150
@@ -215,7 +215,7 @@ void mode_2DTetrisAI()
   }
   else if (tetrisai_data->tetris.state == TetrisAIGame::ANIMATE_MOVE)
   {
-    
+
     if (strip.now - tetrisai_data->lastTime > msDelayMove)
     {
       drawGrid(&tetrisai_data->tetris, tetrisai_data);
@@ -243,7 +243,7 @@ void mode_2DTetrisAI()
         tetrisai_data->tetris.ai.findWorstMove = false;
         tetrisai_data->mistaceCountdown = SEGMENT.custom3;
       }
-      tetrisai_data->mistaceCountdown--;      
+      tetrisai_data->mistaceCountdown--;
     }
     tetrisai_data->tetris.poll();
   }
@@ -252,7 +252,7 @@ void mode_2DTetrisAI()
     tetrisai_data->tetris.poll();
   }
 } // mode_2DTetrisAI()
-static const char _data_FX_MODE_2DTETRISAI[] PROGMEM = "Tetris AI@!,Look ahead,Intelligence,Rotate color,Mistake free,Show next,Border,Mistakes;Game Over,!,Border;!;2;sx=127,ix=64,c1=255,c2=0,c3=31,o1=1,o2=1,o3=0,pal=11";
+static const char _data_FX_MODE_2DTETRISAI[] = "Tetris AI@!,Look ahead,Intelligence,Rotate color,Mistake free,Show next,Border,Mistakes;Game Over,!,Border;!;2;sx=127,ix=64,c1=255,c2=0,c3=31,o1=1,o2=1,o3=0,pal=11";
 
 class TetrisAIUsermod : public Usermod
 {
@@ -268,13 +268,13 @@ public:
 
   void addToConfig(JsonObject& root) override
   {
-    JsonObject top = root.createNestedObject(FPSTR(_name));
+    JsonObject top = root.createNestedObject(_name);
     top["noFlashOnClear"] = noFlashOnClear;
   }
 
   bool readFromConfig(JsonObject& root) override
   {
-    JsonObject top = root[FPSTR(_name)];
+    JsonObject top = root[_name];
     bool configComplete = !top.isNull();
     configComplete &= getJsonValue(top["noFlashOnClear"], noFlashOnClear);
     return configComplete;
@@ -291,7 +291,7 @@ public:
   }
 };
 
-const char TetrisAIUsermod::_name[] PROGMEM = "TetrisAI_v2";
+const char TetrisAIUsermod::_name[] = "TetrisAI_v2";
 
 static TetrisAIUsermod tetrisai_v2;
 REGISTER_USERMOD(tetrisai_v2);

@@ -118,7 +118,7 @@ private:
         _ina226 = new INA226_WE(_i2cAddress);
         if (!_ina226->init())
         {
-            DEBUG_PRINTLN(F("INA226 initialization failed!"));
+            DEBUG_PRINTLN("INA226 initialization failed!");
             return;
         }
         _ina226->setCorrectionFactor(1.0);
@@ -157,11 +157,11 @@ private:
         bool overflow = _ina226->overflow;
 
 #ifndef WLED_DISABLE_MQTT
-        mqttPublishIfChanged(F("current"), _lastCurrentSent, current, 0.01f);
-        mqttPublishIfChanged(F("voltage"), _lastVoltageSent, voltage, 0.01f);
-        mqttPublishIfChanged(F("power"), _lastPowerSent, power, 0.1f);
-        mqttPublishIfChanged(F("shunt_voltage"), _lastShuntVoltageSent, shuntVoltage, 0.01f);
-        mqttPublishIfChanged(F("overflow"), _lastOverflowSent, overflow);
+        mqttPublishIfChanged("current", _lastCurrentSent, current, 0.01f);
+        mqttPublishIfChanged("voltage", _lastVoltageSent, voltage, 0.01f);
+        mqttPublishIfChanged("power", _lastPowerSent, power, 0.1f);
+        mqttPublishIfChanged("shunt_voltage", _lastShuntVoltageSent, shuntVoltage, 0.01f);
+        mqttPublishIfChanged("overflow", _lastOverflowSent, overflow);
 #endif
 
         _lastCurrent = current;
@@ -215,20 +215,20 @@ private:
             return;
 
         char topic[128];
-        snprintf_P(topic, 127, "%s/current", mqttDeviceTopic);
-        mqttCreateHassSensor(F("Current"), topic, F("current"), F("A"));
+        snprintf(topic, 127, "%s/current", mqttDeviceTopic);
+        mqttCreateHassSensor("Current", topic, "current", "A");
 
-        snprintf_P(topic, 127, "%s/voltage", mqttDeviceTopic);
-        mqttCreateHassSensor(F("Voltage"), topic, F("voltage"), F("V"));
+        snprintf(topic, 127, "%s/voltage", mqttDeviceTopic);
+        mqttCreateHassSensor("Voltage", topic, "voltage", "V");
 
-        snprintf_P(topic, 127, "%s/power", mqttDeviceTopic);
-        mqttCreateHassSensor(F("Power"), topic, F("power"), F("W"));
+        snprintf(topic, 127, "%s/power", mqttDeviceTopic);
+        mqttCreateHassSensor("Power", topic, "power", "W");
 
-        snprintf_P(topic, 127, "%s/shunt_voltage", mqttDeviceTopic);
-        mqttCreateHassSensor(F("Shunt Voltage"), topic, F("voltage"), F("V"));
+        snprintf(topic, 127, "%s/shunt_voltage", mqttDeviceTopic);
+        mqttCreateHassSensor("Shunt Voltage", topic, "voltage", "V");
 
-        snprintf_P(topic, 127, "%s/overflow", mqttDeviceTopic);
-        mqttCreateHassBinarySensor(F("Overflow"), topic);
+        snprintf(topic, 127, "%s/overflow", mqttDeviceTopic);
+        mqttCreateHassBinarySensor("Overflow", topic);
     }
 
     void mqttPublishIfChanged(const __FlashStringHelper *topic, float &lastState, float state, float minChange)
@@ -236,7 +236,7 @@ private:
         if (WLED_MQTT_CONNECTED && _mqttPublish && (_mqttPublishAlways || fabsf(lastState - state) > minChange))
         {
             char subuf[128];
-            snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
+            snprintf(subuf, 127, "%s/%s", mqttDeviceTopic, (const char *)topic);
             mqtt->publish(subuf, 0, false, String(state).c_str());
 
             lastState = state;
@@ -248,7 +248,7 @@ private:
         if (WLED_MQTT_CONNECTED && _mqttPublish && (_mqttPublishAlways || lastState != state))
         {
             char subuf[128];
-            snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
+            snprintf(subuf, 127, "%s/%s", mqttDeviceTopic, (const char *)topic);
             mqtt->publish(subuf, 0, false, state ? "true" : "false");
 
             lastState = state;
@@ -257,25 +257,25 @@ private:
 
     void mqttCreateHassSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
     {
-        String t = String(F("homeassistant/sensor/")) + mqttClientID + "/" + name + F("/config");
+        String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
 
         StaticJsonDocument<600> doc;
 
-        doc[F("name")] = name;
-        doc[F("state_topic")] = topic;
-        doc[F("unique_id")] = String(mqttClientID) + name;
+        doc["name"] = name;
+        doc["state_topic"] = topic;
+        doc["unique_id"] = String(mqttClientID) + name;
         if (unitOfMeasurement != "")
-            doc[F("unit_of_measurement")] = unitOfMeasurement;
+            doc["unit_of_measurement"] = unitOfMeasurement;
         if (deviceClass != "")
-            doc[F("device_class")] = deviceClass;
-        doc[F("expire_after")] = 1800;
+            doc["device_class"] = deviceClass;
+        doc["expire_after"] = 1800;
 
-        JsonObject device = doc.createNestedObject(F("device"));
-        device[F("name")] = serverDescription;
-        device[F("identifiers")] = "wled-sensor-" + String(mqttClientID);
-        device[F("manufacturer")] = F(WLED_BRAND);
-        device[F("model")] = F(WLED_PRODUCT_NAME);
-        device[F("sw_version")] = versionString;
+        JsonObject device = doc.createNestedObject("device");
+        device["name"] = serverDescription;
+        device["identifiers"] = "wled-sensor-" + String(mqttClientID);
+        device["manufacturer"] = WLED_BRAND;
+        device["model"] = WLED_RELEASE_NAME;
+        device["sw_version"] = versionString;
 
         String temp;
         serializeJson(doc, temp);
@@ -287,20 +287,20 @@ private:
 
     void mqttCreateHassBinarySensor(const String &name, const String &topic)
     {
-        String t = String(F("homeassistant/binary_sensor/")) + mqttClientID + "/" + name + F("/config");
+        String t = String("homeassistant/binary_sensor/") + mqttClientID + "/" + name + "/config";
 
         StaticJsonDocument<600> doc;
 
-        doc[F("name")] = name;
-        doc[F("state_topic")] = topic;
-        doc[F("unique_id")] = String(mqttClientID) + name;
+        doc["name"] = name;
+        doc["state_topic"] = topic;
+        doc["unique_id"] = String(mqttClientID) + name;
 
-        JsonObject device = doc.createNestedObject(F("device"));
-        device[F("name")] = serverDescription;
-        device[F("identifiers")] = "wled-sensor-" + String(mqttClientID);
-        device[F("manufacturer")] = F(WLED_BRAND);
-        device[F("model")] = F(WLED_PRODUCT_NAME);
-        device[F("sw_version")] = versionString;
+        JsonObject device = doc.createNestedObject("device");
+        device["name"] = serverDescription;
+        device["identifiers"] = "wled-sensor-" + String(mqttClientID);
+        device["manufacturer"] = WLED_BRAND;
+        device["model"] = WLED_RELEASE_NAME;
+        device["sw_version"] = versionString;
 
         String temp;
         serializeJson(doc, temp);
@@ -366,113 +366,113 @@ public:
             user = root.createNestedObject("u");
 
 #ifdef USERMOD_INA226_DEBUG
-        JsonArray temp = user.createNestedArray(F("INA226 last loop"));
+        JsonArray temp = user.createNestedArray("INA226 last loop");
         temp.add(_lastLoopCheck);
 
-        temp = user.createNestedArray(F("INA226 last status"));
+        temp = user.createNestedArray("INA226 last status");
         temp.add(_lastStatus);
 
-        temp = user.createNestedArray(F("INA226 average samples"));
+        temp = user.createNestedArray("INA226 average samples");
         temp.add(_settingInaSamples);
-        temp.add(F("samples"));
+        temp.add("samples");
 
-        temp = user.createNestedArray(F("INA226 conversion time"));
+        temp = user.createNestedArray("INA226 conversion time");
         temp.add(_settingInaConversionTimeUs << 2);
-        temp.add(F("μs"));
+        temp.add("μs");
 
         // INA226 uses (2 * conversion time * samples) time to take a reading.
-        temp = user.createNestedArray(F("INA226 expected sample time"));
+        temp = user.createNestedArray("INA226 expected sample time");
         uint32_t sampleTimeNeededUs = (static_cast<uint32_t>(_settingInaConversionTimeUs) << 2) * _settingInaSamples * 2;
         temp.add(truncateDecimals(sampleTimeNeededUs / 1000.0));
-        temp.add(F("ms"));
+        temp.add("ms");
 
-        temp = user.createNestedArray(F("INA226 mode"));
-        temp.add(_isTriggeredOperationMode ? F("triggered") : F("continuous"));
+        temp = user.createNestedArray("INA226 mode");
+        temp.add(_isTriggeredOperationMode ? "triggered" : "continuous");
 
         if (_isTriggeredOperationMode)
         {
-            temp = user.createNestedArray(F("INA226 triggered"));
-            temp.add(_measurementTriggered ? F("waiting for measurement") : F(""));
+            temp = user.createNestedArray("INA226 triggered");
+            temp.add(_measurementTriggered ? "waiting for measurement" : "");
         }
 #endif
 
-        JsonArray jsonCurrent = user.createNestedArray(F("Current"));
-        JsonArray jsonVoltage = user.createNestedArray(F("Voltage"));
-        JsonArray jsonPower = user.createNestedArray(F("Power"));
-        JsonArray jsonShuntVoltage = user.createNestedArray(F("Shunt Voltage"));
-        JsonArray jsonOverflow = user.createNestedArray(F("Overflow"));
+        JsonArray jsonCurrent = user.createNestedArray("Current");
+        JsonArray jsonVoltage = user.createNestedArray("Voltage");
+        JsonArray jsonPower = user.createNestedArray("Power");
+        JsonArray jsonShuntVoltage = user.createNestedArray("Shunt Voltage");
+        JsonArray jsonOverflow = user.createNestedArray("Overflow");
 
         if (_lastLoopCheck == 0)
         {
-            jsonCurrent.add(F("Not read yet"));
-            jsonVoltage.add(F("Not read yet"));
-            jsonPower.add(F("Not read yet"));
-            jsonShuntVoltage.add(F("Not read yet"));
-            jsonOverflow.add(F("Not read yet"));
+            jsonCurrent.add("Not read yet");
+            jsonVoltage.add("Not read yet");
+            jsonPower.add("Not read yet");
+            jsonShuntVoltage.add("Not read yet");
+            jsonOverflow.add("Not read yet");
             return;
         }
 
         if (_lastStatus != 0)
         {
-            jsonCurrent.add(F("An error occurred"));
-            jsonVoltage.add(F("An error occurred"));
-            jsonPower.add(F("An error occurred"));
-            jsonShuntVoltage.add(F("An error occurred"));
-            jsonOverflow.add(F("An error occurred"));
+            jsonCurrent.add("An error occurred");
+            jsonVoltage.add("An error occurred");
+            jsonPower.add("An error occurred");
+            jsonShuntVoltage.add("An error occurred");
+            jsonOverflow.add("An error occurred");
             return;
         }
 
         jsonCurrent.add(_lastCurrent);
-        jsonCurrent.add(F("A"));
+        jsonCurrent.add("A");
 
         jsonVoltage.add(_lastVoltage);
-        jsonVoltage.add(F("V"));
+        jsonVoltage.add("V");
 
         jsonPower.add(_lastPower);
-        jsonPower.add(F("W"));
+        jsonPower.add("W");
 
         jsonShuntVoltage.add(_lastShuntVoltage);
-        jsonShuntVoltage.add(F("V"));
+        jsonShuntVoltage.add("V");
 
-        jsonOverflow.add(_lastOverflow ? F("true") : F("false"));
+        jsonOverflow.add(_lastOverflow ? "true" : "false");
     }
 
     void addToConfig(JsonObject &root)
     {
-        JsonObject top = root.createNestedObject(FPSTR(_name));
-        top[F("Enabled")] = _settingEnabled;
-        top[F("I2CAddress")] = static_cast<uint8_t>(_i2cAddress);
-        top[F("CheckInterval")] = _checkInterval / 1000;
-        top[F("INASamples")] = _settingInaSamples;
-        top[F("INAConversionTime")] = _settingInaConversionTimeUs << 2;
-        top[F("Decimals")] = log10f(_decimalFactor);
-        top[F("ShuntResistor")] = _shuntResistor;
-        top[F("CurrentRange")] = _currentRange;
+        JsonObject top = root.createNestedObject(_name);
+        top["Enabled"] = _settingEnabled;
+        top["I2CAddress"] = static_cast<uint8_t>(_i2cAddress);
+        top["CheckInterval"] = _checkInterval / 1000;
+        top["INASamples"] = _settingInaSamples;
+        top["INAConversionTime"] = _settingInaConversionTimeUs << 2;
+        top["Decimals"] = log10f(_decimalFactor);
+        top["ShuntResistor"] = _shuntResistor;
+        top["CurrentRange"] = _currentRange;
 #ifndef WLED_DISABLE_MQTT
-        top[F("MqttPublish")] = _mqttPublish;
-        top[F("MqttPublishAlways")] = _mqttPublishAlways;
-        top[F("MqttHomeAssistantDiscovery")] = _mqttHomeAssistant;
+        top["MqttPublish"] = _mqttPublish;
+        top["MqttPublishAlways"] = _mqttPublishAlways;
+        top["MqttHomeAssistantDiscovery"] = _mqttHomeAssistant;
 #endif
 
-        DEBUG_PRINTLN(F("INA226 config saved."));
+        DEBUG_PRINTLN("INA226 config saved.");
     }
 
     bool readFromConfig(JsonObject &root) override
     {
-        JsonObject top = root[FPSTR(_name)];
+        JsonObject top = root[_name];
 
         bool configComplete = !top.isNull();
         if (!configComplete)
             return false;
 
         bool tmpBool;
-        if (getJsonValue(top[F("Enabled")], tmpBool))
+        if (getJsonValue(top["Enabled"], tmpBool))
             _settingEnabled = tmpBool;
         else
             configComplete = false;
 
-        configComplete &= getJsonValue(top[F("I2CAddress")], _i2cAddress);
-        if (getJsonValue(top[F("CheckInterval")], _checkInterval))
+        configComplete &= getJsonValue(top["I2CAddress"], _i2cAddress);
+        if (getJsonValue(top["CheckInterval"], _checkInterval))
         {
             if (1 <= _checkInterval && _checkInterval <= 600)
                 _checkInterval *= 1000;
@@ -483,7 +483,7 @@ public:
             configComplete = false;
 
         uint16_t tmpShort;
-        if (getJsonValue(top[F("INASamples")], tmpShort))
+        if (getJsonValue(top["INASamples"], tmpShort))
         {
             // The method below will fix the provided value to a valid one
             getAverageEnum(tmpShort);
@@ -492,7 +492,7 @@ public:
         else
             configComplete = false;
 
-        if (getJsonValue(top[F("INAConversionTime")], tmpShort))
+        if (getJsonValue(top["INAConversionTime"], tmpShort))
         {
             // The method below will fix the provided value to a valid one
             getConversionTimeEnum(tmpShort);
@@ -501,7 +501,7 @@ public:
         else
             configComplete = false;
 
-        if (getJsonValue(top[F("Decimals")], _decimalFactor))
+        if (getJsonValue(top["Decimals"], _decimalFactor))
         {
             if (0 <= _decimalFactor && _decimalFactor <= 5)
                 _decimalFactor = pow10f(_decimalFactor);
@@ -511,21 +511,21 @@ public:
         else
             configComplete = false;
 
-        configComplete &= getJsonValue(top[F("ShuntResistor")], _shuntResistor);
-        configComplete &= getJsonValue(top[F("CurrentRange")], _currentRange);
+        configComplete &= getJsonValue(top["ShuntResistor"], _shuntResistor);
+        configComplete &= getJsonValue(top["CurrentRange"], _currentRange);
 
 #ifndef WLED_DISABLE_MQTT
-        if (getJsonValue(top[F("MqttPublish")], tmpBool))
+        if (getJsonValue(top["MqttPublish"], tmpBool))
             _mqttPublish = tmpBool;
         else
             configComplete = false;
 
-        if (getJsonValue(top[F("MqttPublishAlways")], tmpBool))
+        if (getJsonValue(top["MqttPublishAlways"], tmpBool))
             _mqttPublishAlways = tmpBool;
         else
             configComplete = false;
 
-        if (getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool))
+        if (getJsonValue(top["MqttHomeAssistantDiscovery"], tmpBool))
             _mqttHomeAssistant = tmpBool;
         else
             configComplete = false;
@@ -552,7 +552,7 @@ public:
 
 };
 
-const char UsermodINA226::_name[] PROGMEM = "INA226";
+const char UsermodINA226::_name[] = "INA226";
 
 
 static UsermodINA226 ina226_v2;

@@ -1,7 +1,7 @@
 #include "wled.h"
 
 #ifndef ARDUINO_ARCH_ESP32
-  // 8266 does not support analogRead on user selectable pins 
+  // 8266 does not support analogRead on user selectable pins
   #error only ESP32 is supported by usermod LDR_DUSK_DAWN
 #endif
 
@@ -11,7 +11,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
     bool ldrEnabled = false;
     int ldrPin = 34; //A2 on Adafruit Huzzah32
     int ldrThresholdMinutes = 5; // How many minutes of readings above/below threshold until it switches LED state
-    int ldrThreshold = 1000; // Readings higher than this number will turn off LED. 
+    int ldrThreshold = 1000; // Readings higher than this number will turn off LED.
     int ldrOnPreset = 1; // Default "On" Preset
     int ldrOffPreset = 2; // Default "Off" Preset
 
@@ -37,7 +37,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
 
     void loop() {
       // Only update every 10 seconds
-      if (millis() - lastMillis > 10000) {      
+      if (millis() - lastMillis > 10000) {
         if (  (ldrEnabled == true)
            && (ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0) ) { // make sure that pin is valid for analogread()
           // Default state is off
@@ -87,7 +87,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
     }
 
   void addToConfig(JsonObject& root) {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
+      JsonObject top = root.createNestedObject(_name);
       top["Enabled"] = ldrEnabled;
       top["LDR Pin"] = ldrPin;
       top["Threshold Minutes"] = ldrThresholdMinutes;
@@ -98,7 +98,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
 
   bool readFromConfig(JsonObject& root) {
       int8_t oldLdrPin = ldrPin;
-      JsonObject top = root[FPSTR(_name)];
+      JsonObject top = root[_name];
       bool configComplete = !top.isNull();
       configComplete &= getJsonValue(top["Enabled"], ldrEnabled);
       configComplete &= getJsonValue(top["LDR Pin"], ldrPin);
@@ -139,9 +139,9 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
 
       //bool pinValid = ((ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0));
       //if (PinManager::getPinOwner(ldrPin) != PinOwner::UM_LDR_DUSK_DAWN) pinValid = false;
-      //JsonArray LDR_valid = user.createNestedArray(F("LDR pin"));
+      //JsonArray LDR_valid = user.createNestedArray("LDR pin");
       //LDR_valid.add(ldrPin);
-      //LDR_valid.add(pinValid ? F(" OK"): F(" invalid"));
+      //LDR_valid.add(pinValid ? " OK": " invalid");
   }
 
   uint16_t getId() {
@@ -149,7 +149,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
   }
 };
 
-const char LDR_Dusk_Dawn_v2::_name[]    PROGMEM = "LDR_Dusk_Dawn_v2";
+const char LDR_Dusk_Dawn_v2::_name[] = "LDR_Dusk_Dawn_v2";
 
 
 static LDR_Dusk_Dawn_v2 ldr_dusk_dawn_v2;

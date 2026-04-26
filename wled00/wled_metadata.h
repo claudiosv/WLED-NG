@@ -11,6 +11,19 @@
 #include <string.h>
 #include <WString.h>
 
+#ifndef WLED_VERSION
+  #warning WLED_VERSION was not set - using default value of 'dev'
+  #define WLED_VERSION dev
+#endif
+#ifndef WLED_RELEASE_NAME
+  #warning WLED_RELEASE_NAME was not set - using default value of 'Custom'
+  #define WLED_RELEASE_NAME "Custom"
+#endif
+#ifndef WLED_REPO
+  // No warning for this one: integrators are not always on GitHub
+  #define WLED_REPO "unknown"
+#endif
+
 #define WLED_VERSION_MAX_LEN 48
 #define WLED_RELEASE_NAME_MAX_LEN 48
 
@@ -36,10 +49,8 @@ extern const wled_metadata_t WLED_BUILD_DESCRIPTION;
 // Convenient metdata pointers
 #define versionString (WLED_BUILD_DESCRIPTION.wled_version)   // Build version, WLED_VERSION
 #define releaseString (WLED_BUILD_DESCRIPTION.release_name)   // Release name,  WLED_RELEASE_NAME
-extern const __FlashStringHelper* repoString;                       // Github repository (if available)
-extern const __FlashStringHelper* productString;                    // Product, WLED_PRODUCT_NAME -- deprecated, use WLED_RELEASE_NAME
-extern const __FlashStringHelper* brandString ;                     // Brand
-
+inline constexpr char repoString[]    = WLED_REPO; // Github repository (if available)
+inline constexpr char brandString[]   = WLED_BRAND; // Brand
 
 // Metadata analysis functions
 

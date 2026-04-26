@@ -606,14 +606,14 @@ public:
     return *this;
   }
 
-  // Create palette from palette stored in PROGMEM
+  // Create palette from palette stored in
   CRGBPalette16(const TProgmemRGBPalette16& rhs) {
     for (int i = 0; i < 16; ++i) {
       entries[i] = pgm_read_dword(rhs + i);
     }
   }
 
-  // Copy assignment operator for PROGMEM palette
+  // Copy assignment operator for palette
   CRGBPalette16& operator=(const TProgmemRGBPalette16& rhs) {
     for (int i = 0; i < 16; ++i) {
       entries[i] = pgm_read_dword(rhs + i);
@@ -684,7 +684,7 @@ public:
     fill_gradient_RGB(&(entries[0]), 16, c1, c2, c3, c4);
   }
 
-  // Creates a palette from a gradient palette in PROGMEM.
+  // Creates a palette from a gradient palette in.
   //
   // Gradient palettes are loaded into CRGBPalettes in such a way
   // that, if possible, every color represented in the gradient palette

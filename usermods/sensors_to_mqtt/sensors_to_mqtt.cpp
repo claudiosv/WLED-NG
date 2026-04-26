@@ -83,8 +83,8 @@ private:
 
     JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
     device["identifiers"] = String("wled-sensor-") + mqttClientID;
-    device["manufacturer"] = F(WLED_BRAND);
-    device["model"] = F(WLED_PRODUCT_NAME);
+    device["manufacturer"] = WLED_BRAND;
+    device["model"] = WLED_RELEASE_NAME;
     device["sw_version"] = VERSION;
     device["name"] = mqttClientID;
 
@@ -113,14 +113,14 @@ private:
   }
 
   /**
-   * Credits: Bouke_Regnerus @ https://community.home-assistant.io/t/example-indoor-air-quality-text-sensor-using-ccs811-sensor/125854 
+   * Credits: Bouke_Regnerus @ https://community.home-assistant.io/t/example-indoor-air-quality-text-sensor-using-ccs811-sensor/125854
    */
   const char *_getIaqIndex(float humidity, int tvoc, int eco2)
   {
     int iaq_index = 0;
 
     /*
-       * Transform indoor humidity values to IAQ points according to Indoor Air Quality UK: 
+       * Transform indoor humidity values to IAQ points according to Indoor Air Quality UK:
        * http://www.iaquk.org.uk/
        */
     if (humidity < 10 or humidity > 90)
@@ -145,7 +145,7 @@ private:
     }
 
     /*
-       * Transform eCO2 values to IAQ points according to Indoor Air Quality UK: 
+       * Transform eCO2 values to IAQ points according to Indoor Air Quality UK:
        * http://www.iaquk.org.uk/
        */
     if (eco2 <= 600)
@@ -170,7 +170,7 @@ private:
     }
 
     /*
-       * Transform TVOC values to IAQ points according to German environmental guidelines: 
+       * Transform TVOC values to IAQ points according to German environmental guidelines:
        * https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf
        */
     if (tvoc <= 65)

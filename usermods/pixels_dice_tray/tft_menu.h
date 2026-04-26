@@ -20,7 +20,7 @@
   #endif
 
 // Bitmask for icon
-const uint8_t LIGHTNING_ICON_8X8[] PROGMEM = {
+const uint8_t LIGHTNING_ICON_8X8[] = {
     0b00001111, 0b00010010, 0b00100100, 0b01001111,
     0b10000001, 0b11110010, 0b00010100, 0b00011000,
 };
@@ -29,7 +29,7 @@ TFT_eSPI tft = TFT_eSPI(TFT_WIDTH, TFT_HEIGHT);
 
 /**
  * Print text with box surrounding it.
- * 
+ *
  * @param txt Text to draw
  * @param color Color for box lines
  */
@@ -399,7 +399,7 @@ class InfoMenu : public MenuBase {
     }
     if (WLED_MQTT_CONNECTED) {
       char mqtt_topic_buffer[MQTT_MAX_TOPIC_LEN + 16];
-      snprintf(mqtt_topic_buffer, sizeof(mqtt_topic_buffer), PSTR("%s/%s"),
+      snprintf(mqtt_topic_buffer, sizeof(mqtt_topic_buffer), "%s/%s",
                mqttDeviceTopic, "dice/settings->roll_label");
       mqtt->publish(mqtt_topic_buffer, 0, false,
                     GetRollName(settings->roll_label));

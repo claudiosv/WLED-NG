@@ -64,15 +64,15 @@ class Si7021_MQTT_HA : public Usermod
           _publishHAMqttSensor("absolute_humidity", "Absolute Humidity", mqttAbsoluteHumidityTopic, "", "g/m³");
         }
       }
-      
+
       mqttInitialized = true;
     }
 
     void _publishHAMqttSensor(
-      const String &name, 
-      const String &friendly_name, 
-      const String &state_topic, 
-      const String &deviceClass, 
+      const String &name,
+      const String &friendly_name,
+      const String &state_topic,
+      const String &deviceClass,
       const String &unitOfMeasurement)
     {
       if (WLED_MQTT_CONNECTED) {
@@ -91,8 +91,8 @@ class Si7021_MQTT_HA : public Usermod
 
         JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
         device["name"] = String(serverDescription);
-        device["model"] = F(WLED_PRODUCT_NAME);
-        device["manufacturer"] = F(WLED_BRAND);
+        device["model"] = WLED_RELEASE_NAME;
+        device["manufacturer"] = WLED_BRAND;
         device["identifiers"] = String("wled-") + String(serverDescription);
         device["sw_version"] = VERSION;
 
@@ -146,21 +146,21 @@ class Si7021_MQTT_HA : public Usermod
   public:
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
-      
-      top[FPSTR(_enabled)] = enabled;
-      top[FPSTR(_sendAdditionalSensors)] = sendAdditionalSensors;
-      top[FPSTR(_haAutoDiscovery)] = haAutoDiscovery;
+      JsonObject top = root.createNestedObject(_name);
+
+      top[_enabled] = enabled;
+      top[_sendAdditionalSensors] = sendAdditionalSensors;
+      top[_haAutoDiscovery] = haAutoDiscovery;
     }
 
     bool readFromConfig(JsonObject& root)
     {
-      JsonObject top = root[FPSTR(_name)];
-      
+      JsonObject top = root[_name];
+
       bool configComplete = !top.isNull();
-      configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
-      configComplete &= getJsonValue(top[FPSTR(_sendAdditionalSensors)], sendAdditionalSensors);
-      configComplete &= getJsonValue(top[FPSTR(_haAutoDiscovery)], haAutoDiscovery);
+      configComplete &= getJsonValue(top[_enabled], enabled);
+      configComplete &= getJsonValue(top[_sendAdditionalSensors], sendAdditionalSensors);
+      configComplete &= getJsonValue(top[_haAutoDiscovery], haAutoDiscovery);
 
       return configComplete;
     }
@@ -188,7 +188,7 @@ class Si7021_MQTT_HA : public Usermod
     void loop()
     {
       yield();
-      if (!enabled || strip.isUpdating()) return; // !sensorFound || 
+      if (!enabled || strip.isUpdating()) return; // !sensorFound ||
 
       unsigned long tempTimer = millis();
 
@@ -215,7 +215,7 @@ class Si7021_MQTT_HA : public Usermod
         }
       }
     }
-    
+
     uint16_t getId()
     {
       return USERMOD_ID_SI7021_MQTT_HA;
@@ -223,10 +223,10 @@ class Si7021_MQTT_HA : public Usermod
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char Si7021_MQTT_HA::_name[]                   PROGMEM = "Si7021 MQTT (Home Assistant)";
-const char Si7021_MQTT_HA::_enabled[]                PROGMEM = "enabled";
-const char Si7021_MQTT_HA::_sendAdditionalSensors[]  PROGMEM = "Send Dew Point, Abs. Humidity and Heat Index";
-const char Si7021_MQTT_HA::_haAutoDiscovery[]        PROGMEM = "Home Assistant MQTT Auto-Discovery";
+const char Si7021_MQTT_HA::_name[] = "Si7021 MQTT (Home Assistant)";
+const char Si7021_MQTT_HA::_enabled[] = "enabled";
+const char Si7021_MQTT_HA::_sendAdditionalSensors[] = "Send Dew Point, Abs. Humidity and Heat Index";
+const char Si7021_MQTT_HA::_haAutoDiscovery[] = "Home Assistant MQTT Auto-Discovery";
 
 
 static Si7021_MQTT_HA si7021_mqtt_ha;

@@ -131,7 +131,7 @@ static um_data_t* getAudioData() {
 void mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
 }
-static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
+static const char _data_FX_MODE_STATIC[] = "Solid";
 
 /*
  * Copy a segment and perform (optional) color adjustments
@@ -179,7 +179,7 @@ void mode_copy_segment(void) {
     }
   }
 }
-static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,Axis(2D),FullStack(last frame);;;12;ix=0,c1=0,c2=0,c3=0";
+static const char _data_FX_MODE_COPY[] = "Copy Segment@,Color shift,Lighten,Brighten,ID,Axis(2D),FullStack(last frame);;;12;ix=0,c1=0,c2=0,c3=0";
 
 
 /*
@@ -219,7 +219,7 @@ void blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
 void mode_blink(void) {
   blink(SEGCOLOR(0), SEGCOLOR(1), false, true);
 }
-static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;01";
+static const char _data_FX_MODE_BLINK[] = "Blink@!,Duty cycle;!,!;!;01";
 
 
 /*
@@ -228,7 +228,7 @@ static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;01";
 void mode_blink_rainbow(void) {
   blink(SEGMENT.color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), false, false);
 }
-static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequency,Blink duration;!,!;!;01";
+static const char _data_FX_MODE_BLINK_RAINBOW[] = "Blink Rainbow@Frequency,Blink duration;!,!;!;01";
 
 
 /*
@@ -237,7 +237,7 @@ static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequen
 void mode_strobe(void) {
   return blink(SEGCOLOR(0), SEGCOLOR(1), true, true);
 }
-static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!,!;!;01";
+static const char _data_FX_MODE_STROBE[] = "Strobe@!;!,!;!;01";
 
 
 /*
@@ -246,7 +246,7 @@ static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!,!;!;01";
 void mode_strobe_rainbow(void) {
   return blink(SEGMENT.color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), true, false);
 }
-static const char _data_FX_MODE_STROBE_RAINBOW[] PROGMEM = "Strobe Rainbow@!;,!;!;01";
+static const char _data_FX_MODE_STROBE_RAINBOW[] = "Strobe Rainbow@!;,!;!;01";
 
 
 /*
@@ -311,7 +311,7 @@ void color_wipe(bool rev, bool useRandomColors) {
 void mode_color_wipe(void) {
   color_wipe(false, false);
 }
-static const char _data_FX_MODE_COLOR_WIPE[] PROGMEM = "Wipe@!,!;!,!;!";
+static const char _data_FX_MODE_COLOR_WIPE[] = "Wipe@!,!;!,!;!";
 
 
 /*
@@ -320,7 +320,7 @@ static const char _data_FX_MODE_COLOR_WIPE[] PROGMEM = "Wipe@!,!;!,!;!";
 void mode_color_sweep(void) {
   color_wipe(true, false);
 }
-static const char _data_FX_MODE_COLOR_SWEEP[] PROGMEM = "Sweep@!,!;!,!;!";
+static const char _data_FX_MODE_COLOR_SWEEP[] = "Sweep@!,!;!,!;!";
 
 
 /*
@@ -330,7 +330,7 @@ static const char _data_FX_MODE_COLOR_SWEEP[] PROGMEM = "Sweep@!,!;!,!;!";
 void mode_color_wipe_random(void) {
   color_wipe(false, true);
 }
-static const char _data_FX_MODE_COLOR_WIPE_RANDOM[] PROGMEM = "Wipe Random@!;;!";
+static const char _data_FX_MODE_COLOR_WIPE_RANDOM[] = "Wipe Random@!;;!";
 
 
 /*
@@ -339,7 +339,7 @@ static const char _data_FX_MODE_COLOR_WIPE_RANDOM[] PROGMEM = "Wipe Random@!;;!"
 void mode_color_sweep_random(void) {
   color_wipe(true, true);
 }
-static const char _data_FX_MODE_COLOR_SWEEP_RANDOM[] PROGMEM = "Sweep Random@!;;!";
+static const char _data_FX_MODE_COLOR_SWEEP_RANDOM[] = "Sweep Random@!;;!";
 
 
 /*
@@ -371,7 +371,7 @@ void mode_random_color(void) {
 
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux1), SEGMENT.color_wheel(SEGENV.aux0), uint8_t(fade)));
 }
-static const char _data_FX_MODE_RANDOM_COLOR[] PROGMEM = "Random Colors@!,Fade time;;!;01";
+static const char _data_FX_MODE_RANDOM_COLOR[] = "Random Colors@!,Fade time;;!;01";
 
 
 /*
@@ -406,7 +406,7 @@ void mode_dynamic(void) {
     }
   }
 }
-static const char _data_FX_MODE_DYNAMIC[] PROGMEM = "Dynamic@!,!,,,,Smooth;;!";
+static const char _data_FX_MODE_DYNAMIC[] = "Dynamic@!,!,,,,Smooth;;!";
 
 
 /*
@@ -418,7 +418,7 @@ void mode_dynamic_smooth(void) {
   mode_dynamic();
   SEGMENT.check1 = old;
  }
-static const char _data_FX_MODE_DYNAMIC_SMOOTH[] PROGMEM = "Dynamic Smooth@!,!;;!";
+static const char _data_FX_MODE_DYNAMIC_SMOOTH[] = "Dynamic Smooth@!,!;;!";
 
 
 /*
@@ -439,7 +439,7 @@ void mode_breath(void) {
   }
 
 }
-static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!,!;!;01";
+static const char _data_FX_MODE_BREATH[] = "Breathe@!;!,!;!;01";
 
 
 /*
@@ -453,7 +453,7 @@ void mode_fade(void) {
     SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
   }
 }
-static const char _data_FX_MODE_FADE[] PROGMEM = "Fade@!;!,!;!;01";
+static const char _data_FX_MODE_FADE[] = "Fade@!;!,!;!;01";
 
 
 /*
@@ -491,7 +491,7 @@ void scan(bool dual) {
 void mode_scan(void) {
   scan(false);
 }
-static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots,,,,,Overlay;!,!,!;!";
+static const char _data_FX_MODE_SCAN[] = "Scan@!,# of dots,,,,,Overlay;!,!,!;!";
 
 
 /*
@@ -500,7 +500,7 @@ static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots,,,,,Overlay;!
 void mode_dual_scan(void) {
   scan(true);
 }
-static const char _data_FX_MODE_DUAL_SCAN[] PROGMEM = "Scan Dual@!,# of dots,,,,,Overlay;!,!,!;!";
+static const char _data_FX_MODE_DUAL_SCAN[] = "Scan Dual@!,# of dots,,,,,Overlay;!,!,!;!";
 
 
 /*
@@ -516,7 +516,7 @@ void mode_rainbow(void) {
     SEGMENT.fill(SEGMENT.color_wheel(counter));
   }
 }
-static const char _data_FX_MODE_RAINBOW[] PROGMEM = "Colorloop@!,Saturation;;!;01";
+static const char _data_FX_MODE_RAINBOW[] = "Colorloop@!,Saturation;;!;01";
 
 
 /*
@@ -532,7 +532,7 @@ void mode_rainbow_cycle(void) {
     SEGMENT.setPixelColor(i, SEGMENT.color_wheel(index));
   }
 }
-static const char _data_FX_MODE_RAINBOW_CYCLE[] PROGMEM = "Rainbow@!,Size;;!";
+static const char _data_FX_MODE_RAINBOW_CYCLE[] = "Rainbow@!,Size;;!";
 
 
 /*
@@ -570,7 +570,7 @@ static void running(uint32_t color1, uint32_t color2, bool theatre = false) {
 void mode_theater_chase(void) {
   running(SEGCOLOR(0), SEGCOLOR(1), true);
 }
-static const char _data_FX_MODE_THEATER_CHASE[] PROGMEM = "Theater@!,Gap size;!,!;!";
+static const char _data_FX_MODE_THEATER_CHASE[] = "Theater@!,Gap size;!,!;!";
 
 
 /*
@@ -580,7 +580,7 @@ static const char _data_FX_MODE_THEATER_CHASE[] PROGMEM = "Theater@!,Gap size;!,
 void mode_theater_chase_rainbow(void) {
   running(SEGMENT.color_wheel(SEGENV.step), SEGCOLOR(1), true);
 }
-static const char _data_FX_MODE_THEATER_CHASE_RAINBOW[] PROGMEM = "Theater Rainbow@!,Gap size;,!;!";
+static const char _data_FX_MODE_THEATER_CHASE_RAINBOW[] = "Theater Rainbow@!,Gap size;,!;!";
 
 
 /*
@@ -622,7 +622,7 @@ static void running_base(bool saw, bool dual=false) {
 void mode_running_dual(void) {
   running_base(false, true);
 }
-static const char _data_FX_MODE_RUNNING_DUAL[] PROGMEM = "Running Dual@!,Wave width;L,!,R;!";
+static const char _data_FX_MODE_RUNNING_DUAL[] = "Running Dual@!,Wave width;L,!,R;!";
 
 
 /*
@@ -631,7 +631,7 @@ static const char _data_FX_MODE_RUNNING_DUAL[] PROGMEM = "Running Dual@!,Wave wi
 void mode_running_lights(void) {
   running_base(false);
 }
-static const char _data_FX_MODE_RUNNING_LIGHTS[] PROGMEM = "Running@!,Wave width;!,!;!";
+static const char _data_FX_MODE_RUNNING_LIGHTS[] = "Running@!,Wave width;!,!;!";
 
 
 /*
@@ -640,7 +640,7 @@ static const char _data_FX_MODE_RUNNING_LIGHTS[] PROGMEM = "Running@!,Wave width
 void mode_saw(void) {
   running_base(true);
 }
-static const char _data_FX_MODE_SAW[] PROGMEM = "Saw@!,Width;!,!;!";
+static const char _data_FX_MODE_SAW[] = "Saw@!,Width;!,!;!";
 
 
 /*
@@ -674,7 +674,7 @@ void mode_twinkle(void) {
     SEGMENT.setPixelColor(j, SEGMENT.color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
   }
 }
-static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!,!;!,!;!;;m12=0"; //pixels
+static const char _data_FX_MODE_TWINKLE[] = "Twinkle@!,!;!,!;!;;m12=0"; //pixels
 
 
 /*
@@ -739,7 +739,7 @@ void dissolve(uint32_t color) {
 void mode_dissolve(void) {
   dissolve(SEGMENT.check1 ? SEGMENT.color_wheel(hw_random8()) : SEGCOLOR(0));
 }
-static const char _data_FX_MODE_DISSOLVE[] PROGMEM = "Dissolve@Repeat speed,Dissolve speed,,,,Random,Complete;!,!;!";
+static const char _data_FX_MODE_DISSOLVE[] = "Dissolve@Repeat speed,Dissolve speed,,,,Random,Complete;!,!;!";
 
 
 /*
@@ -748,7 +748,7 @@ static const char _data_FX_MODE_DISSOLVE[] PROGMEM = "Dissolve@Repeat speed,Diss
 void mode_dissolve_random(void) {
   dissolve(SEGMENT.color_wheel(hw_random8()));
 }
-static const char _data_FX_MODE_DISSOLVE_RANDOM[] PROGMEM = "Dissolve Rnd@Repeat speed,Dissolve speed;,!;!";
+static const char _data_FX_MODE_DISSOLVE_RANDOM[] = "Dissolve Rnd@Repeat speed,Dissolve speed;,!;!";
 
 /*
  * Blinks one LED at a time.
@@ -768,7 +768,7 @@ void mode_sparkle(void) {
 
   SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
 }
-static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,,,,,,Overlay;!,!;!;;m12=0";
+static const char _data_FX_MODE_SPARKLE[] = "Sparkle@!,,,,,,Overlay;!,!;!;;m12=0";
 
 /*
  * Lights all LEDs in the color. Flashes single col 1 pixels randomly. (List name: Sparkle Dark)
@@ -787,7 +787,7 @@ void mode_flash_sparkle(void) {
     SEGENV.aux0 = 255-SEGMENT.speed;
   }
 }
-static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
+static const char _data_FX_MODE_FLASH_SPARKLE[] = "Sparkle Dark@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
 
 
 /*
@@ -810,7 +810,7 @@ void mode_hyper_sparkle(void) {
     SEGENV.aux0 = 255-SEGMENT.speed;
   }
 }
-static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
+static const char _data_FX_MODE_HYPER_SPARKLE[] = "Sparkle+@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
 
 
 /*
@@ -838,7 +838,7 @@ void mode_multi_strobe(void) {
     SEGENV.step = strip.now;
   }
 }
-static const char _data_FX_MODE_MULTI_STROBE[] PROGMEM = "Strobe Mega@!,!;!,!;!;01";
+static const char _data_FX_MODE_MULTI_STROBE[] = "Strobe Mega@!,!;!,!;!;01";
 
 
 /*
@@ -878,7 +878,7 @@ void mode_android(void) {
       SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
   }
 }
-static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!,!;!;;m12=1"; //vertical
+static const char _data_FX_MODE_ANDROID[] = "Android@!,Width;!,!;!;;m12=1"; //vertical
 
 /*
  * color chase function.
@@ -956,7 +956,7 @@ static void chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do_pal
 void mode_chase_color(void) {
   chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
-static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
+static const char _data_FX_MODE_CHASE_COLOR[] = "Chase@!,Width;!,!,!;!";
 
 
 /*
@@ -965,7 +965,7 @@ static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
 void mode_chase_random(void) {
   chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), false);
 }
-static const char _data_FX_MODE_CHASE_RANDOM[] PROGMEM = "Chase Random@!,Width;!,,!;!";
+static const char _data_FX_MODE_CHASE_RANDOM[] = "Chase Random@!,Width;!,,!;!";
 
 
 /*
@@ -979,7 +979,7 @@ void mode_chase_rainbow(void) {
 
   chase(color, SEGCOLOR(0), SEGCOLOR(1), false);
 }
-static const char _data_FX_MODE_CHASE_RAINBOW[] PROGMEM = "Chase Rainbow@!,Width;!,!;!";
+static const char _data_FX_MODE_CHASE_RAINBOW[] = "Chase Rainbow@!,Width;!,!;!";
 
 
 /*
@@ -993,7 +993,7 @@ void mode_chase_rainbow_white(void) {
 
   chase(SEGCOLOR(0), color2, color3, false);
 }
-static const char _data_FX_MODE_CHASE_RAINBOW_WHITE[] PROGMEM = "Rainbow Runner@!,Size;Bg;!";
+static const char _data_FX_MODE_CHASE_RAINBOW_WHITE[] = "Rainbow Runner@!,Size;Bg;!";
 
 
 /*
@@ -1036,7 +1036,7 @@ void mode_colorful(void) {
     for (unsigned j = 0; j < numColors; j++) SEGMENT.setPixelColor(i + j, cols[SEGENV.aux0 + j]);
   }
 }
-static const char _data_FX_MODE_COLORFUL[] PROGMEM = "Colorful@!,Saturation;1,2,3;!";
+static const char _data_FX_MODE_COLORFUL[] = "Colorful@!,Saturation;1,2,3;!";
 
 
 /*
@@ -1066,7 +1066,7 @@ void mode_traffic_light(void) {
     SEGENV.step = strip.now;
   }
 }
-static const char _data_FX_MODE_TRAFFIC_LIGHT[] PROGMEM = "Traffic Light@!,US style;,!;!";
+static const char _data_FX_MODE_TRAFFIC_LIGHT[] = "Traffic Light@!,US style;,!;!";
 
 
 /*
@@ -1105,7 +1105,7 @@ void mode_chase_flash(void) {
   if (advance)
     SEGENV.step = now + delay; // set next update time
 }
-static const char _data_FX_MODE_CHASE_FLASH[] PROGMEM = "Chase Flash@!;Bg,Fx;!";
+static const char _data_FX_MODE_CHASE_FLASH[] = "Chase Flash@!;Bg,Fx;!";
 
 
 /*
@@ -1148,7 +1148,7 @@ void mode_chase_flash_random(void) {
   if (advance)
     SEGENV.step = now + delay; // set next update time
 }
-static const char _data_FX_MODE_CHASE_FLASH_RANDOM[] PROGMEM = "Chase Flash Rnd@!;!,!;!";
+static const char _data_FX_MODE_CHASE_FLASH_RANDOM[] = "Chase Flash Rnd@!;!,!;!";
 
 
 /*
@@ -1157,7 +1157,7 @@ static const char _data_FX_MODE_CHASE_FLASH_RANDOM[] PROGMEM = "Chase Flash Rnd@
 void mode_running_color(void) {
   running(SEGCOLOR(0), SEGCOLOR(1));
 }
-static const char _data_FX_MODE_RUNNING_COLOR[] PROGMEM = "Chase 2@!,Width;!,!;!";
+static const char _data_FX_MODE_RUNNING_COLOR[] = "Chase 2@!,Width;!,!;!";
 
 
 /*
@@ -1193,7 +1193,7 @@ void mode_running_random(void) {
 
   SEGENV.aux1 = it;
 }
-static const char _data_FX_MODE_RUNNING_RANDOM[] PROGMEM = "Stream@!,Zone size;;!";
+static const char _data_FX_MODE_RUNNING_RANDOM[] = "Stream@!,Zone size;;!";
 
 
 /*
@@ -1240,7 +1240,7 @@ void mode_larson_scanner(void) {
     SEGENV.aux1 = index;
   }
 }
-static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
+static const char _data_FX_MODE_LARSON_SCANNER[] = "Scanner@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
 
 /*
  * Creates two Larson scanners moving in opposite directions
@@ -1250,7 +1250,7 @@ void mode_dual_larson_scanner(void){
   SEGMENT.check1 = true;
   mode_larson_scanner();
 }
-static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
+static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] = "Scanner Dual@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
 
 /*
  * Firing comets from one end. "Lighthouse"
@@ -1275,7 +1275,7 @@ void mode_comet(void) {
   }
   SEGENV.aux0 = index++;
 }
-static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!";
+static const char _data_FX_MODE_COMET[] = "Lighthouse@!,Fade rate;!,!;!";
 
 /*
  * Fireworks function.
@@ -1317,7 +1317,7 @@ void mode_fireworks() {
     }
   }
 }
-static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
+static const char _data_FX_MODE_FIREWORKS[] = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 void mode_rain() {
@@ -1351,7 +1351,7 @@ void mode_rain() {
   }
   mode_fireworks();
 }
-static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!,!;!;12;ix=128,pal=0";
+static const char _data_FX_MODE_RAIN[] = "Rain@!,Spawning rate;!,!;!;12;ix=128,pal=0";
 
 /*
  * Fire flicker function
@@ -1378,7 +1378,7 @@ void mode_fire_flicker(void) {
 
   SEGENV.step = it;
 }
-static const char _data_FX_MODE_FIRE_FLICKER[] PROGMEM = "Fire Flicker@!,!;!;!;01";
+static const char _data_FX_MODE_FIRE_FLICKER[] = "Fire Flicker@!,!;!;!;01";
 
 
 /*
@@ -1413,7 +1413,7 @@ void gradient_base(bool loading) {
 void mode_gradient(void) {
   gradient_base(false);
 }
-static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!,!;!;;ix=16";
+static const char _data_FX_MODE_GRADIENT[] = "Gradient@!,Spread;!,!;!;;ix=16";
 
 
 /*
@@ -1422,7 +1422,7 @@ static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!,!;!;;i
 void mode_loading(void) {
   gradient_base(true);
 }
-static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade;!,!;!;;ix=16";
+static const char _data_FX_MODE_LOADING[] = "Loading@!,Fade;!,!;!;;ix=16";
 
 /*
  * Two dots running
@@ -1444,7 +1444,7 @@ void mode_two_dots() {
     SEGMENT.setPixelColor(indexB, color2);
   }
 }
-static const char _data_FX_MODE_TWO_DOTS[] PROGMEM = "Two Dots@!,Dot size,,,,,Overlay;1,2,Bg;!";
+static const char _data_FX_MODE_TWO_DOTS[] = "Two Dots@!,Dot size,,,,,Overlay;1,2,Bg;!";
 
 
 /*
@@ -1530,7 +1530,7 @@ void mode_fairy() {
     }
   }
 }
-static const char _data_FX_MODE_FAIRY[] PROGMEM = "Fairy@!,# of flashers;!,!;!";
+static const char _data_FX_MODE_FAIRY[] = "Fairy@!,# of flashers;!,!;!";
 
 
 /*
@@ -1579,7 +1579,7 @@ void mode_fairytwinkle() {
     SEGMENT.setPixelColor(f, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0), flasherBri));
   }
 }
-static const char _data_FX_MODE_FAIRYTWINKLE[] PROGMEM = "Fairytwinkle@!,!;!,!;!;;m12=0"; //pixels
+static const char _data_FX_MODE_FAIRYTWINKLE[] = "Fairytwinkle@!,!;!,!;!;;m12=0"; //pixels
 
 
 /*
@@ -1609,7 +1609,7 @@ void tricolor_chase(uint32_t color1, uint32_t color2) {
 void mode_tricolor_chase(void) {
   tricolor_chase(SEGCOLOR(2), SEGCOLOR(0));
 }
-static const char _data_FX_MODE_TRICOLOR_CHASE[] PROGMEM = "Chase 3@!,Size;1,2,3;!";
+static const char _data_FX_MODE_TRICOLOR_CHASE[] = "Chase 3@!,Size;1,2,3;!";
 
 
 /*
@@ -1681,7 +1681,7 @@ void mode_icu(void) {
   // use upper bits of SEGENV.step to store current state, lower bits for next update time
   SEGENV.step = (state << 16) | nextUpdate;
 }
-static const char _data_FX_MODE_ICU[] PROGMEM = "ICU@!,!,,,,,Overlay;!,!;!";
+static const char _data_FX_MODE_ICU[] = "ICU@!,!,,,,,Overlay;!,!;!";
 
 
 /*
@@ -1719,7 +1719,7 @@ void mode_tricolor_wipe(void) {
     }
   }
 }
-static const char _data_FX_MODE_TRICOLOR_WIPE[] PROGMEM = "Tri Wipe@!;1,2,3;!";
+static const char _data_FX_MODE_TRICOLOR_WIPE[] = "Tri Wipe@!;1,2,3;!";
 
 
 /*
@@ -1761,7 +1761,7 @@ void mode_tricolor_fade(void) {
     SEGMENT.setPixelColor(i, color);
   }
 }
-static const char _data_FX_MODE_TRICOLOR_FADE[] PROGMEM = "Tri Fade@!;1,2,3;!";
+static const char _data_FX_MODE_TRICOLOR_FADE[] = "Tri Fade@!;1,2,3;!";
 
 /*
  * Creates random comets
@@ -1798,7 +1798,7 @@ void mode_multi_comet(void) {
 
   SEGENV.step = it;
 }
-static const char _data_FX_MODE_MULTI_COMET[] PROGMEM = "Multi Comet@!,Fade;!,!;!;1";
+static const char _data_FX_MODE_MULTI_COMET[] = "Multi Comet@!,Fade;!,!;!;1";
 #undef MAX_COMETS
 
 /*
@@ -1832,7 +1832,7 @@ void mode_random_chase(void) {
 
   prng.setSeed(prevSeed); // restore original seed so other effects can use "random" PRNG
 }
-static const char _data_FX_MODE_RANDOM_CHASE[] PROGMEM = "Stream 2@!;;";
+static const char _data_FX_MODE_RANDOM_CHASE[] = "Stream 2@!;;";
 
 
 //7 bytes
@@ -1893,7 +1893,7 @@ void mode_oscillate(void) {
 
   SEGENV.step = it;
 }
-static const char _data_FX_MODE_OSCILLATE[] PROGMEM = "Oscillate";
+static const char _data_FX_MODE_OSCILLATE[] = "Oscillate";
 
 
 void mode_lightning(void) {
@@ -1935,7 +1935,7 @@ void mode_lightning(void) {
     }
   }
 }
-static const char _data_FX_MODE_LIGHTNING[] PROGMEM = "Lightning@!,!,,,,,Overlay;!,!;!";
+static const char _data_FX_MODE_LIGHTNING[] = "Lightning@!,!,,,,,Overlay;!,!;!";
 
 // combined function from original pride and colorwaves
 void mode_colorwaves_pride_base(bool isPride2015) {
@@ -1992,7 +1992,7 @@ void mode_colorwaves_pride_base(bool isPride2015) {
 void mode_pride_2015(void) {
   mode_colorwaves_pride_base(true);
 }
-static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
+static const char _data_FX_MODE_PRIDE_2015[] = "Pride 2015@!;;";
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
 // This function draws color waves with an ever-changing,
@@ -2000,7 +2000,7 @@ static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 void mode_colorwaves() {
   mode_colorwaves_pride_base(false);
 }
-static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!;;pal=26";
+static const char _data_FX_MODE_COLORWAVES[] = "Colorwaves@!,Hue;!;!;;pal=26";
 
 
 //eight colored dots, weaving in and out of sync with each other
@@ -2018,7 +2018,7 @@ void mode_juggle(void) {
     dothue += 32;
   }
 }
-static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=128";
+static const char _data_FX_MODE_JUGGLE[] = "Juggle@!,Trail;;!;;sx=64,ix=128";
 
 
 void mode_palette() {
@@ -2104,7 +2104,7 @@ void mode_palette() {
     }
   }
 }
-static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
+static const char _data_FX_MODE_PALETTE[] = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
 
 #if defined(WLED_PS_DONT_REPLACE_1D_FX) || defined(WLED_PS_DONT_REPLACE_2D_FX)
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
@@ -2190,7 +2190,7 @@ void mode_fire_2012() {
   if (it != SEGENV.step)
     SEGENV.step = it;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;pal=35,sx=64,ix=160,m12=1,c2=128"; // bars
+static const char _data_FX_MODE_FIRE_2012[] = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;pal=35,sx=64,ix=160,m12=1,c2=128"; // bars
 #endif // WLED_PS_DONT_REPLACE_x_FX
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2201,7 +2201,7 @@ void mode_bpm() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(stp + (i * 2), false, PALETTE_SOLID_WRAP, 0, beat - stp + (i * 10)));
   }
 }
-static const char _data_FX_MODE_BPM[] PROGMEM = "Bpm@!;!;!;;sx=64";
+static const char _data_FX_MODE_BPM[] = "Bpm@!;!;!;;sx=64";
 
 
 void mode_fillnoise8() {
@@ -2212,7 +2212,7 @@ void mode_fillnoise8() {
   }
   SEGENV.step += beatsin8_t(SEGMENT.speed, 1, 6); //10,1,4
 }
-static const char _data_FX_MODE_FILLNOISE8[] PROGMEM = "Fill Noise@!;!;!";
+static const char _data_FX_MODE_FILLNOISE8[] = "Fill Noise@!;!;!";
 
 
 void mode_noise16_1() {
@@ -2231,7 +2231,7 @@ void mode_noise16_1() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
   }
 }
-static const char _data_FX_MODE_NOISE16_1[] PROGMEM = "Noise 1@!;!;!;;pal=20";
+static const char _data_FX_MODE_NOISE16_1[] = "Noise 1@!;!;!;;pal=20";
 
 
 void mode_noise16_2() {
@@ -2247,7 +2247,7 @@ void mode_noise16_2() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 }
-static const char _data_FX_MODE_NOISE16_2[] PROGMEM = "Noise 2@!;!;!;;pal=43";
+static const char _data_FX_MODE_NOISE16_2[] = "Noise 2@!;!;!;;pal=43";
 
 
 void mode_noise16_3() {
@@ -2266,7 +2266,7 @@ void mode_noise16_3() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 }
-static const char _data_FX_MODE_NOISE16_3[] PROGMEM = "Noise 3@!;!;!;;pal=35";
+static const char _data_FX_MODE_NOISE16_3[] = "Noise 3@!;!;!;;pal=35";
 
 
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
@@ -2277,7 +2277,7 @@ void mode_noise16_4() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
   }
 }
-static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!;!;!;;pal=26";
+static const char _data_FX_MODE_NOISE16_4[] = "Noise 4@!;!;!;;pal=26";
 
 
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
@@ -2333,7 +2333,7 @@ void mode_colortwinkle() {
     }
   }
 }
-static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;;!;;m12=0"; //pixels
+static const char _data_FX_MODE_COLORTWINKLE[] = "Colortwinkles@Fade speed,Spawn speed;;!;;m12=0"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2350,7 +2350,7 @@ void mode_lake() {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, false, 0, lum));
   }
 }
-static const char _data_FX_MODE_LAKE[] PROGMEM = "Lake@!;Fx;!";
+static const char _data_FX_MODE_LAKE[] = "Lake@!;Fx;!";
 
 
 // meteor effect & meteor smooth (merged by @dedehai)
@@ -2420,7 +2420,7 @@ void mode_meteor() {
 
   SEGENV.step += SEGMENT.speed +1;
 }
-static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail,,,,Gradient,,Smooth;;!;1";
+static const char _data_FX_MODE_METEOR[] = "Meteor@!,Trail,,,,Gradient,,Smooth;;!;1";
 
 
 //Railway Crossing / Christmas Fairy lights
@@ -2451,7 +2451,7 @@ void mode_railway() {
   }
   SEGENV.step += FRAMETIME;
 }
-static const char _data_FX_MODE_RAILWAY[] PROGMEM = "Railway@!,Smoothness;1,2;!;;pal=3";
+static const char _data_FX_MODE_RAILWAY[] = "Railway@!,Smoothness;1,2;!;;pal=3";
 
 
 //Water ripple
@@ -2529,7 +2529,7 @@ void mode_ripple(void) {
 
   ripple_base(SEGMENT.custom1>>1);
 }
-static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,Blur,,,,Overlay;,!;!;12;c1=0";
+static const char _data_FX_MODE_RIPPLE[] = "Ripple@!,Wave #,Blur,,,,Overlay;,!;!;12;c1=0";
 
 
 void mode_ripple_rainbow(void) {
@@ -2548,7 +2548,7 @@ void mode_ripple_rainbow(void) {
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux0),BLACK,uint8_t(235)));
   ripple_base();
 }
-static const char _data_FX_MODE_RIPPLE_RAINBOW[] PROGMEM = "Ripple Rainbow@!,Wave #;;!;12";
+static const char _data_FX_MODE_RIPPLE_RAINBOW[] = "Ripple Rainbow@!,Wave #;;!;12";
 
 
 //  TwinkleFOX by Mark Kriegsman: https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
@@ -2680,14 +2680,14 @@ void mode_twinklefox()
 {
   twinklefox_base(false);
 }
-static const char _data_FX_MODE_TWINKLEFOX[] PROGMEM = "Twinklefox@!,Twinkle rate,,,,Cool;!,!;!";
+static const char _data_FX_MODE_TWINKLEFOX[] = "Twinklefox@!,Twinkle rate,,,,Cool;!,!;!";
 
 
 void mode_twinklecat()
 {
   twinklefox_base(true);
 }
-static const char _data_FX_MODE_TWINKLECAT[] PROGMEM = "Twinklecat@!,Twinkle rate,,,,Cool,Reverse;!,!;!";
+static const char _data_FX_MODE_TWINKLECAT[] = "Twinklecat@!,Twinkle rate,,,,Cool,Reverse;!,!;!";
 
 
 void mode_halloween_eyes()
@@ -2842,7 +2842,7 @@ void mode_halloween_eyes()
     data.startTime = strip.now;
   }
 }
-static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Eye off time,Eye on time,,,,,Overlay;!,!;!;12";
+static const char _data_FX_MODE_HALLOWEEN_EYES[] = "Halloween Eyes@Eye off time,Eye on time,,,,,Overlay;!,!;!;12";
 
 
 //Speed slider sets amount of LEDs lit, intensity sets unlit
@@ -2862,7 +2862,7 @@ void mode_static_pattern()
     }
   }
 }
-static const char _data_FX_MODE_STATIC_PATTERN[] PROGMEM = "Solid Pattern@Fg size,Bg size;Fg,!;!;;pal=0";
+static const char _data_FX_MODE_STATIC_PATTERN[] = "Solid Pattern@Fg size,Bg size;Fg,!;!;;pal=0";
 
 
 void mode_tri_static_pattern()
@@ -2886,7 +2886,7 @@ void mode_tri_static_pattern()
     }
   }
 }
-static const char _data_FX_MODE_TRI_STATIC_PATTERN[] PROGMEM = "Solid Pattern Tri@,Size;1,2,3;;;pal=0";
+static const char _data_FX_MODE_TRI_STATIC_PATTERN[] = "Solid Pattern Tri@,Size;1,2,3;;;pal=0";
 
 
 static void spots_base(uint16_t threshold)
@@ -2920,7 +2920,7 @@ void mode_spots()
 {
   spots_base((255 - SEGMENT.speed) << 8);
 }
-static const char _data_FX_MODE_SPOTS[] PROGMEM = "Spots@Spread,Width,,,,,Overlay;!,!;!";
+static const char _data_FX_MODE_SPOTS[] = "Spots@Spread,Width,,,,,Overlay;!,!;!";
 
 
 //Intensity slider sets number of "lights", LEDs per light fade in and out
@@ -2931,7 +2931,7 @@ void mode_spots_fade()
   unsigned tr = (t >> 1) + (t >> 2);
   spots_base(tr);
 }
-static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
+static const char _data_FX_MODE_SPOTS_FADE[] = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
 
 //each needs 12 bytes
 typedef struct Ball {
@@ -3012,7 +3012,7 @@ void mode_bouncing_balls(void) {
   for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &balls[stripNr * maxNumBalls]);
 }
-static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
+static const char _data_FX_MODE_BOUNCINGBALLS[] = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
 
 #ifdef WLED_PS_DONT_REPLACE_1D_FX
 /*
@@ -3111,7 +3111,7 @@ static void mode_rolling_balls(void) {
     balls[i].height = thisHeight;
   }
 }
-static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collide,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
+static const char _data_FX_MODE_ROLLINGBALLS[] = "Rolling Balls@!,# of balls,,,,Collide,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
 #endif // WLED_PS_DONT_REPLACE_1D_FX
 
 
@@ -3306,7 +3306,7 @@ static void mode_pacman(void) {
 
   SEGMENT.blur(SEGMENT.custom2>>1);
 }
-static const char _data_FX_MODE_PACMAN[] PROGMEM = "PacMan@Speed,# of PowerDots,Blink distance,Blur,# of Ghosts,Dots,Smear,Compact;;!;1;m12=0,sx=192,ix=64,c1=64,c2=0,c3=12,o1=1,o2=0";
+static const char _data_FX_MODE_PACMAN[] = "PacMan@Speed,# of PowerDots,Blink distance,Blur,# of Ghosts,Dots,Smear,Compact;;!;1;m12=0,sx=192,ix=64,c1=64,c2=0,c3=12,o1=1,o2=0";
 
 
 /*
@@ -3348,19 +3348,19 @@ static void sinelon_base(bool dual, bool rainbow=false) {
 void mode_sinelon(void) {
   sinelon_base(false);
 }
-static const char _data_FX_MODE_SINELON[] PROGMEM = "Sinelon@!,Trail;!,!,!;!";
+static const char _data_FX_MODE_SINELON[] = "Sinelon@!,Trail;!,!,!;!";
 
 
 void mode_sinelon_dual(void) {
   sinelon_base(true);
 }
-static const char _data_FX_MODE_SINELON_DUAL[] PROGMEM = "Sinelon Dual@!,Trail;!,!,!;!";
+static const char _data_FX_MODE_SINELON_DUAL[] = "Sinelon Dual@!,Trail;!,!,!;!";
 
 
 void mode_sinelon_rainbow(void) {
   sinelon_base(false, true);
 }
-static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,Trail;,,!;!";
+static const char _data_FX_MODE_SINELON_RAINBOW[] = "Sinelon Rainbow@!,Trail;,,!;!";
 
 // utility function that will add random glitter to SEGMENT
 void glitter_base(uint8_t intensity, uint32_t col = ULTRAWHITE) {
@@ -3386,7 +3386,7 @@ void mode_glitter()
   }
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=11,m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=11,m12=0"; //pixels
 
 
 //Solid colour background with glitter (can be replaced by Glitter)
@@ -3395,7 +3395,7 @@ void mode_solid_glitter()
   SEGMENT.fill(SEGCOLOR(0));
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
 }
-static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;Bg,,Glitter color;;;m12=0";
+static const char _data_FX_MODE_SOLID_GLITTER[] = "Solid Glitter@,!;Bg,,Glitter color;;;m12=0";
 
 //each needs 20 bytes
 //Spark type is used for popcorn, 1D fireworks, and drip
@@ -3468,7 +3468,7 @@ void mode_popcorn(void) {
   for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &popcorn[stripNr * usablePopcorns], usablePopcorns);
 }
-static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
+static const char _data_FX_MODE_POPCORN[] = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -3559,14 +3559,14 @@ void mode_candle()
 {
   candle(false);
 }
-static const char _data_FX_MODE_CANDLE[] PROGMEM = "Candle@!,!;!,!;!;01;sx=96,ix=224,pal=0";
+static const char _data_FX_MODE_CANDLE[] = "Candle@!,!;!,!;!;01;sx=96,ix=224,pal=0";
 
 
 void mode_candle_multi()
 {
   candle(true);
 }
-static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@!,!;!,!;!;;sx=96,ix=224,pal=0";
+static const char _data_FX_MODE_CANDLE_MULTI[] = "Candle Multi@!,!;!,!;!;;sx=96,ix=224,pal=0";
 
 #ifdef WLED_PS_DONT_REPLACE_1D_FX
 /*
@@ -3695,7 +3695,7 @@ void mode_starburst(void) {
   }
 }
 #undef STARBURST_MAX_FRAG
-static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
+static const char _data_FX_MODE_STARBURST[] = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
 #endif // WLED_PS_DONT_REPLACE_1DFX
 
 #if defined(WLED_PS_DONT_REPLACE_1D_FX) || defined(WLED_PS_DONT_REPLACE_2D_FX)
@@ -3833,7 +3833,7 @@ void mode_exploding_fireworks(void)
   }
 }
 #undef MAX_SPARKS
-static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!;!;12;pal=11,ix=128";
+static const char _data_FX_MODE_EXPLODING_FIREWORKS[] = "Fireworks 1D@Gravity,Firing side;!,!;!;12;pal=11,ix=128";
 #endif // WLED_PS_DONT_REPLACE_x_FX
 
 /*
@@ -3918,7 +3918,7 @@ void mode_drip(void)
   for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &drops[stripNr*maxNumDrops]);
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
+static const char _data_FX_MODE_DRIP[] = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
 
 /*
  * Tetris or Stacking (falling bricks) Effect
@@ -4006,7 +4006,7 @@ void mode_tetrix(void) {
   for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &drops[stripNr]);
 }
-static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width,,,,One color;!,!;!;;sx=0,ix=0,pal=11,m12=1";
+static const char _data_FX_MODE_TETRIX[] = "Tetrix@!,Width,,,,One color;!,!;!;;sx=0,ix=0,pal=11,m12=1";
 
 
 /*
@@ -4028,7 +4028,7 @@ void mode_plasma(void) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0, thisBright));
   }
 }
-static const char _data_FX_MODE_PLASMA[] PROGMEM = "Plasma@Phase,!;!;!";
+static const char _data_FX_MODE_PLASMA[] = "Plasma@Phase,!;!;!";
 
 
 /*
@@ -4079,7 +4079,7 @@ void mode_percent(void) {
     if (SEGENV.aux1 < active_leds) SEGENV.aux1 = active_leds;
   }
 }
-static const char _data_FX_MODE_PERCENT[] PROGMEM = "Percent@!,% of fill,,,,One color;!,!;!";
+static const char _data_FX_MODE_PERCENT[] = "Percent@!,% of fill,,,,One color;!,!;!";
 
 
 /*
@@ -4110,7 +4110,7 @@ void mode_heartbeat(void) {
     SEGMENT.setPixelColor(i, color_blend(SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), uint8_t(255 - (SEGENV.aux1 >> 8))));
   }
 }
-static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!,!;!,!;!;01;m12=1";
+static const char _data_FX_MODE_HEARTBEAT[] = "Heartbeat@!,!;!,!;!;01;m12=1";
 
 
 //  "Pacifica"
@@ -4226,7 +4226,7 @@ void mode_pacifica()
 
   strip.now = nowOld;
 }
-static const char _data_FX_MODE_PACIFICA[] PROGMEM = "Pacifica@!,Angle;;!;;pal=51";
+static const char _data_FX_MODE_PACIFICA[] = "Pacifica@!,Angle;;!;;pal=51";
 
 
 /*
@@ -4275,7 +4275,7 @@ void mode_sunrise() {
     SEGMENT.setPixelColor(SEGLEN - i - 1, c);
   }
 }
-static const char _data_FX_MODE_SUNRISE[] PROGMEM = "Sunrise@Time [min],Width;;!;;pal=35,sx=60";
+static const char _data_FX_MODE_SUNRISE[] = "Sunrise@Time [min],Width;;!;;pal=35,sx=60";
 
 
 /*
@@ -4308,13 +4308,13 @@ static void phased_base(uint8_t moder) {                  // We're making sine w
 void mode_phased(void) {
   phased_base(0);
 }
-static const char _data_FX_MODE_PHASED[] PROGMEM = "Phased@!,!;!,!;!";
+static const char _data_FX_MODE_PHASED[] = "Phased@!,!;!,!;!";
 
 
 void mode_phased_noise(void) {
   phased_base(1);
 }
-static const char _data_FX_MODE_PHASEDNOISE[] PROGMEM = "Phased Noise@!,!;!,!;!";
+static const char _data_FX_MODE_PHASEDNOISE[] = "Phased Noise@!,!;!,!;!";
 
 
 void mode_twinkleup(void) {                     // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
@@ -4330,7 +4330,7 @@ void mode_twinkleup(void) {                     // A very short twinkle routine 
 
   prng.setSeed(prevSeed);                       // restore original seed so other effects can use "random" PRNG
 }
-static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!;!;;m12=0";
+static const char _data_FX_MODE_TWINKLEUP[] = "Twinkleup@!,Intensity;!,!;!;;m12=0";
 
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
@@ -4365,7 +4365,7 @@ void mode_noisepal(void) {                                    // Slow noise pale
 
   SEGENV.aux0 += beatsin8_t(10,1,4);                                        // Moving along the distance. Vary it a bit with a sine wave.
 }
-static const char _data_FX_MODE_NOISEPAL[] PROGMEM = "Noise Pal@!,Scale;;!";
+static const char _data_FX_MODE_NOISEPAL[] = "Noise Pal@!,Scale;;!";
 
 
 // Sine waves that have controllable phase change speed, frequency and cutoff. By Andrew Tuline.
@@ -4385,7 +4385,7 @@ void mode_sinewave(void) {             // Adjustable sinewave. By Andrew Tuline
     SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*colorIndex/255, false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
 }
-static const char _data_FX_MODE_SINEWAVE[] PROGMEM = "Sine@!,Scale;;!";
+static const char _data_FX_MODE_SINEWAVE[] = "Sine@!,Scale;;!";
 
 
 /*
@@ -4421,7 +4421,7 @@ void mode_flow(void)
     }
   }
 }
-static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,Zones;;!;;m12=1"; //vertical
+static const char _data_FX_MODE_FLOW[] = "Flow@!,Zones;;!;;m12=1"; //vertical
 
 
 /*
@@ -4445,7 +4445,7 @@ void mode_chunchun(void)
     SEGMENT.setPixelColor(bird, SEGMENT.color_from_palette((i * 255)/ numBirds, false, false, 0)); // no palette wrapping
   }
 }
-static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!";
+static const char _data_FX_MODE_CHUNCHUN[] = "Chunchun@!,Gap size;!,!;!";
 
 #define SPOT_TYPE_SOLID       0
 #define SPOT_TYPE_GRADIENT    1
@@ -4587,7 +4587,7 @@ void mode_dancing_shadows(void)
     }
   }
 }
-static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!;!";
+static const char _data_FX_MODE_DANCING_SHADOWS[] = "Dancing Shadows@!,# of shadows;!;!";
 #endif // WLED_PS_DONT_REPLACE_1D_FX
 
 /*
@@ -4604,7 +4604,7 @@ void mode_washing_machine(void) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
   }
 }
-static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!;;!";
+static const char _data_FX_MODE_WASHING_MACHINE[] = "Washing Machine@!,!;;!";
 
 
 /*
@@ -4622,7 +4622,7 @@ void mode_image(void) {
   //   Serial.println(status);
   // }
 }
-static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,Blur,;;;12;sx=128,ix=0";
+static const char _data_FX_MODE_IMAGE[] = "Image@!,Blur,;;;12;sx=128,ix=0";
 
 /*
   Blends random colors across palette
@@ -4647,7 +4647,7 @@ void mode_blends(void) {
     if (offset >= pixelLen) offset = 0;
   }
 }
-static const char _data_FX_MODE_BLENDS[] PROGMEM = "Blends@Shift speed,Blend speed;;!";
+static const char _data_FX_MODE_BLENDS[] = "Blends@Shift speed,Blend speed;;!";
 
 
 /*
@@ -4774,7 +4774,7 @@ void mode_tv_simulator(void) {
     SEGENV.aux0 = 0;
   }
 }
-static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;!;01";
+static const char _data_FX_MODE_TV_SIMULATOR[] = "TV Simulator@!,!;;!;01";
 
 
 /*
@@ -4917,7 +4917,7 @@ void mode_aurora(void) {
     SEGMENT.setPixelColor(i, mixedRgb);
   }
 }
-static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!;1,2,3;!;;sx=24,pal=50";
+static const char _data_FX_MODE_AURORA[] = "Aurora@!,!;1,2,3;!;;sx=24,pal=50";
 
 
 /** Softly floating colorful clouds.
@@ -4991,7 +4991,7 @@ void mode_ColorClouds()
     SEGMENT.setPixelColor(i, pixel);
   }
 }
-static const char _data_FX_MODE_COLORCLOUDS[] PROGMEM = "Color Clouds@!,!,Clouds,Colors,Distance,,,Cozy;;!;;sx=24,ix=32,c1=48,c2=64,c3=12,pal=0";
+static const char _data_FX_MODE_COLORCLOUDS[] = "Color Clouds@!,!,Clouds,Colors,Distance,,,Cozy;;!;;sx=24,ix=32,c1=48,c2=64,c3=12,pal=0";
 
 
 // WLED-SR effects
@@ -5010,7 +5010,7 @@ void mode_perlinmove(void) {
     SEGMENT.setPixelColor(pixloc, SEGMENT.color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0));
   }
 } // mode_perlinmove()
-static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,Fade rate;!,!;!";
+static const char _data_FX_MODE_PERLINMOVE[] = "Perlin Move@!,# of pixels,Fade rate;!,!;!";
 
 
 /////////////////////////
@@ -5026,7 +5026,7 @@ void mode_wavesins(void) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, bri));
   }
 } // mode_waveins()
-static const char _data_FX_MODE_WAVESINS[] PROGMEM = "Wavesins@!,Brightness variation,Starting color,Range of colors,Color variation;!;!";
+static const char _data_FX_MODE_WAVESINS[] = "Wavesins@!,Brightness variation,Starting color,Range of colors,Color variation;!;!";
 
 
 //////////////////////////////
@@ -5047,7 +5047,7 @@ void mode_FlowStripe(void) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(b + hue, false, true, 3));
   }
 } // mode_FlowStripe()
-static const char _data_FX_MODE_FLOWSTRIPE[] PROGMEM = "Flow Stripe@Hue speed,Effect speed;;!;pal=11";
+static const char _data_FX_MODE_FLOWSTRIPE[] = "Flow Stripe@Hue speed,Effect speed;;!;pal=11";
 
 /*
   Shimmer effect: moves a gradient with optional modulators across the strip at a given interval, up to 60 seconds
@@ -5118,7 +5118,7 @@ void mode_shimmer() {
     }
   }
 }
-static const char _data_FX_MODE_SHIMMER[] PROGMEM = "Shimmer@Speed,Interval,Size,Granular,Flow,Zebra,Reverse,Sporadic;Fx,Bg,Cx;!;1;pal=15,sx=220,ix=10,c2=0,c3=0";
+static const char _data_FX_MODE_SHIMMER[] = "Shimmer@Speed,Interval,Size,Granular,Flow,Zebra,Reverse,Sporadic;Fx,Bg,Cx;!;1;pal=15,sx=220,ix=10,c2=0,c3=0";
 
 #ifndef WLED_DISABLE_2D
 ///////////////////////////////////////////////////////////////////////////////
@@ -5152,7 +5152,7 @@ void mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmateli
   // blur everything a bit
   if (SEGMENT.check3) SEGMENT.blur(16, cols*rows < 100);
 } // mode_2DBlackHole()
-static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.,Solid,,Blur;!;!;2;pal=11";
+static const char _data_FX_MODE_2DBLACKHOLE[] = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.,Solid,,Blur;!;!;2;pal=11";
 
 
 ////////////////////////////
@@ -5202,7 +5202,7 @@ void mode_2DColoredBursts() {              // By: ldirko   https://editor.soulma
   }
   SEGMENT.blur(SEGMENT.custom3>>1, SEGMENT.check2);
 } // mode_2DColoredBursts()
-static const char _data_FX_MODE_2DCOLOREDBURSTS[] PROGMEM = "Colored Bursts@Speed,# of lines,,,Blur,Gradient,Smear,Dots;;!;2;c3=16";
+static const char _data_FX_MODE_2DCOLOREDBURSTS[] = "Colored Bursts@Speed,# of lines,,,Blur,Gradient,Smear,Dots;;!;2;c3=16";
 
 
 /////////////////////
@@ -5221,7 +5221,7 @@ void mode_2Ddna(void) {         // dna originally by by ldirko at https://pasteb
   }
   SEGMENT.blur(SEGMENT.intensity / (8 - (SEGMENT.check1 * 2)), SEGMENT.check1);
 } // mode_2Ddna()
-static const char _data_FX_MODE_2DDNA[] PROGMEM = "DNA@Scroll speed,Blur,,,,Smear;;!;2;ix=0";
+static const char _data_FX_MODE_2DDNA[] = "DNA@Scroll speed,Blur,,,,Smear;;!;2;ix=0";
 
 /////////////////////////
 //     2D DNA Spiral   //
@@ -5266,7 +5266,7 @@ void mode_2DDNASpiral() {               // By: ldirko  https://editor.soulmateli
   }
   SEGMENT.blur(((uint16_t)SEGMENT.custom1 * 3) / (6 + SEGMENT.check1), SEGMENT.check1);
 } // mode_2DDNASpiral()
-static const char _data_FX_MODE_2DDNASPIRAL[] PROGMEM = "DNA Spiral@Scroll speed,Y frequency,Blur,,,Smear;;!;2;c1=0";
+static const char _data_FX_MODE_2DDNASPIRAL[] = "DNA Spiral@Scroll speed,Y frequency,Blur,,,Smear;;!;2;c1=0";
 
 
 /////////////////////////
@@ -5294,7 +5294,7 @@ void mode_2DDrift() {              // By: Stepko   https://editor.soulmatelights
   }
   SEGMENT.blur(SEGMENT.intensity>>(3 - SEGMENT.check2), SEGMENT.check2);
 } // mode_2DDrift()
-static const char _data_FX_MODE_2DDRIFT[] PROGMEM = "Drift@Rotation speed,Blur,,,,Twin,Smear;;!;2;ix=0";
+static const char _data_FX_MODE_2DDRIFT[] = "Drift@Rotation speed,Blur,,,,Twin,Smear;;!;2;ix=0";
 
 
 //////////////////////////
@@ -5325,7 +5325,7 @@ void mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline. Ye
     } // for i
   } // for j
 } // mode_2Dfirenoise()
-static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale,,,,Palette;;!;2;pal=66";
+static const char _data_FX_MODE_2DFIRENOISE[] = "Firenoise@X scale,Y scale,,,,Palette;;!;2;pal=66";
 
 
 //////////////////////////////
@@ -5345,7 +5345,7 @@ void mode_2DFrizzles(void) {                 // By: Stepko https://editor.soulma
   }
   SEGMENT.blur(SEGMENT.custom1 >> (3 + SEGMENT.check1), SEGMENT.check1);
 } // mode_2DFrizzles()
-static const char _data_FX_MODE_2DFRIZZLES[] PROGMEM = "Frizzles@X frequency,Y frequency,Blur,,,Smear;;!;2";
+static const char _data_FX_MODE_2DFRIZZLES[] = "Frizzles@X frequency,Y frequency,Blur,,,Smear;;!;2";
 
 
 ///////////////////////////////////////////
@@ -5505,7 +5505,7 @@ void mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://na
     SEGENV.step = strip.now;
   }
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,,Blur,,,,,Mutation;!,!;!;2;pal=11,sx=128";
+static const char _data_FX_MODE_2DGAMEOFLIFE[] = "Game Of Life@!,,Blur,,,,,Mutation;!,!;!;2;pal=11,sx=128";
 
 
 /////////////////////////
@@ -5524,7 +5524,7 @@ void mode_2DHiphotic() {                        //  By: ldirko  https://editor.s
     }
   }
 } // mode_2DHiphotic()
-static const char _data_FX_MODE_2DHIPHOTIC[] PROGMEM = "Hiphotic@X scale,Y scale,,,Speed;!;!;2";
+static const char _data_FX_MODE_2DHIPHOTIC[] = "Hiphotic@X scale,Y scale,,,Speed;!;!;2";
 
 
 /////////////////////////
@@ -5640,7 +5640,7 @@ void mode_2DJulia(void) {                           // An animated Julia set by 
   if(SEGMENT.check1)
     SEGMENT.blur(100, true);
 } // mode_2DJulia()
-static const char _data_FX_MODE_2DJULIA[] PROGMEM = "Julia@,Max iterations per pixel,X center,Y center,Area size, Blur;!;!;2;ix=24,c1=128,c2=128,c3=16";
+static const char _data_FX_MODE_2DJULIA[] = "Julia@,Max iterations per pixel,X center,Y center,Area size, Blur;!;!;2;ix=24,c1=128,c2=128,c3=16";
 
 
 //////////////////////////////
@@ -5667,7 +5667,7 @@ void mode_2DLissajous(void) {            // By: Andrew Tuline
   }
   SEGMENT.blur(SEGMENT.custom1 >> (1 + SEGMENT.check1 * 3), SEGMENT.check1);
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate,Blur,,Speed,Smear;!;!;2;c1=0";
+static const char _data_FX_MODE_2DLISSAJOUS[] = "Lissajous@X frequency,Fade rate,Blur,,Speed,Smear;!;!;2;c1=0";
 
 
 ///////////////////////
@@ -5736,7 +5736,7 @@ void mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Ada
     }
   }
 } // mode_2Dmatrix()
-static const char _data_FX_MODE_2DMATRIX[] PROGMEM = "Matrix@!,Spawning rate,Trail,,,Custom color;Spawn,Trail;;2";
+static const char _data_FX_MODE_2DMATRIX[] = "Matrix@!,Spawning rate,Trail,,,Custom color;Spawn,Trail;;2";
 
 
 /////////////////////////
@@ -5793,7 +5793,7 @@ void mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have one 
     }
   }
 } // mode_2Dmetaballs()
-static const char _data_FX_MODE_2DMETABALLS[] PROGMEM = "Metaballs@!;;!;2";
+static const char _data_FX_MODE_2DMETABALLS[] = "Metaballs@!;;!;2";
 
 
 //////////////////////
@@ -5814,7 +5814,7 @@ void mode_2Dnoise(void) {                  // By Andrew Tuline
     }
   }
 } // mode_2Dnoise()
-static const char _data_FX_MODE_2DNOISE[] PROGMEM = "Noise2D@!,Scale;;!;2";
+static const char _data_FX_MODE_2DNOISE[] = "Noise2D@!,Scale;;!;2";
 
 
 //////////////////////////////
@@ -5849,7 +5849,7 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
   }
   SEGMENT.blur(SEGMENT.custom2>>5);
 } // mode_2DPlasmaball()
-static const char _data_FX_MODE_2DPLASMABALL[] PROGMEM = "Plasma Ball@Speed,,Fade,Blur;;!;2";
+static const char _data_FX_MODE_2DPLASMABALL[] = "Plasma Ball@Speed,,Fade,Blur;;!;2";
 
 
 ////////////////////////////////
@@ -5882,7 +5882,7 @@ void mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://e
     }
   }
 } // mode_2DPolarLights()
-static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale,,,,Flip Palette;;!;2;pal=71";
+static const char _data_FX_MODE_2DPOLARLIGHTS[] = "Polar Lights@!,Scale,,,,Flip Palette;;!;2;pal=71";
 
 
 /////////////////////////
@@ -5902,7 +5902,7 @@ void mode_2DPulser(void) {                       // By: ldirko   https://editor.
 
   SEGMENT.blur(SEGMENT.intensity>>4);
 } // mode_2DPulser()
-static const char _data_FX_MODE_2DPULSER[] PROGMEM = "Pulser@!,Blur;;!;2";
+static const char _data_FX_MODE_2DPULSER[] = "Pulser@!,Blur;;!;2";
 
 
 /////////////////////////
@@ -5929,7 +5929,7 @@ void mode_2DSindots(void) {                             // By: ldirko   https://
   }
   SEGMENT.blur(SEGMENT.custom2 >> (3 + SEGMENT.check1), SEGMENT.check1);
 } // mode_2DSindots()
-static const char _data_FX_MODE_2DSINDOTS[] PROGMEM = "Sindots@!,Dot distance,Fade rate,Blur,,Smear;;!;2;";
+static const char _data_FX_MODE_2DSINDOTS[] = "Sindots@!,Dot distance,Fade rate,Blur,,Smear;;!;2;";
 
 
 //////////////////////////////
@@ -5960,7 +5960,7 @@ void mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://gist.
   SEGMENT.addPixelColorXY(j, n, ColorFromPalette(SEGPALETTE, strip.now/41, 255, LINEARBLEND));
   SEGMENT.addPixelColorXY(k, p, ColorFromPalette(SEGPALETTE, strip.now/73, 255, LINEARBLEND));
 } // mode_2Dsquaredswirl()
-static const char _data_FX_MODE_2DSQUAREDSWIRL[] PROGMEM = "Squared Swirl@,Fade,,,Blur;;!;2";
+static const char _data_FX_MODE_2DSQUAREDSWIRL[] = "Squared Swirl@,Fade,,,Blur;;!;2";
 
 
 //////////////////////////////
@@ -6008,7 +6008,7 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
     yindex += (cols + 2);
   }
 } // mode_2DSunradiation()
-static const char _data_FX_MODE_2DSUNRADIATION[] PROGMEM = "Sun Radiation@Variance,Brightness;;;2";
+static const char _data_FX_MODE_2DSUNRADIATION[] = "Sun Radiation@Variance,Brightness;;;2";
 
 
 /////////////////////////
@@ -6045,7 +6045,7 @@ void mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.soulma
     }
   }
 } // mode_2DTartan()
-static const char _data_FX_MODE_2DTARTAN[] PROGMEM = "Tartan@X scale,Y scale,,,Sharpness;;!;2";
+static const char _data_FX_MODE_2DTARTAN[] = "Tartan@X scale,Y scale,,,Sharpness;;!;2";
 
 
 /////////////////////////
@@ -6084,7 +6084,7 @@ void mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [https:
   }
   SEGMENT.blur(SEGMENT.intensity >> 3, SEGMENT.check1);
 }
-static const char _data_FX_MODE_2DSPACESHIPS[] PROGMEM = "Spaceships@!,Blur,,,,Smear;;!;2";
+static const char _data_FX_MODE_2DSPACESHIPS[] = "Spaceships@!,Blur,,,,Smear;;!;2";
 
 
 /////////////////////////
@@ -6155,7 +6155,7 @@ void mode_2Dcrazybees(void) {
     }
   }
 }
-static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur,,,,Smear;;!;2;pal=11,ix=0";
+static const char _data_FX_MODE_2DCRAZYBEES[] = "Crazy Bees@!,Blur,,,,Smear;;!;2;pal=11,ix=0";
 #undef MAX_BEES
 
 #ifdef WLED_PS_DONT_REPLACE_2D_FX
@@ -6243,7 +6243,7 @@ void mode_2Dghostrider(void) {
     SEGMENT.blur(SEGMENT.intensity>>3);
   }
 }
-static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;;!;2";
+static const char _data_FX_MODE_2DGHOSTRIDER[] = "Ghost Rider@Fade rate,Blur;;!;2";
 #undef LIGHTERS_AM
 
 ////////////////////////////
@@ -6340,7 +6340,7 @@ void mode_2Dfloatingblobs(void) {
 
   if (SEGENV.step < strip.now) SEGENV.step = strip.now + 2000; // change colors every 2 seconds
 }
-static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
+static const char _data_FX_MODE_2DBLOBS[] = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
 #undef MAX_BLOBS
 #endif // WLED_PS_DONT_REPLACE_2D_FX
 
@@ -6362,9 +6362,9 @@ void mode_2Dscrollingtext(void) {
   if (useAMPM) {
     if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
     if (AmPmHour == 0) { AmPmHour  = 12; }
-    sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
+    sprintf(sec, " %2s", (isitAM ? "AM" : "PM"));
   } else {
-    sprintf_P(sec, PSTR(":%02d"), second(localTime));
+    sprintf(sec, ":%02d", second(localTime));
   }
 
   // prepare text string from segment name
@@ -6372,7 +6372,7 @@ void mode_2Dscrollingtext(void) {
   if (SEGMENT.name) len = strlen(SEGMENT.name); // note: SEGMENT.name is limited to WLED_MAX_SEGNAME_LEN
   if (len == 0) {
     // fallback if empty segment name: display date and time "#MON #DD #YYYY #TIME"
-    sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
+    sprintf(text, "%s %d, %d %d:%02d%s", monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
     fontManager.cacheNumbers(true); // cache all numbers when using clock to avoid frequent re-caching
   } else {
     size_t i = 0;
@@ -6392,22 +6392,22 @@ void mode_2Dscrollingtext(void) {
 
         // Process token
         char temp[32];
-        if      (!strncmp_P(token,PSTR("#DATE"),5))  sprintf_P(temp, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
-        else if (!strncmp_P(token,PSTR("#DDMM"),5))  sprintf_P(temp, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
-        else if (!strncmp_P(token,PSTR("#MMDD"),5))  sprintf_P(temp, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
-        else if (!strncmp_P(token,PSTR("#TIME"),5))  sprintf_P(temp, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
-        else if (!strncmp_P(token,PSTR("#HHMM"),5))  sprintf_P(temp, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
-        else if (!strncmp_P(token,PSTR("#YYYY"),5))  sprintf_P(temp,          PSTR("%04d")                 ,         year(localTime));
-        else if (!strncmp_P(token,PSTR("#MONL"),5))  sprintf  (temp,          ("%s")                       ,         monthStr(month(localTime)));
-        else if (!strncmp_P(token,PSTR("#DDDD"),5))  sprintf  (temp,          ("%s")                       ,         dayStr(weekday(localTime)));
-        else if (!strncmp_P(token,PSTR("#YY"),3))  { sprintf  (temp,          ("%02d")                     ,         year(localTime)%100); advance = 3; }
-        else if (!strncmp_P(token,PSTR("#HH"),3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         AmPmHour); advance = 3; }
-        else if (!strncmp_P(token,PSTR("#MM"),3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         minute(localTime)); advance = 3; }
-        else if (!strncmp_P(token,PSTR("#SS"),3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         second(localTime)); advance = 3; }
-        else if (!strncmp_P(token,PSTR("#MON"),4)) { sprintf  (temp,          ("%s")                       ,         monthShortStr(month(localTime))); advance = 4; }
-        else if (!strncmp_P(token,PSTR("#MO"),3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         month(localTime)); advance = 3; }
-        else if (!strncmp_P(token,PSTR("#DAY"),4)) { sprintf  (temp,          ("%s")                       ,         dayShortStr(weekday(localTime))); advance = 4; }
-        else if (!strncmp_P(token,PSTR("#DD"),3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         day(localTime)); advance = 3; }
+        if      (!strncmp(token,"#DATE",5))  sprintf(temp, zero?"%02d.%02d.%04d":"%d.%d.%d",   day(localTime),   month(localTime),  year(localTime));
+        else if (!strncmp(token,"#DDMM",5))  sprintf(temp, zero?"%02d.%02d"     :"%d.%d",      day(localTime),   month(localTime));
+        else if (!strncmp(token,"#MMDD",5))  sprintf(temp, zero?"%02d/%02d"     :"%d/%d",      month(localTime), day(localTime));
+        else if (!strncmp(token,"#TIME",5))  sprintf(temp, zero?"%02d:%02d%s"   :"%2d:%02d%s", AmPmHour,         minute(localTime), sec);
+        else if (!strncmp(token,"#HHMM",5))  sprintf(temp, zero?"%02d:%02d"     :"%d:%02d",    AmPmHour,         minute(localTime));
+        else if (!strncmp(token,"#YYYY",5))  sprintf(temp,          "%04d"                 ,         year(localTime));
+        else if (!strncmp(token,"#MONL",5))  sprintf  (temp,          ("%s")                       ,         monthStr(month(localTime)));
+        else if (!strncmp(token,"#DDDD",5))  sprintf  (temp,          ("%s")                       ,         dayStr(weekday(localTime)));
+        else if (!strncmp(token,"#YY",3))  { sprintf  (temp,          ("%02d")                     ,         year(localTime)%100); advance = 3; }
+        else if (!strncmp(token,"#HH",3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         AmPmHour); advance = 3; }
+        else if (!strncmp(token,"#MM",3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         minute(localTime)); advance = 3; }
+        else if (!strncmp(token,"#SS",3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         second(localTime)); advance = 3; }
+        else if (!strncmp(token,"#MON",4)) { sprintf  (temp,          ("%s")                       ,         monthShortStr(month(localTime))); advance = 4; }
+        else if (!strncmp(token,"#MO",3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         month(localTime)); advance = 3; }
+        else if (!strncmp(token,"#DAY",4)) { sprintf  (temp,          ("%s")                       ,         dayShortStr(weekday(localTime))); advance = 4; }
+        else if (!strncmp(token,"#DD",3))  { sprintf  (temp, zero?    ("%02d")          :    ("%d"),         day(localTime)); advance = 3; }
         else { temp[0] = '#'; temp[1] = '\0'; zero = false; advance = 1; } // Unknown token, just copy the #
 
         if(zero) advance++; // skip the '0' suffix
@@ -6532,7 +6532,7 @@ void mode_2Dscrollingtext(void) {
     currentXOffset += advance;
   }
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,Rotate,Gradient,Custom Font,Reverse;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] = "Scrolling Text@!,Y Offset,Trail,Font size,Rotate,Gradient,Custom Font,Reverse;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////
@@ -6559,7 +6559,7 @@ void mode_2Ddriftrose(void) {
   }
   SEGMENT.blur(SEGMENT.intensity >> 4, SEGMENT.check1);
 }
-static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur,,,,Smear;;!;2;pal=11";
+static const char _data_FX_MODE_2DDRIFTROSE[] = "Drift Rose@Fade,Blur,,,,Smear;;!;2;pal=11";
 
 /////////////////////////////
 //  2D PLASMA ROTOZOOMER   //
@@ -6603,7 +6603,7 @@ void mode_2Dplasmarotozoom() {
   *a -= 0.03f + float(SEGENV.speed-128)*0.0002f;  // rotation speed
   if(*a < -6283.18530718f) *a += 6283.18530718f; // 1000*2*PI, protect sin/cos from very large input float values (will give wrong results)
 }
-static const char _data_FX_MODE_2DPLASMAROTOZOOM[] PROGMEM = "Rotozoomer@!,Scale,,,,Alt;;!;2;pal=54";
+static const char _data_FX_MODE_2DPLASMAROTOZOOM[] = "Rotozoomer@!,Scale,,,,Alt;;!;2;pal=54";
 
 #endif // WLED_DISABLE_2D
 
@@ -6682,7 +6682,7 @@ void mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuline.
     } // switch step
   } // for i
 } // mode_ripplepeak()
-static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixel, Beatsin
+static const char _data_FX_MODE_RIPPLEPEAK[] = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6720,7 +6720,7 @@ void mode_2DSwirl(void) {
   SEGMENT.addPixelColorXY( i,nj, ColorFromPalette(SEGPALETTE, (strip.now / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 37, 200, 255);
   SEGMENT.addPixelColorXY(ni, j, ColorFromPalette(SEGPALETTE, (strip.now / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 41, 200, 255);
 } // mode_2DSwirl()
-static const char _data_FX_MODE_2DSWIRL[] PROGMEM = "Swirl@!,Sensitivity,Blur;,Bg Swirl;!;2v;ix=64,si=0"; // Beatsin // TODO: color 1 unused?
+static const char _data_FX_MODE_2DSWIRL[] = "Swirl@!,Sensitivity,Blur;,Bg Swirl;!;2v;ix=64,si=0"; // Beatsin // TODO: color 1 unused?
 
 
 /////////////////////////
@@ -6755,7 +6755,7 @@ void mode_2DWaverly(void) {
   }
   if (SEGMENT.check3) SEGMENT.blur(16, cols*rows < 100);
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity,,,,,Blur;;!;2v;ix=64,si=0"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] = "Waverly@Amplification,Sensitivity,,,,,Blur;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6857,7 +6857,7 @@ void mode_gravcenter_base(unsigned mode) {
 void mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   mode_gravcenter_base(0);
 }
-static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVCENTER[] = "Gravcenter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
 
 ///////////////////////
 //   * GRAVCENTRIC   //
@@ -6865,7 +6865,7 @@ static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,
 void mode_gravcentric(void) {               // Gravcentric. By Andrew Tuline.
   mode_gravcenter_base(1);
 }
-static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=3,si=0"; // Corner, Beatsin
+static const char _data_FX_MODE_GRAVCENTRIC[] = "Gravcentric@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=3,si=0"; // Corner, Beatsin
 
 
 ///////////////////////
@@ -6874,7 +6874,7 @@ static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fal
 void mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
  mode_gravcenter_base(2);
 }
-static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVIMETER[] = "Gravimeter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6883,7 +6883,7 @@ static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,
 void mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   mode_gravcenter_base(3);
 }
-static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensitivity;!,!;!;1f;ix=128,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_GRAVFREQ[] = "Gravfreq@Rate of fall,Sensitivity;!,!;!;1f;ix=128,m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6901,7 +6901,7 @@ void mode_juggles(void) {                   // Juggles. By Andrew Tuline.
     SEGMENT.setPixelColor(beatsin16_t(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(strip.now/4+i*2, false, PALETTE_SOLID_WRAP, 0), my_sampleAgc));
   }
 } // mode_juggles()
-static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;!,!;!;01v;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_JUGGLES[] = "Juggles@!,# of balls;!,!;!;01v;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6935,7 +6935,7 @@ void mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     SEGMENT.setPixelColor(k, pixels[k]);
   }
 } // mode_matripix()
-static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;!;1v;ix=64,m12=2,si=1"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
+static const char _data_FX_MODE_MATRIPIX[] = "Matripix@!,Brightness;!,!;!;1v;ix=64,m12=2,si=1"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6965,7 +6965,7 @@ void mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
   SEGENV.aux0=SEGENV.aux0+beatsin8_t(5,0,10);
   SEGENV.aux1=SEGENV.aux1+beatsin8_t(4,0,10);
 } // mode_midnoise()
-static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Max. length;!,!;!;1v;ix=128,m12=1,si=0"; // Bar, Beatsin
+static const char _data_FX_MODE_MIDNOISE[] = "Midnoise@Fade rate,Max. length;!,!;!;1v;ix=128,m12=1,si=0"; // Bar, Beatsin
 
 
 //////////////////////
@@ -6991,7 +6991,7 @@ void mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     SEGMENT.setPixelColor(i, ColorFromPalette(myPal, index, volumeSmth*2, LINEARBLEND)); // Use my own palette.
   }
 } // mode_noisefire()
-static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;01v;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEFIRE[] = "Noisefire@!,!;;;01v;m12=2,si=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7020,7 +7020,7 @@ void mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
   SEGENV.aux0+=beatsin8_t(5,0,10);
   SEGENV.aux1+=beatsin8_t(4,0,10);
 } // mode_noisemeter()
-static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEMETER[] = "Noisemeter@Fade rate,Width;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7048,7 +7048,7 @@ void mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
     for (unsigned i = 0; i < SEGLEN/2; i++)          SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 } // mode_pixelwave()
-static const char _data_FX_MODE_PIXELWAVE[] PROGMEM = "Pixelwave@!,Sensitivity;!,!;!;1v;ix=64,m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_PIXELWAVE[] = "Pixelwave@!,Sensitivity;!,!;!;1v;ix=64,m12=2,si=0"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7083,7 +7083,7 @@ void mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright));
   }
 } // mode_plasmoid()
-static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;01v;sx=128,ix=128,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PLASMOID[] = "Plasmoid@Phase,# of pixels;!,!;!;01v;sx=128,ix=128,m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7127,12 +7127,12 @@ void mode_puddles_base(bool peakdetect) {
 void mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   mode_puddles_base(true);
 }
-static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLEPEAK[] = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixels, Beatsin
 
 void mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   mode_puddles_base(false);
 }
-static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLES[] = "Puddles@Fade rate,Puddle size;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7159,7 +7159,7 @@ void mode_pixels(void) {                    // Pixels. By Andrew Tuline.
     SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), uint8_t(volumeSmth)));
   }
 } // mode_pixels()
-static const char _data_FX_MODE_PIXELS[] PROGMEM = "Pixels@Fade rate,# of pixels;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PIXELS[] = "Pixels@Fade rate,# of pixels;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
 
 //////////////////////
 //    ** Blurz      //
@@ -7189,7 +7189,7 @@ void mode_blurz(void) {                    // Blurz. By Andrew Tuline.
     SEGMENT.blur(SEGMENT.intensity); // note: blur > 210 results in a alternating pattern, this could be fixed by mapping but some may like it (very old bug)
   }
 } // mode_blurz()
-static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur;!,Color mix;!;1f;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_BLURZ[] = "Blurz@Fade rate,Blur;!,Color mix;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
 
 /////////////////////////
@@ -7218,7 +7218,7 @@ void mode_DJLight(void) {                   // Written by ??? Adapted by Will Ta
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 } // mode_DJLight()
-static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;01f;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_DJLIGHT[] = "DJ Light@Speed;;;01f;m12=2,si=0"; // Circle, Beatsin
 
 
 ////////////////////
@@ -7249,7 +7249,7 @@ void mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. Woul
 
   SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
 } // mode_freqmap()
-static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;!,!;!;1f;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQMAP[] = "Freqmap@Fade rate,Starting color;!,!;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7299,7 +7299,7 @@ void mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
     for (int i = SEGLEN - 1; i > 0; i--) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
   }
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Speed,Sound effect,Low bin,High bin,Sensitivity;;;01f;m12=3,si=0"; // Corner, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] = "Freqmatrix@Speed,Sound effect,Low bin,High bin,Sensitivity;;;01f;m12=3,si=0"; // Corner, Beatsin
 
 
 //////////////////////
@@ -7331,7 +7331,7 @@ void mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (uint8_t)my_magnitude));
   }
 } // mode_freqpixels()
-static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Starting color and # of pixels;!,!,;!;1f;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQPIXELS[] = "Freqpixels@Fade rate,Starting color and # of pixels;!,!,;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7392,7 +7392,7 @@ void mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
     for (unsigned i = 0; i < SEGLEN/2; i++)          SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 } // mode_freqwave()
-static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Speed,Sound effect,Low bin,High bin,Pre-amp;;;01f;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_FREQWAVE[] = "Freqwave@Speed,Sound effect,Low bin,High bin,Pre-amp;;;01f;m12=2,si=0"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7413,7 +7413,7 @@ void mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), uint8_t(fftResult[i % 16]*4)));
   }
 } // mode_noisemove()
-static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Move speed,Fade rate;!,!;!;01f;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_NOISEMOVE[] = "Noisemove@Move speed,Fade rate;!,!;!;01f;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7446,7 +7446,7 @@ void mode_rocktaves(void) {                 // Rocktaves. Same note from each oc
   i = constrain(i, 0U, SEGLEN-1U);
   SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp));
 } // mode_rocktaves()
-static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;!,!;!;01f;m12=1,si=0"; // Bar, Beatsin
+static const char _data_FX_MODE_ROCKTAVES[] = "Rocktaves@;!,!;!;01f;m12=1,si=0"; // Bar, Beatsin
 
 
 ///////////////////////
@@ -7500,7 +7500,7 @@ void mode_waterfall(void) {                   // Waterfall. By: Andrew Tuline
     }
   }
 } // mode_waterfall()
-static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;01f;c2=0,m12=2,si=0"; // Circles, Beatsin
+static const char _data_FX_MODE_WATERFALL[] = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;01f;c2=0,m12=2,si=0"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -7560,7 +7560,7 @@ void mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
   }
 } // mode_2DGEQ()
-static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,Bin,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0,c3=0";
+static const char _data_FX_MODE_2DGEQ[] = "GEQ@Fade speed,Ripple decay,# of bands,,Bin,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0,c3=0";
 
 
 /////////////////////////
@@ -7611,13 +7611,13 @@ void mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Will Ta
     }
   }
 } // mode_2DFunkyPlank
-static const char _data_FX_MODE_2DFUNKYPLANK[] PROGMEM = "Funky Plank@Scroll speed,,# of bands;;;2f;si=0"; // Beatsin
+static const char _data_FX_MODE_2DFUNKYPLANK[] = "Funky Plank@Scroll speed,,# of bands;;;2f;si=0"; // Beatsin
 
 
 /////////////////////////
 //     2D Akemi        //
 /////////////////////////
-static uint8_t akemi[] PROGMEM = {
+static uint8_t akemi[] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0,
@@ -7713,7 +7713,7 @@ void mode_2DAkemi(void) {
     }
   }
 } // mode_2DAkemi
-static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;2f;si=0"; //beatsin
+static const char _data_FX_MODE_2DAKEMI[] = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;2f;si=0"; //beatsin
 
 
 // Distortion waves - ldirko
@@ -7792,7 +7792,7 @@ void mode_2Ddistortionwaves() {
   if(!SEGMENT.check1 && SEGMENT.palette)
     SEGMENT.blur(200, true);
 }
-static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale,,,,Fill,Zoom,Alt;;!;2;pal=0";
+static const char _data_FX_MODE_2DDISTORTIONWAVES[] = "Distortion Waves@!,Scale,,,,Fill,Zoom,Alt;;!;2;pal=0";
 
 
 //Soap
@@ -7895,7 +7895,7 @@ void mode_2Dsoap() {
   soapPixels(true,  noise3d, pixels); // rows
   soapPixels(false, noise3d, pixels); // cols
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness,Density;;!;2;pal=11";
+static const char _data_FX_MODE_2DSOAP[] = "Soap@!,Smoothness,Density;;!;2;pal=11";
 
 
 //Idea from https://www.youtube.com/watch?v=HsA-6KIbgto&ab_channel=GreatScott%21
@@ -7953,7 +7953,7 @@ void mode_2Doctopus() {
     }
   }
 }
-static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs,fasttan;;!;2;";
+static const char _data_FX_MODE_2DOCTOPUS[] = "Octopus@!,,Offset X,Offset Y,Legs,fasttan;;!;2;";
 
 
 //Waving Cell
@@ -7978,7 +7978,7 @@ void mode_2Dwavingcell() {
   }
   SEGMENT.blur(SEGMENT.intensity);
 }
-static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,Blur,Amplitude 1,Amplitude 2,Amplitude 3,,Flow;;!;2;ix=0";
+static const char _data_FX_MODE_2DWAVINGCELL[] = "Waving Cell@!,Blur,Amplitude 1,Amplitude 2,Amplitude 3,,Flow;;!;2;ix=0";
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
@@ -8076,7 +8076,7 @@ void mode_particlevortex(void) {
   PartSys->update(); //update all particles and render to frame
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation Speed,Particle Speed,Arms,Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=27,c1=200,c2=0,c3=0";
+static const char _data_FX_MODE_PARTICLEVORTEX[] = "PS Vortex@Rotation Speed,Particle Speed,Arms,Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=27,c1=200,c2=0,c3=0";
 
 /*
   Particle Fireworks
@@ -8215,7 +8215,7 @@ void mode_particlefireworks(void) {
   PartSys->update(); // update and render
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=50,c1=40,c2=0,c3=12";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=50,c1=40,c2=0,c3=12";
 
 /*
   Particle Volcano
@@ -8288,7 +8288,7 @@ void mode_particlevolcano(void) {
   PartSys->update(); // update and render
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1";
 
 /*
   Particle Fire
@@ -8390,7 +8390,7 @@ void mode_particlefire(void) {
 
   PartSys->updateFire(SEGMENT.intensity); // update and render the fire
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Flame Height,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
+static const char _data_FX_MODE_PARTICLEFIRE[] = "PS Fire@Speed,Intensity,Flame Height,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
 
 /*
   PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
@@ -8460,7 +8460,7 @@ void mode_particlepit(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=70,c2=180,c3=31,o3=1";
+static const char _data_FX_MODE_PARTICLEPIT[] = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=70,c2=180,c3=31,o3=1";
 
 /*
   Particle Waterfall
@@ -8526,7 +8526,7 @@ void mode_particlewaterfall(void) {
 
   PartSys->update();   // update and render
 }
-static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,o3=1";
+static const char _data_FX_MODE_PARTICLEWATERFALL[] = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,o3=1";
 
 /*
   Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
@@ -8612,7 +8612,7 @@ void mode_particlebox(void) {
 
   PartSys->update();   // update and render
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Tilt,Hardness,Size,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,c3=1,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] = "PS Box@!,Particles,Tilt,Hardness,Size,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,c3=1,o1=1";
 
 /*
   Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
@@ -8673,7 +8673,7 @@ void mode_particleperlin(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collide;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5";
+static const char _data_FX_MODE_PARTICLEPERLIN[] = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collide;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5";
 
 /*
   Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
@@ -8775,7 +8775,7 @@ void mode_particleimpact(void) {
   PartSys->update(); // update and render
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,!,Force,Hardness,Blur,Cylinder,Walls,Collide;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] = "PS Impact@Launches,!,Force,Hardness,Blur,Cylinder,Walls,Collide;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
 
 /*
   Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -8861,8 +8861,8 @@ void mode_particleattractor(void) {
   PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags, &sourcesettings); // move the source
   PartSys->update(); // update and render
 }
-//static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=1,c2=0";
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=2,c2=0";
+//static const char _data_FX_MODE_PARTICLEATTRACTOR[] = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=1,c2=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=2,c2=0";
 
 /*
   Particle Spray, just a particle spray with many parameters
@@ -8934,7 +8934,7 @@ void mode_particlespray(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collide;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21";
+static const char _data_FX_MODE_PARTICLESPRAY[] = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collide;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21";
 
 
 /*
@@ -9007,7 +9007,7 @@ void mode_particleGEQ(void) {
   PartSys->update(); // update and render
 }
 
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS GEQ 2D@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] = "PS GEQ 2D@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
 
 /*
   Particle rotating GEQ
@@ -9078,7 +9078,7 @@ void mode_particlecenterGEQ(void) {
   }
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS GEQ Nova@Speed,Intensity,Rotation Speed,Color Change,Nozzle,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
+static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] = "PS GEQ Nova@Speed,Intensity,Rotation Speed,Color Change,Nozzle,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 /*
   Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original FX by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -9157,7 +9157,7 @@ void mode_particleghostrider(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,AgeColor,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1";
+static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,AgeColor,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1";
 
 /*
   PS Blobs: large particles bouncing around, changing size and form
@@ -9230,7 +9230,7 @@ void mode_particleblobs(void) {
   PartSys->setMotionBlur(((SEGMENT.custom3) << 3) + 7);
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o3=1";
+static const char _data_FX_MODE_PARTICLEBLOBS[] = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o3=1";
 
 /*
   Particle Galaxy, particles spiral like in a galaxy
@@ -9328,7 +9328,7 @@ void mode_particlegalaxy(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEGALAXY[] PROGMEM = "PS Galaxy@!,!,Size,,Color,,Starfield,Trace;;!;2;pal=59,sx=80,c1=1,c3=4";
+static const char _data_FX_MODE_PARTICLEGALAXY[] = "PS Galaxy@!,!,Size,,Color,,Starfield,Trace;;!;2;pal=59,sx=80,c1=1,c3=4";
 
 #endif //WLED_DISABLE_PARTICLESYSTEM2D
 #endif // WLED_DISABLE_2D
@@ -9446,7 +9446,7 @@ void mode_particleDrip(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21";
+static const char _data_FX_MODE_PARTICLEDRIP[] = "PS DripDrop@Speed,!,Splash,Blur,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21";
 
 
 /*
@@ -9562,7 +9562,7 @@ void mode_particlePinball(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PSPINBALL[] PROGMEM = "PS Pinball@Speed,!,Size,Blur,Gravity,Collide,Rolling,Position Color;,!;!;1;pal=0,ix=220,c2=0,c3=8,o1=1";
+static const char _data_FX_MODE_PSPINBALL[] = "PS Pinball@Speed,!,Size,Blur,Gravity,Collide,Rolling,Position Color;,!;!;1;pal=0,ix=220,c2=0,c3=8,o1=1";
 
 /*
   Particle Replacement for original Dancing Shadows:
@@ -9680,7 +9680,7 @@ void mode_particleDancingShadows(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,Smear,Position Color,Smooth;,!;!;1;sx=100,ix=180,c1=0,c2=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,Smear,Position Color,Smooth;,!;!;1;sx=100,ix=180,c1=0,c2=0";
 
 /*
   Particle Fireworks 1D replacement
@@ -9800,7 +9800,7 @@ void mode_particleFireworks1D(void) {
     else PartSys->particles[i].ttl = 0;
   }
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Color,Colorful,Trail,Smooth;,!;!;1;c2=30,o1=1";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Color,Colorful,Trail,Smooth;,!;!;1;c2=30,o1=1";
 
 /*
   Particle based Sparkle effect
@@ -9870,7 +9870,7 @@ void mode_particleSparkler(void) {
     else PartSys->particles[i].ttl = 0;
   }
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Move,!,Saturation,Blur,Sparklers,Slide,Bounce,Large;,!;!;1;pal=0,sx=255,c1=0,c2=0,c3=6";
+static const char _data_FX_MODE_PS_SPARKLER[] = "PS Sparkler@Move,!,Saturation,Blur,Sparklers,Slide,Bounce,Large;,!;!;1;pal=0,sx=255,c1=0,c2=0,c3=6";
 
 /*
   Particle based Hourglass, particles falling at defined intervals
@@ -9993,7 +9993,7 @@ void mode_particleHourglass(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Interval,!,Color,Blur,Gravity,Colorflip,Start,Fast Reset;,!;!;1;pal=34,sx=5,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
+static const char _data_FX_MODE_PS_HOURGLASS[] = "PS Hourglass@Interval,!,Color,Blur,Gravity,Colorflip,Start,Fast Reset;,!;!;1;pal=34,sx=5,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
 
 /*
   Particle based Spray effect (like a volcano, possible replacement for popcorn)
@@ -10043,7 +10043,7 @@ void mode_particle1Dspray(void) {
   }
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS Spray 1D@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=0,c2=0";
+static const char _data_FX_MODE_PS_1DSPRAY[] = "PS Spray 1D@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=0,c2=0";
 
 /*
   Particle based balance: particles move back and forth (1D pendent to 2D particle box)
@@ -10123,7 +10123,7 @@ void mode_particleBalance(void) {
   }
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Hardness,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,c2=0,c3=4,o1=1";
+static const char _data_FX_MODE_PS_BALANCE[] = "PS 1D Balance@!,!,Hardness,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,c2=0,c3=4,o1=1";
 
 /*
 Particle based Chase effect
@@ -10218,7 +10218,7 @@ void mode_particleChase(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@!,Density,Size,Hue,Blur,Playful,,Position Color;,!;!;1;pal=11,sx=50,c2=5,c3=0";
+static const char _data_FX_MODE_PS_CHASE[] = "PS Chase@!,Density,Size,Hue,Blur,Playful,,Position Color;,!;!;1;pal=11,sx=50,c2=5,c3=0";
 
 /*
   Particle Fireworks Starburst replacement (smoother rendering, more settings)
@@ -10276,7 +10276,7 @@ void mode_particleStarburst(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Size,Blur,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
+static const char _data_FX_MODE_PS_STARBURST[] = "PS Starburst@Chance,Fragments,Size,Blur,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
 
 /*
   Particle based 1D GEQ effect, each frequency bin gets an emitter, distributed over the strip
@@ -10348,7 +10348,7 @@ void mode_particle1DGEQ(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS GEQ 1D@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1D_GEQ[] = "PS GEQ 1D@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 
 /*
   Particle based Fire effect
@@ -10412,7 +10412,7 @@ void mode_particleFire1D(void) {
 
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
+static const char _data_FX_MODE_PS_FIRE1D[] = "PS Fire 1D@!,!,Cooling,Blur;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
 
 /*
   Particle based AR effect, swoop particles along the strip with selected frequency loudness
@@ -10514,7 +10514,7 @@ void mode_particle1DsonicStream(void) {
     }
   }
 }
-static const char _data_FX_MODE_PS_SONICSTREAM[] PROGMEM = "PS Sonic Stream@!,!,Color,Blur,Bin,Mod,Filter,Push;,!;!;1f;c3=0,o2=1";
+static const char _data_FX_MODE_PS_SONICSTREAM[] = "PS Sonic Stream@!,!,Color,Blur,Bin,Mod,Filter,Push;,!;!;1f;c3=0,o2=1";
 
 
 /*
@@ -10604,7 +10604,7 @@ void mode_particle1DsonicBoom(void) {
 
   PartSys->update(); // update and render (needs to be done before manipulation for initial particle spacing to be right)
 }
-static const char _data_FX_MODE_PS_SONICBOOM[] PROGMEM = "PS Sonic Boom@!,!,Color,Position,Bin,Mod,Filter,Blur;,!;!;1f;c2=63,c3=0,o2=1";
+static const char _data_FX_MODE_PS_SONICBOOM[] = "PS Sonic Boom@!,!,Color,Position,Bin,Mod,Filter,Blur;,!;!;1f;c2=63,c3=0,o2=1";
 
 /*
 Particles bound by springs
@@ -10772,7 +10772,7 @@ void mode_particleSpringy(void) {
   }
   PartSys->update(); // update and render
 }
-static const char _data_FX_MODE_PS_SPRINGY[] PROGMEM = "PS Springy@Stiffness,Damping,Density,Hue,Mode,Smear,XL,AR;,!;!;1f;pal=54,c2=0,c3=23";
+static const char _data_FX_MODE_PS_SPRINGY[] = "PS Springy@Stiffness,Damping,Density,Hue,Mode,Smear,XL,AR;,!;!;1f;pal=54,c2=0,c3=23";
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
@@ -10871,11 +10871,11 @@ void mode_slow_transition(void) {
   }
   SEGMENT.cct = data->currentCCT;
 }
-static const char _data_FX_MODE_SLOW_TRANSITION[] PROGMEM = "Slow Transition@Time (min),,,,,,Sweep;!;!;1;pal=2,sx=0,ix=0";
+static const char _data_FX_MODE_SLOW_TRANSITION[] = "Slow Transition@Time (min),,,,,,Sweep;!;!;1;pal=2,sx=0,ix=0";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
-static const char _data_RESERVED[] PROGMEM = "RSVD";
+static const char _data_RESERVED[] = "RSVD";
 
 // add (or replace reserved) effect mode and data into vector
 // use id==255 to find unallocated gaps (with "Reserved" data string)

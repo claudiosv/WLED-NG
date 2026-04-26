@@ -1,7 +1,7 @@
 #include "wled.h"
 #include "pov.h"
 
-static const char _data_FX_MODE_POV_IMAGE[] PROGMEM = "POV Image@!;;;;";
+static const char _data_FX_MODE_POV_IMAGE[] = "POV Image@!;;;;";
 
 static POV s_pov;
 
@@ -48,7 +48,7 @@ public:
 
   PovDisplayUsermod(const char *name, bool enabled)
     : enabled(enabled) , _name(name) {}
-  
+
   void setup() override {
     strip.addEffect(255, &mode_pov_image, _data_FX_MODE_POV_IMAGE);
     //initDone removed (unused)

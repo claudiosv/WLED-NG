@@ -95,7 +95,7 @@ unsigned dataSize = cols * rows;  // SEGLEN (virtual length) is equivalent to vW
     }
   }
 }
-static const char _data_FX_MODE_DIFFUSIONFIRE[] PROGMEM = "Diffusion Fire@!,Spark rate,Diffusion Speed,Turbulence,,Use palette;;Color;;2;pal=35";
+static const char _data_FX_MODE_DIFFUSIONFIRE[] = "Diffusion Fire@!,Spark rate,Diffusion Speed,Turbulence,,Use palette;;Color;;2;pal=35";
 
 
 /*
@@ -179,7 +179,7 @@ static void mode_spinning_wheel(void) {
       }
     }
   }
- 
+
   struct virtualStrip {
     static void runStrip(uint16_t stripNr, uint32_t* state, bool settingsChanged, bool allReadyToRestart, unsigned strips) {
       uint8_t phase = state[PHASE_IDX];
@@ -213,7 +213,7 @@ static void mode_spinning_wheel(void) {
         // Set velocity
         uint16_t speed = map(SEGMENT.speed, 0, 255, 300, 800);
         if (speed == 300) {  // random speed (user selected 0 on speed slider)
-          state[VELOCITY_IDX] = hw_random16(200, 900) * 655;   // fixed-point velocity scaling (approx. 65536/100) 
+          state[VELOCITY_IDX] = hw_random16(200, 900) * 655;   // fixed-point velocity scaling (approx. 65536/100)
         } else {
           state[VELOCITY_IDX] = hw_random16(speed - 100, speed + 100) * 655;
         }
@@ -236,7 +236,7 @@ static void mode_spinning_wheel(void) {
 
       uint32_t pos_fixed = state[CUR_POS_IDX];
       uint32_t velocity = state[VELOCITY_IDX];
-      
+
       // Phase management
       if (phase == 0) {
         // Fast spinning phase
@@ -337,7 +337,7 @@ static void mode_spinning_wheel(void) {
     }
   }
 }
-static const char _data_FX_MODE_SPINNINGWHEEL[] PROGMEM = "Spinning Wheel@Speed (0=random),Slowdown (0=random),Spinner size,,Spin delay,Spin me!,Color per block,Sync restart;!,!;!;;m12=1,c1=1,c3=8,o1=1,o3=1";
+static const char _data_FX_MODE_SPINNINGWHEEL[] = "Spinning Wheel@Speed (0=random),Slowdown (0=random),Spinner size,,Spin delay,Spin me!,Color per block,Sync restart;!,!;!;;m12=1,c1=1,c3=8,o1=1,o3=1";
 
 
 /*
@@ -623,7 +623,7 @@ static void mode_2D_lavalamp(void) {
     }
   }
 }
-static const char _data_FX_MODE_2D_LAVALAMP[] PROGMEM = "Lava Lamp@,# of blobs,Blob size,H. Damping,,,Attract,Keep Color Ratio;;!;2;ix=64,c2=192,o2=1,o3=1,pal=47";
+static const char _data_FX_MODE_2D_LAVALAMP[] = "Lava Lamp@,# of blobs,Blob size,H. Damping,,,Attract,Keep Color Ratio;;!;2;ix=64,c2=192,o2=1,o3=1,pal=47";
 
 
 /*
@@ -712,7 +712,7 @@ static void drawLavaBombs(const uint16_t width, const uint16_t height, float *pa
       int16_t yFlipped = height - 1 - yi;  // Flip Y coordinate
 
       SEGMENT.addPixelColorXY(xi, yFlipped, pcolor.scale8(w0));
-      if (xi + 1 < width) 
+      if (xi + 1 < width)
         SEGMENT.addPixelColorXY(xi + 1, yFlipped, pcolor.scale8(w1));
       if (yFlipped - 1 >= 0)
         SEGMENT.addPixelColorXY(xi, yFlipped - 1, pcolor.scale8(w2));
@@ -814,7 +814,7 @@ static void mode_2D_magma(void) {
 
   SEGENV.step++;
 }
-static const char _data_FX_MODE_2D_MAGMA[] PROGMEM = "Magma@Flow rate,Magma height,Lava bombs,Gravity,,,Bombs in front;;!;2;ix=192,c2=32,o2=1,pal=35";
+static const char _data_FX_MODE_2D_MAGMA[] = "Magma@Flow rate,Magma height,Lava bombs,Gravity,,,Bombs in front;;!;2;ix=192,c2=32,o2=1,pal=35";
 
 
 /*
@@ -1003,7 +1003,7 @@ static void mode_ants(void) {
 
   SEGMENT.blur(SEGMENT.custom2>>1);
 }
-static const char _data_FX_MODE_ANTS[] PROGMEM = "Ants@Ant speed,# of ants,Ant size,Blur,,Gathering food,Smear,Pass by;!,!,!;!;1;sx=192,ix=255,c1=32,c2=0,o1=1,o3=1";
+static const char _data_FX_MODE_ANTS[] = "Ants@Ant speed,# of ants,Ant size,Blur,,Gathering food,Smear,Pass by;!,!,!;!;1;sx=192,ix=255,c1=32,c2=0,o1=1,o3=1";
 
 
 /*
@@ -1094,7 +1094,7 @@ static void mode_morsecode(void) {
   };
 
   static const PunctuationMapping punctuation[] = {
-    {'.', ".-.-.-"}, {',', "--..--"}, {'?', "..--.."}, 
+    {'.', ".-.-.-"}, {',', "--..--"}, {'?', "..--.."},
     {':', "---..."}, {'-', "-....-"}, {'!', "-.-.--"},
     {'&', ".-..."}, {'@', ".--.-."}, {')', "-.--.-"},
     {'(', "-.--."}, {'/', "-..-."}, {'\'', ".----."}
@@ -1106,7 +1106,7 @@ static void mode_morsecode(void) {
 
   if (SEGMENT.name) len = strlen(SEGMENT.name);
   if (len == 0) {
-    strcpy_P(text, PSTR("I Love WLED!"));
+    strcpy(text, "I Love WLED!");
   } else {
     strcpy(text, SEGMENT.name);
   }
@@ -1255,7 +1255,7 @@ static void mode_morsecode(void) {
     }
   }
 }
-static const char _data_FX_MODE_MORSECODE[] PROGMEM = "Morse Code@Speed,,,,Color mode,Color by Word,Punctuation,EndOfMessage;;!;1;sx=192,c3=8,o1=1,o2=1";
+static const char _data_FX_MODE_MORSECODE[] = "Morse Code@Speed,,,,Color mode,Color by Word,Punctuation,EndOfMessage;;!;1;sx=192,c3=8,o1=1,o2=1";
 
 
 /////////////////////
@@ -1291,12 +1291,12 @@ class UserFxUsermod : public Usermod {
 
   // void addToConfig(JsonObject& root) override
   // {
-  //   JsonObject top = root.createNestedObject(FPSTR("User FX"));
+  //   JsonObject top = root.createNestedObject("User FX");
   //   top["myConfigValue"] = myConfigValue;
   // }
   // bool readFromConfig(JsonObject& root) override
   // {
-  //   JsonObject top = root[FPSTR("User FX")];
+  //   JsonObject top = root["User FX"];
   //   bool configComplete = !top.isNull();
   //   configComplete &= getJsonValue(top["myConfigValue"], myConfigValue);
   //   return configComplete;

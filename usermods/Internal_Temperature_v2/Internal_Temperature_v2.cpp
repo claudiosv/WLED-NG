@@ -118,49 +118,49 @@ public:
     if (user.isNull())
       user = root.createNestedObject("u");
 
-    JsonArray userTempArr = user.createNestedArray(FPSTR(_name));
+    JsonArray userTempArr = user.createNestedArray(_name);
     userTempArr.add(temperature);
-    userTempArr.add(F(" °C"));
+    userTempArr.add(" °C");
 
     // if "sensor" object does not exist yet wee need to create it
-    JsonObject sensor = root[F("sensor")];
+    JsonObject sensor = root["sensor"];
     if (sensor.isNull())
-      sensor = root.createNestedObject(F("sensor"));
+      sensor = root.createNestedObject("sensor");
 
-    JsonArray sensorTempArr = sensor.createNestedArray(FPSTR(_name));
+    JsonArray sensorTempArr = sensor.createNestedArray(_name);
     sensorTempArr.add(temperature);
-    sensorTempArr.add(F("°C"));
+    sensorTempArr.add("°C");
   }
 
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[FPSTR(_enabled)] = isEnabled;
-    top[FPSTR(_loopInterval)] = loopInterval;
-    top[FPSTR(_activationThreshold)] = activationThreshold;
-    top[FPSTR(_presetToActivate)] = presetToActivate;
+    JsonObject top = root.createNestedObject(_name);
+    top[_enabled] = isEnabled;
+    top[_loopInterval] = loopInterval;
+    top[_activationThreshold] = activationThreshold;
+    top[_presetToActivate] = presetToActivate;
   }
 
     // Append useful info to the usermod settings gui
     void appendConfigData()
     {
     // Display 'ms' next to the 'Loop Interval' setting
-    oappend(F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
+    oappend("addInfo('Internal Temperature:Loop Interval', 1, 'ms');");
     // Display '°C' next to the 'Activation Threshold' setting
-    oappend(F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
+    oappend("addInfo('Internal Temperature:Activation Threshold', 1, '°C');");
     // Display '0 = Disabled' next to the 'Preset To Activate' setting
-    oappend(F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
+    oappend("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');");
     }
 
   bool readFromConfig(JsonObject &root)
   {
-    JsonObject top = root[FPSTR(_name)];
+    JsonObject top = root[_name];
     bool configComplete = !top.isNull();
-    configComplete &= getJsonValue(top[FPSTR(_enabled)], isEnabled);
-    configComplete &= getJsonValue(top[FPSTR(_loopInterval)], loopInterval);
+    configComplete &= getJsonValue(top[_enabled], isEnabled);
+    configComplete &= getJsonValue(top[_loopInterval], loopInterval);
     loopInterval = max(loopInterval, minLoopInterval);    // Makes sure the loop interval isn't too small.
-    configComplete &= getJsonValue(top[FPSTR(_presetToActivate)], presetToActivate);
-    configComplete &= getJsonValue(top[FPSTR(_activationThreshold)], activationThreshold);
+    configComplete &= getJsonValue(top[_presetToActivate], presetToActivate);
+    configComplete &= getJsonValue(top[_activationThreshold], activationThreshold);
     return configComplete;
   }
 
@@ -170,11 +170,11 @@ public:
   }
 };
 
-const char InternalTemperatureUsermod::_name[] PROGMEM = "Internal Temperature";
-const char InternalTemperatureUsermod::_enabled[] PROGMEM = "Enabled";
-const char InternalTemperatureUsermod::_loopInterval[] PROGMEM = "Loop Interval";
-const char InternalTemperatureUsermod::_activationThreshold[] PROGMEM = "Activation Threshold";
-const char InternalTemperatureUsermod::_presetToActivate[] PROGMEM = "Preset To Activate";
+const char InternalTemperatureUsermod::_name[] = "Internal Temperature";
+const char InternalTemperatureUsermod::_enabled[] = "Enabled";
+const char InternalTemperatureUsermod::_loopInterval[] = "Loop Interval";
+const char InternalTemperatureUsermod::_activationThreshold[] = "Activation Threshold";
+const char InternalTemperatureUsermod::_presetToActivate[] = "Preset To Activate";
 
 void InternalTemperatureUsermod::publishMqtt(const char *state, bool retain)
 {
@@ -184,7 +184,7 @@ void InternalTemperatureUsermod::publishMqtt(const char *state, bool retain)
   {
     char subuf[64];
     strcpy(subuf, mqttDeviceTopic);
-    strcat_P(subuf, PSTR("/mcutemp"));
+    strcat(subuf, "/mcutemp");
     mqtt->publish(subuf, 0, retain, state);
   }
 #endif

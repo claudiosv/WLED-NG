@@ -43,7 +43,7 @@ void FontManager::getFontFileName(uint8_t fontNum, char* buffer, bool scanAll) {
   uint8_t i = 0;
   while (rootfile && i < MAX_FONTS) {
     String name = rootfile.name();
-    if (name.endsWith(F(".wbf"))) {
+    if (name.endsWith(".wbf")) {
       if (i == fontNum) {
         if (name.charAt(0) != '/') name = "/" + name; // need to add leading slash
         strncpy(buffer, name.c_str(), FONT_NAME_BUFFER_SIZE - 1);
@@ -352,7 +352,7 @@ uint8_t FontManager::collectNeededCodes(const char* text, FontHeader* hdr, uint8
   uint8_t count = 0;
   // add numbers to cache if needed (for clock use without constant re-caching)
   if (_cacheNumbers) {
-    static const char s_nums[] PROGMEM = "0123456789:. ";
+    static const char s_nums[] = "0123456789:. ";
     for (const char* p = s_nums; *p && count < MAX_CACHED_GLYPHS; p++) {
       int32_t idx = getGlyphIndex(*p, hdr);
       if (idx >= 0 && idx < 256) {

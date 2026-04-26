@@ -101,25 +101,25 @@ bool updateVal(const char* req, const char* key, byte &val, byte minv, byte maxv
 }
 
 static size_t printSetFormInput(Print& settingsScript, const char* key, const char* selector, int value) {
-  return settingsScript.printf_P(PSTR("d.Sf.%s.%s=%d;"), key, selector, value);
+  return settingsScript.printf("d.Sf.%s.%s=%d;", key, selector, value);
 }
 
 size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val) {
-  return printSetFormInput(settingsScript, key, PSTR("checked"), val);
+  return printSetFormInput(settingsScript, key, "checked", val);
 }
 size_t printSetFormValue(Print& settingsScript, const char* key, int val) {
-  return printSetFormInput(settingsScript, key, PSTR("value"), val);
+  return printSetFormInput(settingsScript, key, "value", val);
 }
 size_t printSetFormIndex(Print& settingsScript, const char* key, int index) {
-  return printSetFormInput(settingsScript, key, PSTR("selectedIndex"), index);
+  return printSetFormInput(settingsScript, key, "selectedIndex", index);
 }
 
 size_t printSetFormValue(Print& settingsScript, const char* key, const char* val) {
-  return settingsScript.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
+  return settingsScript.printf("d.Sf.%s.value=\"%s\";",key,val);
 }
 
 size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val) {
-  return settingsScript.printf_P(PSTR("d.getElementsByClassName(\"%s\")[%d].innerHTML=\"%s\";"), key, index, val);
+  return settingsScript.printf("d.getElementsByClassName(\"%s\"[%d].innerHTML=\"%s\";", key, index, val);
 }
 
 
@@ -151,17 +151,17 @@ static void sanitizeHostname(char* hostname, size_t maxLen) {
  */
 void getWLEDhostname(char* hostname, size_t maxLen, bool preferMDNS) {
   if (maxLen <= 6) { strlcpy(hostname, "wled", maxLen); return; } // buffer too small (should not happen)
-  if (preferMDNS && (strlen(cmDNS) > 0) && (strcmp_P(cmDNS, PSTR(DEFAULT_MDNS_NAME)) != 0)) {     // avoid "x" = not set (use wled-MAC)
+  if (preferMDNS && (strlen(cmDNS) > 0) && (strcmp(cmDNS, DEFAULT_MDNS_NAME) != 0)) {     // avoid "x" = not set (use wled-MAC)
     strlcpy(hostname, cmDNS, maxLen);
     sanitizeHostname(hostname, maxLen);  // sanitize cmDNS name
     if (strlen(hostname) < 1) {          // if result is empty -> fall back to wled-MAC
-      snprintf_P(hostname, maxLen, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
+      snprintf(hostname, maxLen, "wled-%*s", 6, escapedMac.c_str() + 6);
       hostname[maxLen -1] = '\0';        // ensure string termination
     }
   } else {
     prepareHostname(hostname, maxLen); // use legacy hostname based on "server description" - already sanitized
   }
-  DEBUG_PRINTF_P(PSTR("getWLEDHostname: '%s'\n"), hostname);
+  DEBUG_PRINTF_P("getWLEDHostname: '%s'\n", hostname);
 }
 
 /* Legacy hostname construction:
@@ -172,16 +172,16 @@ void getWLEDhostname(char* hostname, size_t maxLen, bool preferMDNS) {
 void prepareHostname(char* hostname, size_t maxLen)
 {
   if (maxLen <= 6) { strlcpy(hostname, "wled", maxLen); return; } // buffer too small (should not happen)
-  if (strncasecmp_P(serverDescription, PSTR("wled"), 4) == 0)     // avoid wled-WLED-... as a hostname
+  if (strncasecmp(serverDescription, "wled", 4) == 0)     // avoid wled-WLED-... as a hostname
     strlcpy(hostname, serverDescription, maxLen);
   else
-    snprintf_P(hostname, maxLen, PSTR("wled-%s"), serverDescription);
+    snprintf(hostname, maxLen, "wled-%s", serverDescription);
   hostname[maxLen -1] = '\0';                             // ensure string termination
 
   size_t sanOffset = hostname[4] != '-' ? 4 : 5;            // ensure that "WLED foo" and "WLED!foo" get sanitized
   sanitizeHostname(hostname+sanOffset, maxLen-sanOffset);   // sanitize name, keep "wled-" intact
   if (strlen(hostname) <= sanOffset)
-    snprintf_P(hostname, maxLen, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6); // fallback to wled-MAC if sanitization cleaned everything
+    snprintf(hostname, maxLen, "wled-%*s", 6, escapedMac.c_str() + 6); // fallback to wled-MAC if sanitization cleaned everything
 }
 
 
@@ -246,7 +246,7 @@ size_t utf8_strlen(const char *s)
 bool requestJSONBufferLock(uint8_t moduleID)
 {
   if (pDoc == nullptr) {
-    DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
+    DEBUG_PRINTLN("ERROR: JSON buffer not allocated!");
     return false;
   }
 
@@ -260,7 +260,7 @@ bool requestJSONBufferLock(uint8_t moduleID)
 #endif
   // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
-    DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), moduleID, jsonBufferLock);
+    DEBUG_PRINTF_P("ERROR: Locking JSON buffer (%d failed! (still locked by %d)\n", moduleID, jsonBufferLock);
 #ifdef ARDUINO_ARCH_ESP32
     xSemaphoreGiveRecursive(jsonBufferLockMutex);
 #endif
@@ -268,7 +268,7 @@ bool requestJSONBufferLock(uint8_t moduleID)
   }
 
   jsonBufferLock = moduleID ? moduleID : 255;
-  DEBUG_PRINTF_P(PSTR("JSON buffer locked. (%d)\n"), jsonBufferLock);
+  DEBUG_PRINTF_P("JSON buffer locked. (%d\n", jsonBufferLock);
   pDoc->clear();
   return true;
 }
@@ -276,7 +276,7 @@ bool requestJSONBufferLock(uint8_t moduleID)
 
 void releaseJSONBufferLock()
 {
-  DEBUG_PRINTF_P(PSTR("JSON buffer released. (%d)\n"), jsonBufferLock);
+  DEBUG_PRINTF_P("JSON buffer released. (%d\n", jsonBufferLock);
   jsonBufferLock = 0;
 #ifdef ARDUINO_ARCH_ESP32
   xSemaphoreGiveRecursive(jsonBufferLockMutex);
@@ -291,8 +291,8 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   if (src == JSON_mode_names || src == nullptr) {
     if (mode < strip.getModeCount()) {
       char lineBuffer[256];
-      //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
-      strncpy_P(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer)/sizeof(char)-1);
+      //strcpy(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
+      strncpy(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer)/sizeof(char)-1);
       lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
       size_t len = strlen(lineBuffer);
       size_t j = 0;
@@ -306,7 +306,7 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   }
 
   if (src == JSON_palette_names && mode > 255-customPalettes.size()) {
-    snprintf_P(dest, maxLen, PSTR("~ Custom %d ~"), 255-mode);
+    snprintf(dest, maxLen, "~ Custom %d ~", 255-mode);
     dest[maxLen] = '\0';
     return strlen(dest);
   }
@@ -315,7 +315,7 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   bool insideQuotes = false;
   unsigned printedChars = 0;
   char singleJsonSymbol;
-  size_t len = strlen_P(src);
+  size_t len = strlen(src);
 
   // Find the mode name in JSON
   for (size_t i = 0; i < len; i++) {
@@ -348,7 +348,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   dest[0] = '\0'; // start by clearing buffer
 
   if (mode < strip.getModeCount()) {
-    String lineBuffer = FPSTR(strip.getModeData(mode));
+    String lineBuffer = strip.getModeData(mode);
     if (lineBuffer.length() > 0) {
       int start = lineBuffer.indexOf('@');   // String::indexOf() returns an int, not an unsigned; -1 means "not found"
       int stop  = lineBuffer.indexOf(';', start);
@@ -368,14 +368,14 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
               }
               if (names.charAt(nameBegin) == '!') {
                 switch (slider) {
-                  case  0: tmpstr = PSTR("FX Speed");     break;
-                  case  1: tmpstr = PSTR("FX Intensity"); break;
-                  case  2: tmpstr = PSTR("FX Custom 1");  break;
-                  case  3: tmpstr = PSTR("FX Custom 2");  break;
-                  case  4: tmpstr = PSTR("FX Custom 3");  break;
-                  default: tmpstr = PSTR("FX Custom");    break;
+                  case  0: tmpstr = "FX Speed";     break;
+                  case  1: tmpstr = "FX Intensity"; break;
+                  case  2: tmpstr = "FX Custom 1";  break;
+                  case  3: tmpstr = "FX Custom 2";  break;
+                  case  4: tmpstr = "FX Custom 3";  break;
+                  default: tmpstr = "FX Custom";    break;
                 }
-                strncpy_P(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
+                strncpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
                 dest[maxLen-1] = '\0';
               } else {
                 if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
@@ -405,8 +405,8 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
       } else {
         // defaults to just speed and intensity since there is no slider data
         switch (slider) {
-          case 0:  strncpy_P(dest, PSTR("FX Speed"), maxLen); break;
-          case 1:  strncpy_P(dest, PSTR("FX Intensity"), maxLen); break;
+          case 0:  strncpy(dest, "FX Speed", maxLen); break;
+          case 1:  strncpy(dest, "FX Intensity", maxLen); break;
         }
         dest[maxLen-1] = '\0'; // strncpy does not necessarily null terminate string
       }
@@ -422,7 +422,7 @@ int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
     char lineBuffer[256];
-    strncpy_P(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer)/sizeof(char)-1);
+    strncpy(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer)/sizeof(char)-1);
     lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
     if (lineBuffer[0] != 0) {
       char* startPtr = strrchr(lineBuffer, ';'); // last ";" in FX data
@@ -631,7 +631,7 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
+static const char s_ledmap_tmpl[] = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   StaticJsonDocument<64> filter;
@@ -639,7 +639,7 @@ void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
     char fileName[33] = "/";
-    sprintf_P(fileName+1, s_ledmap_tmpl, i);
+    sprintf(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     if (ledmapNames[i-1]) { //clear old name
@@ -665,7 +665,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
+            snprintf(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = static_cast<char*>(malloc(len+1));
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
@@ -852,24 +852,24 @@ void *allocate_buffer(size_t size, uint32_t type) {
   /*
   #if !defined(ESP8266) && defined(WLED_DEBUG)
   if (buffer) {
-    DEBUG_PRINTF_P(PSTR("*Buffer allocated: size:%d, address:%p"), size, (uintptr_t)buffer);
+    DEBUG_PRINTF_P("*Buffer allocated: size:%d, address:%p", size, (uintptr_t)buffer);
     if ((uintptr_t)buffer > SOC_DRAM_LOW && (uintptr_t)buffer < SOC_DRAM_HIGH)
-      DEBUG_PRINTLN(F(" in DRAM"));
+      DEBUG_PRINTLN(" in DRAM");
     #ifndef CONFIG_IDF_TARGET_ESP32C3
     else if ((uintptr_t)buffer > SOC_EXTRAM_DATA_LOW && (uintptr_t)buffer < SOC_EXTRAM_DATA_HIGH)
-      DEBUG_PRINTLN(F(" in PSRAM"));
+      DEBUG_PRINTLN(" in PSRAM");
     #endif
     #ifdef CONFIG_IDF_TARGET_ESP32
     else if ((uintptr_t)buffer > SOC_IRAM_LOW && (uintptr_t)buffer < SOC_IRAM_HIGH)
-      DEBUG_PRINTLN(F(" in IRAM"));   // only used on ESP32 (MALLOC_CAP_32BIT)
+      DEBUG_PRINTLN(" in IRAM");   // only used on ESP32 (MALLOC_CAP_32BIT)
     #else
     else if ((uintptr_t)buffer > SOC_RTC_DRAM_LOW && (uintptr_t)buffer < SOC_RTC_DRAM_HIGH)
-      DEBUG_PRINTLN(F(" in RTCRAM")); // not available on ESP32
+      DEBUG_PRINTLN(" in RTCRAM"); // not available on ESP32
     #endif
     else
-      DEBUG_PRINTLN(F(" in ???")); // unknown (check soc.h for other memory regions)
+      DEBUG_PRINTLN(" in ???"); // unknown (check soc.h for other memory regions)
   } else
-    DEBUG_PRINTF_P(PSTR("Buffer allocation failed: size:%d\n"), size);
+    DEBUG_PRINTF_P("Buffer allocation failed: size:%d\n", size);
   #endif
   */
   return buffer;
@@ -931,12 +931,12 @@ static bool detectBootLoop() {
 
     case ResetReason::Crash:
     {
-      DEBUG_PRINTLN(F("crash detected!"));
+      DEBUG_PRINTLN("crash detected!");
       uint32_t rebootinterval = rtctime - bl_last_boottime;
       if (rebootinterval < BOOTLOOP_INTERVAL_MILLIS) {
         bl_crashcounter++;
         if (bl_crashcounter >= BOOTLOOP_THRESHOLD) {
-          DEBUG_PRINTLN(F("!BOOTLOOP DETECTED!"));
+          DEBUG_PRINTLN("!BOOTLOOP DETECTED!");
           bl_crashcounter = 0;
           if(bl_actiontracker > BOOTLOOP_ACTION_DUMP) bl_actiontracker = BOOTLOOP_ACTION_RESTORE; // reset action tracker if out of bounds
           result = true;
@@ -951,7 +951,7 @@ static bool detectBootLoop() {
 
     case ResetReason::Brownout:
       // crash due to brownout can't be detected unless using flash memory to store bootloop variables
-      DEBUG_PRINTLN(F("brownout detected"));
+      DEBUG_PRINTLN("brownout detected");
       //restoreConfig(); // TODO: blindly restoring config if brownout detected is a bad idea, need a better way (if at all)
       break;
   }
@@ -962,7 +962,7 @@ static bool detectBootLoop() {
 }
 
 void handleBootLoop() {
-  DEBUG_PRINTF_P(PSTR("checking for bootloop: time %d, counter %d, action %d\n"), bl_last_boottime, bl_crashcounter, bl_actiontracker);
+  DEBUG_PRINTF_P("checking for bootloop: time %d, counter %d, action %d\n", bl_last_boottime, bl_crashcounter, bl_actiontracker);
   if (!detectBootLoop()) return; // no bootloop detected
 
   switch(bl_actiontracker) {
@@ -976,7 +976,7 @@ void handleBootLoop() {
       break;
     case BOOTLOOP_ACTION_OTA:
       if(Update.canRollBack()) {
-        DEBUG_PRINTLN(F("Swapping boot partition..."));
+        DEBUG_PRINTLN("Swapping boot partition...");
         Update.rollBack(); // swap boot partition
       }
       ++bl_actiontracker;

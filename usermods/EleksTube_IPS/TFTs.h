@@ -72,7 +72,7 @@ private:
     h = sz / (w * 2);
     x = 0;
     y = (height() - h) /2;
-    
+
     uint8_t lineBuffer[w * 2];
 
     if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
@@ -82,7 +82,7 @@ private:
 
       bmpFS.read(lineBuffer, sizeof(lineBuffer));
       uint8_t PixM, PixL;
-      
+
       // Colors are already in 16-bit R5, G6, B5 format
       for (col = 0; col < w; col++)
       {
@@ -128,7 +128,7 @@ private:
 
     uint16_t magic = read16(bmpFS);
     if (magic != ('B' | ('M' << 8))) { // File not found or not a BMP
-      Serial.println(F("BMP not found!"));
+      Serial.println("BMP not found!");
       bmpFS.close();
       return false;
     }
@@ -143,7 +143,7 @@ private:
     bitDepth = read16(bmpFS);
 
     if (read32(bmpFS) != 0 || (bitDepth != 24 && bitDepth != 1 && bitDepth != 4 && bitDepth != 8)) {
-      Serial.println(F("BMP format not recognized."));
+      Serial.println("BMP format not recognized.");
       bmpFS.close();
       return false;
     }
@@ -168,14 +168,14 @@ private:
 
     uint32_t lineSize = ((bitDepth * w +31) >> 5) * 4;
     uint8_t lineBuffer[lineSize];
-    
+
     uint8_t serviceStrip = (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) ? 7 : 0;
     // row is decremented as the BMP image is drawn bottom up
     for (row = h-1; row >= 0; row--) {
       if ((row & 0b00000111) == serviceStrip) strip.service(); //still refresh backlight to mitigate stutter every few rows
       bmpFS.read(lineBuffer, sizeof(lineBuffer));
       uint8_t*  bptr = lineBuffer;
-      
+
       // Convert 24 to 16 bit colors while copying to output buffer.
       for (uint16_t col = 0; col < w; col++)
       {
@@ -212,7 +212,7 @@ private:
         output_buffer[row][col] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xFF) >> 3);
       }
     }
-    
+
     drawBuffer();
 
     bmpFS.close();
@@ -234,10 +234,10 @@ private:
 
     uint16_t r, g, b, dimming = 255, magic;
     int16_t row, col;
-    
+
     magic = read16(bmpFS);
     if (magic != 0x4B43) { // look for "CK" header
-      Serial.print(F("File not a CLK. Magic: "));
+      Serial.print("File not a CLK. Magic: ");
       Serial.println(magic);
       bmpFS.close();
       return false;
@@ -247,9 +247,9 @@ private:
     h = read16(bmpFS);
     x = (width() - w) / 2;
     y = (height() - h) / 2;
-    
+
     uint8_t lineBuffer[w * 2];
-    
+
     if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
 
     // 0,0 coordinates are top left
@@ -257,7 +257,7 @@ private:
 
       bmpFS.read(lineBuffer, sizeof(lineBuffer));
       uint8_t PixM, PixL;
-      
+
       // Colors are already in 16-bit R5, G6, B5 format
       for (col = 0; col < w; col++)
       {
@@ -302,7 +302,7 @@ public:
 
   uint8_t tubeSegment = 1;
   uint8_t digitOffset = 0;
-  
+
   void begin() {
     pinMode(TFT_ENABLE_PIN, OUTPUT);
     digitalWrite(TFT_ENABLE_PIN, HIGH); //enable displays on boot
@@ -346,7 +346,7 @@ public:
     sprintf(file_name, "/%d.bmp", digitToDraw);
     if (drawBmp(file_name)) bufferedDigit = digitToDraw;
     return;
-  } 
+  }
 
   void setDigit(uint8_t digit, uint8_t value, show_t show=yes) {
     uint8_t old_value = digits[digit];

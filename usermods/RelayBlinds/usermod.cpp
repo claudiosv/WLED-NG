@@ -5,7 +5,7 @@
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-  
+
 }
 
 //gets called every time WiFi is (re-)connected. Initialize own network interfaces here
@@ -34,7 +34,7 @@ void handleRelay()
     }
     userVar0 = 0;
   }
-  
+
   if (upActive)
   {
     if(!upActiveBefore)
@@ -43,12 +43,12 @@ void handleRelay()
       digitalWrite(PIN_UP_RELAY, LOW);
       upActiveBefore = true;
       upStartTime = millis();
-      DEBUG_PRINTLN(F("UPA"));
+      DEBUG_PRINTLN("UPA");
     }
     if (millis()- upStartTime > PIN_ON_TIME)
     {
       upActive = false;
-      DEBUG_PRINTLN(F("UPN"));
+      DEBUG_PRINTLN("UPN");
     }
   } else if (upActiveBefore)
   {

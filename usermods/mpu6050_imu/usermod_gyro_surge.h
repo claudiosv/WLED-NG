@@ -122,7 +122,7 @@ class GyroSurge : public Usermod {
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
+      JsonObject top = root.createNestedObject(_name);
 
       //save these vars persistently whenever settings are saved
       top["max"] = max;
@@ -133,16 +133,16 @@ class GyroSurge : public Usermod {
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
-     * 
+     *
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-     * 
+     *
      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
-     * 
+     *
      * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
      * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
-     * 
+     *
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
     bool readFromConfig(JsonObject& root)
@@ -150,7 +150,7 @@ class GyroSurge : public Usermod {
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root[FPSTR(_name)];
+      JsonObject top = root[_name];
 
       bool configComplete = !top.isNull();
 
@@ -170,10 +170,10 @@ class GyroSurge : public Usermod {
       }
       uint32_t sample_count = *(uint32_t*)(um_data->u_data[8]);
 
-      if (sample_count != last_sample) {        
+      if (sample_count != last_sample) {
         last_sample = sample_count;
         // Calculate based on new data
-        // We use the raw gyro data (angular rate)        
+        // We use the raw gyro data (angular rate)
         auto gyros = (int16_t*)um_data->u_data[4];  // 16384 == 2000 deg/s
 
         // Compute the overall rotation rate
@@ -182,7 +182,7 @@ class GyroSurge : public Usermod {
                         //Eigen::AngleAxis<float>(ESTIMATED_ANGULAR_RATE * gyros[0], Eigen::Vector3f::UnitX()) *
                         Eigen::AngleAxis<float>(ESTIMATED_ANGULAR_RATE * gyros[1], Eigen::Vector3f::UnitY()) *
                         Eigen::AngleAxis<float>(ESTIMATED_ANGULAR_RATE * gyros[2], Eigen::Vector3f::UnitZ()) };
-        
+
         // Filter the results
         filter(std::min(sensitivity * gyro_q.angle(), 1.0f));   // radians per second
 /*
@@ -216,4 +216,4 @@ class GyroSurge : public Usermod {
     }
 };
 
-const char GyroSurge::_name[] PROGMEM = "GyroSurge";
+const char GyroSurge::_name[] = "GyroSurge";

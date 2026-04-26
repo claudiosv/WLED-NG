@@ -16,7 +16,7 @@
 // See /src/dependencies/fastled_slim/LICENSE.txt for details
 
 // Cloudy color palette
-const TProgmemRGBPalette16 CloudColors_p PROGMEM = {
+const TProgmemRGBPalette16 CloudColors_p = {
   CRGB::Blue,
   CRGB::DarkBlue,
   CRGB::DarkBlue,
@@ -39,7 +39,7 @@ const TProgmemRGBPalette16 CloudColors_p PROGMEM = {
 };
 
 // Lava color palette
-const TProgmemRGBPalette16 LavaColors_p PROGMEM = {
+const TProgmemRGBPalette16 LavaColors_p = {
   CRGB::Black,
   CRGB::Maroon,
   CRGB::Black,
@@ -62,7 +62,7 @@ const TProgmemRGBPalette16 LavaColors_p PROGMEM = {
 };
 
 // Ocean colors, blues and whites
-const TProgmemRGBPalette16 OceanColors_p PROGMEM = {
+const TProgmemRGBPalette16 OceanColors_p = {
   CRGB::MidnightBlue,
   CRGB::DarkBlue,
   CRGB::MidnightBlue,
@@ -85,7 +85,7 @@ const TProgmemRGBPalette16 OceanColors_p PROGMEM = {
 };
 
 // Forest colors, greens
-const TProgmemRGBPalette16 ForestColors_p PROGMEM = {
+const TProgmemRGBPalette16 ForestColors_p = {
   CRGB::DarkGreen,
   CRGB::DarkGreen,
   CRGB::DarkOliveGreen,
@@ -109,7 +109,7 @@ const TProgmemRGBPalette16 ForestColors_p PROGMEM = {
 
 // Gradient palette "ib_jul01_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/ing/xmas/ib_jul01.c3g
-const uint8_t ib_jul01_gp[] PROGMEM = {
+const uint8_t ib_jul01_gp[] = {
     0, 226,   6,  12,
    94,  26,  96,  78,
   132, 130, 189,  94,
@@ -117,7 +117,7 @@ const uint8_t ib_jul01_gp[] PROGMEM = {
 
 // Gradient palette "es_vintage_57_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/vintage/es_vintage_57.c3g
-const uint8_t es_vintage_57_gp[] PROGMEM = {
+const uint8_t es_vintage_57_gp[] = {
     0,  29,   8,   3,
    53,  76,   1,   0,
   104, 142,  96,  28,
@@ -126,7 +126,7 @@ const uint8_t es_vintage_57_gp[] PROGMEM = {
 
 // Gradient palette "es_vintage_01_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/vintage/es_vintage_01.c3g
-const uint8_t es_vintage_01_gp[] PROGMEM = {
+const uint8_t es_vintage_01_gp[] = {
     0,  41,  18,  24,
    51,  73,   0,  22,
    76, 165, 170,  38,
@@ -138,7 +138,7 @@ const uint8_t es_vintage_01_gp[] PROGMEM = {
 
 // Gradient palette "es_rivendell_15_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/rivendell/es_rivendell_15.c3g
-const uint8_t es_rivendell_15_gp[] PROGMEM = {
+const uint8_t es_rivendell_15_gp[] = {
     0,  24,  69,  44,
   101,  73, 105,  70,
   165, 129, 140,  97,
@@ -147,7 +147,7 @@ const uint8_t es_rivendell_15_gp[] PROGMEM = {
 
 // Gradient palette "rgi_15_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/ds/rgi/rgi_15.c3g
-const uint8_t rgi_15_gp[] PROGMEM = {
+const uint8_t rgi_15_gp[] = {
     0,  41,  14,  99,
    31, 128,  24,  74,
    63, 227,  34,  50,
@@ -160,13 +160,13 @@ const uint8_t rgi_15_gp[] PROGMEM = {
 
 // Gradient palette "retro2_16_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/ma/retro2/retro2_16.c3g
-const uint8_t retro2_16_gp[] PROGMEM = {
+const uint8_t retro2_16_gp[] = {
     0, 222, 191,   8,
   255, 117,  52,   1};
 
 // Gradient palette "Analogous_1_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/red/Analogous_1.c3g
-const uint8_t Analogous_1_gp[] PROGMEM = {
+const uint8_t Analogous_1_gp[] = {
     0,  38,   0, 255,
    63,  86,   0, 255,
   127, 139,   0, 255,
@@ -175,7 +175,7 @@ const uint8_t Analogous_1_gp[] PROGMEM = {
 
 // Gradient palette "es_pinksplash_08_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/pink_splash/es_pinksplash_08.c3g
-const uint8_t es_pinksplash_08_gp[] PROGMEM = {
+const uint8_t es_pinksplash_08_gp[] = {
     0, 186,  63, 255,
   127, 227,   9,  85,
   175, 234, 205, 213,
@@ -185,7 +185,7 @@ const uint8_t es_pinksplash_08_gp[] PROGMEM = {
 
 // Gradient palette "es_ocean_breeze_036_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/ocean_breeze/es_ocean_breeze_036.c3g
-const uint8_t es_ocean_breeze_036_gp[] PROGMEM = {
+const uint8_t es_ocean_breeze_036_gp[] = {
     0,  16,  48,  51,
    89,  27, 166, 175,
   153, 197, 233, 255,
@@ -193,7 +193,7 @@ const uint8_t es_ocean_breeze_036_gp[] PROGMEM = {
 
 // Gradient palette "departure_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/mjf/departure.c3g
-const uint8_t departure_gp[] PROGMEM = {
+const uint8_t departure_gp[] = {
     0,  53,  34,   0,
    42,  86,  51,   0,
    63, 147, 108,  49,
@@ -209,7 +209,7 @@ const uint8_t departure_gp[] PROGMEM = {
 
 // Gradient palette "es_landscape_64_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/landscape/es_landscape_64.c3g
-const uint8_t es_landscape_64_gp[] PROGMEM = {
+const uint8_t es_landscape_64_gp[] = {
     0,   0,   0,   0,
    37,  31,  89,  19,
    76,  72, 178,  43,
@@ -222,7 +222,7 @@ const uint8_t es_landscape_64_gp[] PROGMEM = {
 
 // Gradient palette "es_landscape_33_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/landscape/es_landscape_33.c3g
-const uint8_t es_landscape_33_gp[] PROGMEM = {
+const uint8_t es_landscape_33_gp[] = {
     0,  12,  45,   0,
    19, 101,  86,   2,
    38, 207, 128,   4,
@@ -232,7 +232,7 @@ const uint8_t es_landscape_33_gp[] PROGMEM = {
 
 // Gradient palette "rainbowsherbet_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/ma/icecream/rainbowsherbet.c3g
-const uint8_t rainbowsherbet_gp[] PROGMEM = {
+const uint8_t rainbowsherbet_gp[] = {
     0, 255, 102,  41,
    43, 255, 140,  90,
    86, 255,  51,  90,
@@ -243,7 +243,7 @@ const uint8_t rainbowsherbet_gp[] PROGMEM = {
 
 // Gradient palette "gr65_hult_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/hult/gr65_hult.c3g
-const uint8_t gr65_hult_gp[] PROGMEM = {
+const uint8_t gr65_hult_gp[] = {
     0, 251, 216, 252,
    48, 255, 192, 255,
    89, 239,  95, 241,
@@ -253,7 +253,7 @@ const uint8_t gr65_hult_gp[] PROGMEM = {
 
 // Gradient palette "gr64_hult_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/hult/gr64_hult.c3g
-const uint8_t gr64_hult_gp[] PROGMEM = {
+const uint8_t gr64_hult_gp[] = {
     0,  24, 184, 174,
    66,   8, 162, 150,
   104, 124, 137,   7,
@@ -265,7 +265,7 @@ const uint8_t gr64_hult_gp[] PROGMEM = {
 
 // Gradient palette "GMT_drywet_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/gmt/GMT_drywet.c3g
-const uint8_t GMT_drywet_gp[] PROGMEM = {
+const uint8_t GMT_drywet_gp[] = {
     0, 119,  97,  33,
    42, 235, 199,  88,
    84, 169, 238, 124,
@@ -276,7 +276,7 @@ const uint8_t GMT_drywet_gp[] PROGMEM = {
 
 // Gradient palette "ib15_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/ing/general/ib15.c3g
-const uint8_t ib15_gp[] PROGMEM = {
+const uint8_t ib15_gp[] = {
     0, 177, 160, 199,
    72, 205, 158, 149,
    89, 233, 155, 101,
@@ -286,7 +286,7 @@ const uint8_t ib15_gp[] PROGMEM = {
 
 // Gradient palette "Tertiary_01_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/vermillion/Tertiary_01.c3g
-const uint8_t Tertiary_01_gp[] PROGMEM = {
+const uint8_t Tertiary_01_gp[] = {
     0,   0,  25, 255,
    63,  38, 140, 117,
   127,  86, 255,   0,
@@ -295,7 +295,7 @@ const uint8_t Tertiary_01_gp[] PROGMEM = {
 
 // Gradient palette "lava_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/neota/elem/lava.c3g
-const uint8_t lava_gp[] PROGMEM = {
+const uint8_t lava_gp[] = {
     0,   0,   0,   0,
    46,  77,   0,   0,
    96, 177,   0,   0,
@@ -312,7 +312,7 @@ const uint8_t lava_gp[] PROGMEM = {
 
 // Gradient palette "fierce-ice_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/neota/elem/fierce-ice.c3g
-const uint8_t fierce_ice_gp[] PROGMEM = {
+const uint8_t fierce_ice_gp[] = {
     0,   0,   0,   0,
    59,   0,  51, 117,
   119,   0, 102, 255,
@@ -323,7 +323,7 @@ const uint8_t fierce_ice_gp[] PROGMEM = {
 
 // Gradient palette "Colorfull_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Colorfull.c3g
-const uint8_t Colorfull_gp[] PROGMEM = {
+const uint8_t Colorfull_gp[] = {
     0,  61, 155,  44,
    25,  95, 174,  77,
    60, 132, 193, 113,
@@ -338,7 +338,7 @@ const uint8_t Colorfull_gp[] PROGMEM = {
 
 // Gradient palette "Pink_Purple_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Pink_Purple.c3g
-const uint8_t Pink_Purple_gp[] PROGMEM = {
+const uint8_t Pink_Purple_gp[] = {
     0,  79,  32, 109,
    25,  90,  40, 117,
    51, 102,  48, 124,
@@ -353,7 +353,7 @@ const uint8_t Pink_Purple_gp[] PROGMEM = {
 
 // Gradient palette "Sunset_Real_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Sunset_Real.c3g
-const uint8_t Sunset_Real_gp[] PROGMEM = {
+const uint8_t Sunset_Real_gp[] = {
     0, 181,   0,   0,
    22, 218,  85,   0,
    51, 255, 170,   0,
@@ -364,7 +364,7 @@ const uint8_t Sunset_Real_gp[] PROGMEM = {
 
 // Gradient palette "Sunset_Yellow_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Sunset_Yellow.c3g
-const uint8_t Sunset_Yellow_gp[] PROGMEM = {
+const uint8_t Sunset_Yellow_gp[] = {
     0,  61, 135, 184,
    36, 129, 188, 169,
    87, 203, 241, 155,
@@ -379,7 +379,7 @@ const uint8_t Sunset_Yellow_gp[] PROGMEM = {
 
 // Gradient palette "Beech_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Beech.c3g
-const uint8_t Beech_gp[] PROGMEM = {
+const uint8_t Beech_gp[] = {
     0, 255, 254, 236,
    12, 255, 254, 236,
    22, 255, 254, 236,
@@ -398,7 +398,7 @@ const uint8_t Beech_gp[] PROGMEM = {
 
 // Gradient palette "Another_Sunset_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/atmospheric/Another_Sunset.c3g
-const uint8_t Another_Sunset_gp[] PROGMEM = {
+const uint8_t Another_Sunset_gp[] = {
     0, 175, 121,  62,
    29, 128, 103,  60,
    68,  84,  84,  58,
@@ -410,7 +410,7 @@ const uint8_t Another_Sunset_gp[] PROGMEM = {
 
 // Gradient palette "es_autumn_19_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/es/autumn/es_autumn_19.c3g
-const uint8_t es_autumn_19_gp[] PROGMEM = {
+const uint8_t es_autumn_19_gp[] = {
     0,  90,  14,   5,
    51, 139,  41,  13,
    84, 180,  70,  17,
@@ -427,7 +427,7 @@ const uint8_t es_autumn_19_gp[] PROGMEM = {
 
 // Gradient palette "BlacK_Blue_Magenta_White_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/basic/BlacK_Blue_Magenta_White.c3g
-const uint8_t BlacK_Blue_Magenta_White_gp[] PROGMEM = {
+const uint8_t BlacK_Blue_Magenta_White_gp[] = {
     0,   0,   0,   0,
    42,   0,   0, 117,
    84,   0,   0, 255,
@@ -438,7 +438,7 @@ const uint8_t BlacK_Blue_Magenta_White_gp[] PROGMEM = {
 
 // Gradient palette "BlacK_Magenta_Red_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/basic/BlacK_Magenta_Red.c3g
-const uint8_t BlacK_Magenta_Red_gp[] PROGMEM = {
+const uint8_t BlacK_Magenta_Red_gp[] = {
     0,   0,   0,   0,
    63, 113,   0, 117,
   127, 255,   0, 255,
@@ -447,7 +447,7 @@ const uint8_t BlacK_Magenta_Red_gp[] PROGMEM = {
 
 // Gradient palette "BlacK_Red_Magenta_Yellow_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/basic/BlacK_Red_Magenta_Yellow.c3g
-const uint8_t BlacK_Red_Magenta_Yellow_gp[] PROGMEM = {
+const uint8_t BlacK_Red_Magenta_Yellow_gp[] = {
     0,   0,   0,   0,
    42, 113,   0,   0,
    84, 255,   0,   0,
@@ -458,7 +458,7 @@ const uint8_t BlacK_Red_Magenta_Yellow_gp[] PROGMEM = {
 
 // Gradient palette "Blue_Cyan_Yellow_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/nd/basic/Blue_Cyan_Yellow.c3g
-const uint8_t Blue_Cyan_Yellow_gp[] PROGMEM = {
+const uint8_t Blue_Cyan_Yellow_gp[] = {
     0,   0,   0, 255,
    63,   0, 128, 255,
   127,   0, 255, 255,
@@ -466,14 +466,14 @@ const uint8_t Blue_Cyan_Yellow_gp[] PROGMEM = {
   255, 255, 255,   0};
 
 //Custom palette by Aircoookie
-const byte Orange_Teal_gp[] PROGMEM = {
+const byte Orange_Teal_gp[] = {
     0,   0,150, 92,
    55,   0,150, 92,
   200, 255, 72,  0,
   255, 255, 72,  0};
 
 //Custom palette by Aircoookie
-const byte Tiamat_gp[] PROGMEM = {
+const byte Tiamat_gp[] = {
     0,   1,  2, 14, //gc
    33,   2,  5, 35, //gc from 47, 61,126
   100,  13,135, 92, //gc from 88,242,247
@@ -487,7 +487,7 @@ const byte Tiamat_gp[] PROGMEM = {
   255, 255,249,255};
 
 //Custom palette by Aircoookie
-const byte April_Night_gp[] PROGMEM = {
+const byte April_Night_gp[] = {
     0,   1,  5, 45, //deep blue
    10,   1,  5, 45,
    25,   5,169,175, //light blue
@@ -506,7 +506,7 @@ const byte April_Night_gp[] PROGMEM = {
   244,   1,  5, 45,
   255,   1,  5, 45};
 
-const byte Orangery_gp[] PROGMEM = {
+const byte Orangery_gp[] = {
     0, 255, 95, 23,
    30, 255, 82,  0,
    60, 223, 13,  8,
@@ -518,7 +518,7 @@ const byte Orangery_gp[] PROGMEM = {
   255, 213, 37,  4};
 
 //inspired by Mark Kriegsman https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
-const byte C9_gp[] PROGMEM = {
+const byte C9_gp[] = {
     0, 184,  4,  0, //red
    60, 184,  4,  0,
    65, 144, 44,  2, //amber
@@ -528,14 +528,14 @@ const byte C9_gp[] PROGMEM = {
   195,   7,  7, 88, //blue
   255,   7,  7, 88};
 
-const byte Sakura_gp[] PROGMEM = {
+const byte Sakura_gp[] = {
     0, 196, 19, 10,
    65, 255, 69, 45,
   130, 223, 45, 72,
   195, 255, 82,103,
   255, 223, 13, 17};
 
-const byte Aurora_gp[] PROGMEM = {
+const byte Aurora_gp[] = {
     0,   1,  5, 45, //deep blue
    64,   0,200, 23,
   128,   0,255,  0, //green
@@ -543,7 +543,7 @@ const byte Aurora_gp[] PROGMEM = {
   200,   0,135,  7,
   255,   1,  5, 45};//deep blue
 
-const byte Atlantica_gp[] PROGMEM = {
+const byte Atlantica_gp[] = {
     0,   0, 28,112, //#001C70
    50,  32, 96,255, //#2060FF
   100,   0,243, 45,
@@ -551,7 +551,7 @@ const byte Atlantica_gp[] PROGMEM = {
   200,  25,190, 95, //#19BE5F
   255,  40,170, 80};//#28AA50
 
-  const byte C9_2_gp[] PROGMEM = {
+  const byte C9_2_gp[] = {
     0,   6, 126,   2, //green
    45,   6, 126,   2,
    46,   4,  30, 114, //blue
@@ -564,7 +564,7 @@ const byte Atlantica_gp[] PROGMEM = {
   255, 137,  85,   2};
 
   //C9, but brighter and with a less purple blue
-  const byte C9_new_gp[] PROGMEM = {
+  const byte C9_new_gp[] = {
     0, 255,   5,   0, //red
    60, 255,   5,   0,
    61, 196,  57,   2, //amber (start 61?)
@@ -576,7 +576,7 @@ const byte Atlantica_gp[] PROGMEM = {
 
 // Gradient palette "temperature_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/arendal/temperature.c3g
-const uint8_t temperature_gp[] PROGMEM = {
+const uint8_t temperature_gp[] = {
     0,  20,  92, 171,
    14,  15, 111, 186,
    28,   6, 142, 211,
@@ -598,7 +598,7 @@ const uint8_t temperature_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_01_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_01.c3g
-const uint8_t retro_clown_gp[] PROGMEM = {
+const uint8_t retro_clown_gp[] = {
     0, 242, 168,  38,
   117, 226,  78,  80,
   255, 161,  54, 225,
@@ -606,7 +606,7 @@ const uint8_t retro_clown_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_04_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_04.c3g
-const uint8_t candy_gp[] PROGMEM = {
+const uint8_t candy_gp[] = {
     0, 243, 242,  23,
    15, 242, 168,  38,
   142, 111,  21, 151,
@@ -615,13 +615,13 @@ const uint8_t candy_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_05_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_05.c3g
-const uint8_t toxy_reaf_gp[] PROGMEM = {
+const uint8_t toxy_reaf_gp[] = {
     0,   2, 239, 126,
   255, 145,  35, 217};
 
 // Gradient palette "bhw1_06_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_06.c3g
-const uint8_t fairy_reaf_gp[] PROGMEM = {
+const uint8_t fairy_reaf_gp[] = {
     0, 220,  19, 187,
   160,  12, 225, 219,
   219, 203, 242, 223,
@@ -629,7 +629,7 @@ const uint8_t fairy_reaf_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_14_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_14.c3g
-const uint8_t semi_blue_gp[] PROGMEM = {
+const uint8_t semi_blue_gp[] = {
     0,   0,   0,   0,
    12,  24,   4,  38,
    53,  55,   8,  84,
@@ -642,7 +642,7 @@ const uint8_t semi_blue_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_three_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_three.c3g
-const uint8_t pink_candy_gp[] PROGMEM = {
+const uint8_t pink_candy_gp[] = {
     0, 255, 255, 255,
    45,  50,  64, 255,
   112, 242,  16, 186,
@@ -653,7 +653,7 @@ const uint8_t pink_candy_gp[] PROGMEM = {
 
 // Gradient palette "bhw1_w00t_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw1/bhw1_w00t.c3g
-const uint8_t red_reaf_gp[] PROGMEM = {
+const uint8_t red_reaf_gp[] = {
     0,  36,  68, 114,
   104, 149, 195, 248,
   188, 255,   0,   0,
@@ -661,7 +661,7 @@ const uint8_t red_reaf_gp[] PROGMEM = {
 
 // Gradient palette "bhw2_23_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw2/bhw2_23.c3g
-const uint8_t aqua_flash_gp[] PROGMEM = {
+const uint8_t aqua_flash_gp[] = {
     0,   0,   0,   0,
    66, 130, 242, 245,
    96, 255, 255,  53,
@@ -672,7 +672,7 @@ const uint8_t aqua_flash_gp[] PROGMEM = {
 
 // Gradient palette "bhw2_xc_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw2/bhw2_xc.c3g
-const uint8_t yelblu_hot_gp[] PROGMEM = {
+const uint8_t yelblu_hot_gp[] = {
     0,  43,  30,  57,
    58,  73,   0, 119,
   122,  87,   0,  74,
@@ -684,7 +684,7 @@ const uint8_t yelblu_hot_gp[] PROGMEM = {
 
 // Gradient palette "bhw2_45_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw2/bhw2_45.c3g
-const uint8_t lite_light_gp[] PROGMEM = {
+const uint8_t lite_light_gp[] = {
     0,   0,   0,   0,
     9,  20,  21,  22,
    40,  46,  43,  49,
@@ -694,7 +694,7 @@ const uint8_t lite_light_gp[] PROGMEM = {
 
 // Gradient palette "bhw2_22_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw2/bhw2_22.c3g
-const uint8_t red_flash_gp[] PROGMEM = {
+const uint8_t red_flash_gp[] = {
     0,   0,   0,   0,
    99, 242,  12,   8,
   130, 253, 228, 163,
@@ -703,7 +703,7 @@ const uint8_t red_flash_gp[] PROGMEM = {
 
 // Gradient palette "bhw3_40_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw3/bhw3_40.c3g
-const uint8_t blink_red_gp[] PROGMEM = {
+const uint8_t blink_red_gp[] = {
     0,   4,   7,   4,
    43,  40,  25,  62,
    76,  61,  15,  36,
@@ -715,7 +715,7 @@ const uint8_t blink_red_gp[] PROGMEM = {
 
 // Gradient palette "bhw3_52_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw3/bhw3_52.c3g
-const uint8_t red_shift_gp[] PROGMEM = {
+const uint8_t red_shift_gp[] = {
     0,  98,  22,  93,
    45, 103,  22,  73,
    99, 192,  45,  56,
@@ -726,7 +726,7 @@ const uint8_t red_shift_gp[] PROGMEM = {
 
 // Gradient palette "bhw4_097_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw4/bhw4_097.c3g
-const uint8_t red_tide_gp[] PROGMEM = {
+const uint8_t red_tide_gp[] = {
     0, 251,  46,   0,
    28, 255, 139,  25,
    43, 246, 158,  63,
@@ -741,7 +741,7 @@ const uint8_t red_tide_gp[] PROGMEM = {
 
 // Gradient palette "bhw4_017_gp", originally from
 // http://seaviewsensing.com/pub/cpt-city/bhw/bhw4/bhw4_017.c3g
-const uint8_t candy2_gp[] PROGMEM = {
+const uint8_t candy2_gp[] = {
     0, 109, 102, 102,
    25,  42,  49,  71,
    48, 121,  96,  84,
@@ -753,13 +753,13 @@ const uint8_t candy2_gp[] PROGMEM = {
   211, 109, 102, 102,
   255,  20,  19,  13};
 
-const byte trafficlight_gp[] PROGMEM = {
+const byte trafficlight_gp[] = {
     0,   0,   0, 0,   //black
    85,   0, 255, 0,   //green
   170, 255, 255, 0,   //yellow
   255, 255,   0, 0};  //red
 
-const byte Aurora2_gp[] PROGMEM = {
+const byte Aurora2_gp[] = {
     0,  17, 177,  13,    //Greenish
    64, 121, 242,   5,    //Greenish
   128,  25, 173, 121,    //Turquoise
@@ -769,28 +769,28 @@ const byte Aurora2_gp[] PROGMEM = {
 // FastLed palettes, corrected with inverse gamma of 2.2 to match original looks
 
 // Party colors
-const TProgmemRGBPalette16 PartyColors_gc22 PROGMEM = {
+const TProgmemRGBPalette16 PartyColors_gc22 = {
   0x9B00D5, 0xBD00B8, 0xDA0092, 0xF3005C,
   0xF45500, 0xDC8F00, 0xD5B400, 0xD5D500,
   0xD59B00, 0xEF6600, 0xF90044, 0xE10086,
   0xC400B0, 0xA300CF, 0x7600E8, 0x0032FC};
 
 // Rainbow colors
-const TProgmemRGBPalette16 RainbowColors_gc22 PROGMEM = {
+const TProgmemRGBPalette16 RainbowColors_gc22 = {
   0xFF0000, 0xEB7000, 0xD59B00, 0xD5BA00,
   0xD5D500, 0x9CEB00, 0x00FF00, 0x00EB70,
   0x00D59B, 0x009CD4, 0x0000FF, 0x7000EB,
   0x9B00D5, 0xBA00BB, 0xD5009B, 0xEB0072};
 
 // Rainbow colors with alternatating stripes of black
-const TProgmemRGBPalette16 RainbowStripeColors_gc22 PROGMEM = {
+const TProgmemRGBPalette16 RainbowStripeColors_gc22 = {
   0xFF0000, 0x000000, 0xD59B00, 0x000000,
   0xD5D500, 0x000000, 0x00FF00, 0x000000,
   0x00D59B, 0x000000, 0x0000FF, 0x000000,
   0x9B00D5, 0x000000, 0xD5009B, 0x000000};
 
 // array of fastled palettes (palette 6 - 12)
-const TProgmemRGBPalette16 *const fastledPalettes[] PROGMEM = {
+const TProgmemRGBPalette16 *const fastledPalettes[] = {
   &PartyColors_gc22,            //06-00 Party
   &CloudColors_p,               //07-01 Cloud
   &LavaColors_p,                //08-02 Lava
@@ -804,7 +804,7 @@ const TProgmemRGBPalette16 *const fastledPalettes[] PROGMEM = {
 // This will let us programmatically choose one based on
 // a number, rather than having to activate each explicitly
 // by name every time.
-const uint8_t* const gGradientPalettes[] PROGMEM = {
+const uint8_t* const gGradientPalettes[] = {
   Sunset_Real_gp,               //13-00 Sunset
   es_rivendell_15_gp,           //14-01 Rivendell
   es_ocean_breeze_036_gp,       //15-02 Breeze

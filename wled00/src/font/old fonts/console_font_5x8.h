@@ -38,7 +38,7 @@
  * at the end of each glyph bitmap, padding bits are added if necessary to fill the last byte
  */
 
-static const unsigned char console_font_5x8[] PROGMEM = {
+static const unsigned char console_font_5x8[] = {
     0x57, 0x08, 0x05, 0x01, 0x00, 0x20, 0x7E, 0x00, 0x00, 0x00, 0x00, 0x00, // Header: Magic, H, W, Spacing, Flags, First, Last, Reserved, UnicodeOffset
 
     // 0x00, 0x00, 0x00, 0x00, 0x00,     // /* code=0, hex=0x00, ascii="^@" */

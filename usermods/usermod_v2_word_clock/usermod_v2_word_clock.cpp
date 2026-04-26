@@ -3,16 +3,16 @@
 /*
  * Usermods allow you to add own functionality to WLED more easily
  * See: https://github.com/wled-dev/WLED/wiki/Add-own-functionality
- * 
- * This usermod can be used to drive a wordclock with a 11x10 pixel matrix with WLED. There are also 4 additional dots for the minutes. 
+ *
+ * This usermod can be used to drive a wordclock with a 11x10 pixel matrix with WLED. There are also 4 additional dots for the minutes.
  * The visualisation is described in 4 mask with LED numbers (single dots for minutes, minutes, hours and "clock/Uhr").
  * There are 2 parameters to change the behaviour:
- * 
+ *
  * active: enable/disable usermod
  * diplayItIs: enable/disable display of "Es ist" on the clock.
  */
 
-class WordClockUsermod : public Usermod 
+class WordClockUsermod : public Usermod
 {
   private:
     unsigned long lastTime = 0;
@@ -24,7 +24,7 @@ class WordClockUsermod : public Usermod
     int ledOffset = 100;
     bool meander = false;
     bool nord = false;
-    
+
     // defines for mask sizes
     #define maskSizeLeds        114
     #define maskSizeMinutes     12
@@ -36,7 +36,7 @@ class WordClockUsermod : public Usermod
 
     // "minute" masks
     // Normal wiring
-    const int maskMinutes[14][maskSizeMinutes] = 
+    const int maskMinutes[14][maskSizeMinutes] =
     {
       {107, 108, 109,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
       {  7,   8,   9,  10,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
@@ -55,7 +55,7 @@ class WordClockUsermod : public Usermod
     };
 
     // Meander wiring
-    const int maskMinutesMea[14][maskSizeMinutesMea] = 
+    const int maskMinutesMea[14][maskSizeMinutesMea] =
     {
       { 99, 100, 101,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
       {  7,   8,   9,  10,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
@@ -76,7 +76,7 @@ class WordClockUsermod : public Usermod
 
     // hour masks
     // Normal wiring
-    const int maskHours[13][maskSizeHours] = 
+    const int maskHours[13][maskSizeHours] =
     {
       { 55,  56,  57,  -1,  -1,  -1}, // 01: ein
       { 55,  56,  57,  58,  -1,  -1}, // 01: eins
@@ -93,7 +93,7 @@ class WordClockUsermod : public Usermod
       { 94,  95,  96,  97,  98,  -1}  // 12: zwölf and 00: null
     };
     // Meander wiring
-    const int maskHoursMea[13][maskSizeHoursMea] = 
+    const int maskHoursMea[13][maskSizeHoursMea] =
     {
       { 63,  64,  65,  -1,  -1,  -1}, // 01: ein
       { 62,  63,  64,  65,  -1,  -1}, // 01: eins
@@ -117,7 +117,7 @@ class WordClockUsermod : public Usermod
     const int maskMinuteDots[maskSizeMinuteDots] = {110, 111, 112, 113};
 
     // overall mask to define which LEDs are on
-    int maskLedsOn[maskSizeLeds] = 
+    int maskLedsOn[maskSizeLeds] =
     {
       0,0,0,0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,0,0,0,
@@ -136,7 +136,7 @@ class WordClockUsermod : public Usermod
     void updateLedMask(const int wordMask[], int arraySize)
     {
       // loop over array
-      for (int x=0; x < arraySize; x++) 
+      for (int x=0; x < arraySize; x++)
       {
         // check if mask has a valid LED number
         if (wordMask[x] >= 0 && wordMask[x] < maskSizeLeds)
@@ -204,20 +204,20 @@ class WordClockUsermod : public Usermod
         for (int i = 0; i < minutesDotCount; i++)
         {
           // activate LED
-          maskLedsOn[maskMinuteDots[i]] = 1;  
+          maskLedsOn[maskMinuteDots[i]] = 1;
         }
       }
     }
 
     // update the display
-    void updateDisplay(uint8_t hours, uint8_t minutes) 
+    void updateDisplay(uint8_t hours, uint8_t minutes)
     {
       // disable complete matrix at the bigging
       for (int x = 0; x < maskSizeLeds; x++)
       {
         maskLedsOn[x] = 0;
-      } 
-      
+      }
+
       // display it is/es ist if activated
       if (displayItIs)
       {
@@ -228,7 +228,7 @@ class WordClockUsermod : public Usermod
       setSingleMinuteDots(minutes);
 
       // switch minutes
-      switch (minutes / 5) 
+      switch (minutes / 5)
       {
         case 0:
             // full hour
@@ -251,7 +251,7 @@ class WordClockUsermod : public Usermod
               setMinutes(12);
               setHours(hours, false);
             } else {
-              // viertel 
+              // viertel
               setMinutes(3);
               setHours(hours + 1, false);
             };
@@ -285,7 +285,7 @@ class WordClockUsermod : public Usermod
             // viertel vor
             if (nord) {
               setMinutes(13);
-            } 
+            }
             // dreiviertel
               else {
               setMinutes(9);
@@ -312,7 +312,7 @@ class WordClockUsermod : public Usermod
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() 
+    void setup()
     {
     }
 
@@ -320,24 +320,24 @@ class WordClockUsermod : public Usermod
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() 
+    void connected()
     {
     }
 
     /*
      * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
+     *
      * Tips:
      * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
      *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-     * 
+     *
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
     void loop() {
 
       // do it every 5 seconds
-      if (millis() - lastTime > 5000) 
+      if (millis() - lastTime > 5000)
       {
         // check the time
         int minutes = minute(localTime);
@@ -388,11 +388,11 @@ class WordClockUsermod : public Usermod
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * If you want to force saving the current state, use serializeConfig() in your loop().
-     * 
+     *
      * CAUTION: serializeConfig() will initiate a filesystem write operation.
      * It might cause the LEDs to stutter and will cause flash wear if called too often.
      * Use it sparingly and always in the loop, never in network callbacks!
-     * 
+     *
      * addToConfig() will make your settings editable through the Usermod Settings page automatically.
      *
      * Usermod Settings Overview:
@@ -412,42 +412,42 @@ class WordClockUsermod : public Usermod
      *   - Tip: use int8_t to store the pin value in the Usermod, so a -1 value (pin not set) can be used
      *
      * See usermod_v2_auto_save.h for an example that saves Flash space by reusing ArduinoJson key name strings
-     * 
-     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.  
+     *
+     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.
      * You will have to add the setting to the HTML, xml.cpp and set.cpp manually.
      * See the WLED Soundreactive fork (code and wiki) for reference.  https://github.com/atuline/WLED
-     * 
+     *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject(F("WordClockUsermod"));
-      top[F("active")] = usermodActive;
-      top[F("displayItIs")] = displayItIs;
-      top[F("ledOffset")] = ledOffset;
-      top[F("Meander wiring?")] = meander;
-      top[F("Norddeutsch")] = nord;
+      JsonObject top = root.createNestedObject("WordClockUsermod");
+      top["active"] = usermodActive;
+      top["displayItIs"] = displayItIs;
+      top["ledOffset"] = ledOffset;
+      top["Meander wiring?"] = meander;
+      top["Norddeutsch"] = nord;
     }
 
     void appendConfigData()
     {
-      oappend(F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
-      oappend(F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
+      oappend("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');");
+      oappend("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');");
     }
 
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
-     * 
+     *
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-     * 
+     *
      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
-     * 
+     *
      * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
      * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
-     * 
+     *
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
     bool readFromConfig(JsonObject& root)
@@ -455,15 +455,15 @@ class WordClockUsermod : public Usermod
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root[F("WordClockUsermod")];
+      JsonObject top = root["WordClockUsermod"];
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top[F("active")], usermodActive);
-      configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
-      configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
-      configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
-      configComplete &= getJsonValue(top[F("Norddeutsch")], nord);
+      configComplete &= getJsonValue(top["active"], usermodActive);
+      configComplete &= getJsonValue(top["displayItIs"], displayItIs);
+      configComplete &= getJsonValue(top["ledOffset"], ledOffset);
+      configComplete &= getJsonValue(top["Meander wiring?"], meander);
+      configComplete &= getJsonValue(top["Norddeutsch"], nord);
 
       return configComplete;
     }

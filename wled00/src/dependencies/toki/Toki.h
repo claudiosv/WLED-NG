@@ -21,7 +21,7 @@
   THE SOFTWARE.
 */
 
-#include <Arduino.h> 
+#include <Arduino.h>
 
 #define YEARS_70 2208988800UL
 
@@ -46,7 +46,7 @@ class Toki {
     inactive, marked, active
   } TickT;
 
-  public: 
+  public:
   typedef struct {
     uint32_t sec;
     uint16_t ms;
@@ -77,7 +77,7 @@ class Toki {
     Time fromNTP(byte *timestamp) { //ntp timestamp is 8 bytes, 4 bytes second and 4 bytes sub-second fraction
       unsigned long highWord = word(timestamp[0], timestamp[1]);
       unsigned long lowWord = word(timestamp[2], timestamp[3]);
-    
+
       unsigned long unix = highWord << 16 | lowWord;
       if (!unix) return {0,0};
       unix -= YEARS_70; //NTP begins 1900, Unix 1970
@@ -156,6 +156,6 @@ class Toki {
     }
 
     void printTime(const Time& t, Print &dest = Serial) {
-      dest.printf_P(PSTR("%u,%03u\n"),t.sec,t.ms);
+      dest.printf("%u,%03u\n",t.sec,t.ms);
     }
 };
