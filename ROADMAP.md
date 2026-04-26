@@ -5,3 +5,5 @@
 - [ ] Remove SPIFFS
 - [ ] Upstream ESPAsyncWebServer
 - [ ] Update NeoPixelBus
+- [ ] Bump platform packages
+- [ ] Tweak build flags for speed
