@@ -374,14 +374,10 @@ class Usermod {
     static Print* oappend_shim;
     // old form of appendConfigData; called by default appendConfigData(Print&) with oappend_shim set up
     // private so it is not accidentally invoked except via Usermod::appendConfigData(Print&)
-    virtual void appendConfigData() {}    
+    virtual void appendConfigData() {}
   protected:
     // Shim for oappend(), which used to exist in utils.cpp
     template<typename T> static inline void oappend(const T& t) { oappend_shim->print(t); };
-#ifdef ESP8266
-    // Handle print(PSTR()) without crashing by detecting PROGMEM strings
-    static void oappend(const char* c) { if ((intptr_t) c >= 0x40000000) oappend_shim->print(FPSTR(c)); else oappend_shim->print(c); };
-#endif
 };
 
 namespace UsermodManager {
@@ -420,12 +416,9 @@ void userConnected();
 void userLoop();
 
 //util.cpp
-#ifdef ESP8266
-#define HW_RND_REGISTER RANDOM_REG32
-#else // ESP32 family
 #include "soc/wdev_reg.h"
 #define HW_RND_REGISTER REG_READ(WDEV_RND_REG)
-#endif
+
 #define inoise8 perlin8   // fastled legacy alias
 #define inoise16 perlin16 // fastled legacy alias
 #define hex2int(a) (((a)>='0' && (a)<='9') ? (a)-'0' : ((a)>='A' && (a)<='F') ? (a)-'A'+10 : ((a)>='a' && (a)<='f') ? (a)-'a'+10 : 0)
@@ -498,11 +491,7 @@ extern "C" {
   void *d_malloc(size_t);
   void *d_calloc(size_t, size_t);
   void *d_realloc_malloc(void *ptr, size_t size);
-  #ifndef ESP8266
   inline void d_free(void *ptr) { heap_caps_free(ptr); }
-  #else
-  inline void d_free(void *ptr) { free(ptr); }
-  #endif
   #if defined(BOARD_HAS_PSRAM)
   // prefer PSRAM in p_xalloc functions, DRAM as fallback
   void *p_malloc(size_t);
@@ -516,13 +505,8 @@ extern "C" {
   #define p_free d_free
   #endif
 }
-#ifndef ESP8266
 inline size_t getFreeHeapSize() { return heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT); } // returns free heap (ESP.getFreeHeap() can include other memory types)
 inline size_t getContiguousFreeHeap() { return heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT); } // returns largest contiguous free block
-#else
-inline size_t getFreeHeapSize() { return ESP.getFreeHeap(); } // returns free heap
-inline size_t getContiguousFreeHeap() { return ESP.getMaxFreeBlockSize(); } // returns largest contiguous free block
-#endif
 #define BFRALLOC_NOBYTEACCESS    (1 << 0) // ESP32 has 32bit accessible DRAM (usually ~50kB free) that must not be byte-accessed
 #define BFRALLOC_PREFER_DRAM     (1 << 1) // prefer DRAM over PSRAM
 #define BFRALLOC_ENFORCE_DRAM    (1 << 2) // use DRAM only, no PSRAM
@@ -532,9 +516,7 @@ inline size_t getContiguousFreeHeap() { return ESP.getMaxFreeBlockSize(); } // r
 void *allocate_buffer(size_t size, uint32_t type);
 
 void handleBootLoop();   // detect and handle bootloops
-#ifndef ESP8266
 void bootloopCheckOTA(); // swap boot image if bootloop is detected instead of restoring config
-#endif
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard
 class JSONBufferGuard {
