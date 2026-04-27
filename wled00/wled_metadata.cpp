@@ -1,14 +1,14 @@
-#include "ota_update.h"
-#include "wled.h"
 #include "wled_metadata.h"
 
-constexpr uint32_t WLED_CUSTOM_DESC_MAGIC = 0x57535453;  // "WSTS" (WLED System Tag Structure)
-constexpr uint32_t WLED_CUSTOM_DESC_VERSION = 2;    // v1 - original PR; v2 - "safe to update from" version
+#include "ota_update.h"
+#include "wled.h"
+
+constexpr uint32_t WLED_CUSTOM_DESC_MAGIC   = 0x57535453;  // "WSTS" (WLED System Tag Structure)
+constexpr uint32_t WLED_CUSTOM_DESC_VERSION = 2;           // v1 - original PR; v2 - "safe to update from" version
 
 // Compile-time validation that release name doesn't exceed maximum length
 static_assert(sizeof(WLED_RELEASE_NAME) <= WLED_RELEASE_NAME_MAX_LEN,
               "WLED_RELEASE_NAME exceeds maximum length of WLED_RELEASE_NAME_MAX_LEN characters");
-
 
 /**
  * DJB2 hash function (C++11 compatible constexpr)
@@ -22,18 +22,18 @@ static_assert(sizeof(WLED_RELEASE_NAME) <= WLED_RELEASE_NAME_MAX_LEN,
  *
  */
 constexpr uint32_t djb2_hash_constexpr(const char* str, uint32_t hash = 5381) {
-    return (*str == '\0') ? hash : djb2_hash_constexpr(str + 1, ((hash << 5) + hash) + *str);
+  return (*str == '\0') ? hash : djb2_hash_constexpr(str + 1, ((hash << 5) + hash) + *str);
 }
 
 /**
  * Runtime DJB2 hash function for validation
  */
 inline uint32_t djb2_hash_runtime(const char* str) {
-    uint32_t hash = 5381;
-    while (*str) {
-        hash = ((hash << 5) + hash) + *str++;
-    }
-    return hash;
+  uint32_t hash = 5381;
+  while (*str) {
+    hash = ((hash << 5) + hash) + *str++;
+  }
+  return hash;
 }
 
 // ------------------------------------
@@ -41,15 +41,17 @@ inline uint32_t djb2_hash_runtime(const char* str) {
 // ------------------------------------
 // Structure instantiation for this build
 const wled_metadata_t __attribute__((section(BUILD_METADATA_SECTION))) WLED_BUILD_DESCRIPTION = {
-    WLED_CUSTOM_DESC_MAGIC,                   // magic
-    /*WLED_CUSTOM_DESC_VERSION*/ 1,           // structure version.  Currently set to 1 to allow OTA from broken original version. FIXME before 0.16 release.
+    WLED_CUSTOM_DESC_MAGIC, // magic
+    /*WLED_CUSTOM_DESC_VERSION*/ 1, // structure version.  Currently set to 1 to allow OTA from broken original
+                                     // version. FIXME before 0.16 release.
     TOSTRING(WLED_VERSION),
-    WLED_RELEASE_NAME,                        // release_name
-    std::integral_constant<uint32_t, djb2_hash_constexpr(WLED_RELEASE_NAME)>::value, // hash - computed at compile time; integral_constant enforces this
+    WLED_RELEASE_NAME, // release_name
+    std::integral_constant<uint32_t, djb2_hash_constexpr(WLED_RELEASE_NAME)>::
+        value, // hash - computed at compile time; integral_constant enforces this
 #if defined(ESP32) && defined(CONFIG_IDF_TARGET_ESP32)
-    { 0, 15, 3 },  // Some older ESP32 might have bootloader issues; assume we'll have it sorted by 0.15.3
+    {0, 15, 3}, // Some older ESP32 might have bootloader issues; assume we'll have it sorted by 0.15.3
 #else
-    { 0, 15, 2 },  // All other platforms can update safely
+    {0, 15, 2},  // All other platforms can update safely
 #endif
 };
 
@@ -86,8 +88,7 @@ bool findWledMetadata(const uint8_t* binaryData, size_t dataSize, wled_metadata_
         // Valid structure found - copy entire structure
         *extractedDesc = candidate;
 
-        DEBUG_PRINTF_P("Extracted WLED structure at offset %u: '%s'\n",
-                      offset, extractedDesc->release_name);
+        DEBUG_PRINTF_P("Extracted WLED structure at offset %u: '%s'\n", offset, extractedDesc->release_name);
         return true;
       }
     }
@@ -97,16 +98,17 @@ bool findWledMetadata(const uint8_t* binaryData, size_t dataSize, wled_metadata_
   return false;
 }
 
-
 // Strip "_V4" suffix from a release name to allow upgrading between IDF v4 and newer IDF builds.
 static String normalizeReleaseName(const String& name) {
-  if (name.endsWith("_V4")) return name.substring(0, name.length() - 3);
+  if (name.endsWith("_V4")) {
+    return name.substring(0, name.length() - 3);
+  }
   return name;
 }
 
-template<size_t len>
+template <size_t len>
 static inline String bufToString(const char (&buf)[len]) {
-  char sbuf[len+1];
+  char   sbuf[len + 1];
   size_t real_len = strnlen(buf, len);
   memcpy(sbuf, buf, real_len);
   sbuf[len] = '\0';
@@ -131,8 +133,8 @@ bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessa
   if (normalizeReleaseName(uploadedRelease) != normalizeReleaseName(releaseString)) {
     if (errorMessage && errorMessageLen > 0) {
       snprintf(errorMessage, errorMessageLen, "Firmware release name mismatch: current='%s', uploaded='%s'.",
-                releaseString, uploadedRelease.c_str());
-      errorMessage[errorMessageLen - 1] = '\0'; // Ensure null termination
+               releaseString, uploadedRelease.c_str());
+      errorMessage[errorMessageLen - 1] = '\0';  // Ensure null termination
     }
     return false;
   }
@@ -141,9 +143,9 @@ bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessa
     // Add safe version check
     // Parse our version (x.y.z) and compare it to the "safe version" array
     const char* our_version = versionString;
-    for(unsigned v_index = 0; v_index < 3; ++v_index) {
+    for (unsigned v_index = 0; v_index < 3; ++v_index) {
       char* our_version_end = nullptr;
-      long our_v_parsed = strtol(our_version, &our_version_end, 10);
+      long  our_v_parsed    = strtol(our_version, &our_version_end, 10);
       if (!our_version_end || (our_version_end == our_version)) {
         // We were built with a malformed version string
         // We blame the integrator and attempt the update anyways - nothing the user can do to fix this
@@ -152,17 +154,20 @@ bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessa
 
       if (firmwareDescription.safe_update_version[v_index] > our_v_parsed) {
         if (errorMessage && errorMessageLen > 0) {
-          snprintf(errorMessage, errorMessageLen, "Cannot update from this version: requires at least %d.%d.%d, current='%s'.",
-                  firmwareDescription.safe_update_version[0], firmwareDescription.safe_update_version[1], firmwareDescription.safe_update_version[2],
-                  versionString);
-          errorMessage[errorMessageLen - 1] = '\0'; // Ensure null termination
+          snprintf(errorMessage, errorMessageLen,
+                   "Cannot update from this version: requires at least %d.%d.%d, current='%s'.",
+                   firmwareDescription.safe_update_version[0], firmwareDescription.safe_update_version[1],
+                   firmwareDescription.safe_update_version[2], versionString);
+          errorMessage[errorMessageLen - 1] = '\0';  // Ensure null termination
         }
         return false;
       } else if (firmwareDescription.safe_update_version[v_index] < our_v_parsed) {
         break;  // no need to check the other components
       }
 
-      if (*our_version_end == '.') ++our_version_end;
+      if (*our_version_end == '.') {
+        ++our_version_end;
+      }
       our_version = our_version_end;
     }
   }

@@ -1,9 +1,9 @@
 #include "wled.h"
 #ifdef USERMOD_SN_PHOTORESISTOR
-  #include "SN_Photoresistor.h"
+#include "SN_Photoresistor.h"
 #endif
 #ifdef USERMOD_BH1750
-  #include "BH1750_v2.h"
+#include "BH1750_v2.h"
 #endif
 
 #ifdef WLED_DISABLE_MQTT
@@ -11,30 +11,29 @@
 #endif
 
 class UsermodSSDR : public Usermod {
+  // #define REFRESHTIME 497
 
-//#define REFRESHTIME 497
+ private:
+  // Runtime variables.
+  unsigned long umSSDRLastRefresh   = 0;
+  unsigned long umSSDRResfreshTime  = 3000;
+  bool          umSSDRDisplayTime   = false;
+  bool          umSSDRInverted      = false;
+  bool          umSSDRColonblink    = true;
+  bool          umSSDRLeadingZero   = false;
+  bool          umSSDREnableLDR     = false;
+  String        umSSDRHours         = "";
+  String        umSSDRMinutes       = "";
+  String        umSSDRSeconds       = "";
+  String        umSSDRColons        = "";
+  String        umSSDRDays          = "";
+  String        umSSDRMonths        = "";
+  String        umSSDRYears         = "";
+  uint16_t      umSSDRLength        = 0;
+  uint16_t      umSSDRBrightnessMin = 0;
+  uint16_t      umSSDRBrightnessMax = 255;
 
-private:
-  //Runtime variables.
-  unsigned long umSSDRLastRefresh = 0;
-  unsigned long umSSDRResfreshTime = 3000;
-  bool umSSDRDisplayTime = false;
-  bool umSSDRInverted = false;
-  bool umSSDRColonblink = true;
-  bool umSSDRLeadingZero = false;
-  bool umSSDREnableLDR = false;
-  String umSSDRHours = "";
-  String umSSDRMinutes = "";
-  String umSSDRSeconds = "";
-  String umSSDRColons = "";
-  String umSSDRDays = "";
-  String umSSDRMonths = "";
-  String umSSDRYears = "";
-  uint16_t umSSDRLength = 0;
-  uint16_t umSSDRBrightnessMin = 0;
-  uint16_t umSSDRBrightnessMax = 255;
-
-  bool* umSSDRMask = 0;
+  bool *umSSDRMask = 0;
 
   /*//  H - 00-23 hours
     //  h - 01-12 hours
@@ -47,7 +46,7 @@ private:
     //  Y - 2021 year
     //  : for a colon
     */
-  String umSSDRDisplayMask = "H:m"; //This should reflect physical equipment.
+  String umSSDRDisplayMask = "H:m";  // This should reflect physical equipment.
 
   /* Segment order, seen from the front:
 
@@ -64,21 +63,21 @@ private:
   */
 
   uint8_t umSSDRNumbers[11][7] = {
-    //  A    B    C    D    E    F    G
-    {   1,   1,   1,   1,   1,   1,   0 },  // 0
-    {   0,   1,   1,   0,   0,   0,   0 },  // 1
-    {   1,   1,   0,   1,   1,   0,   1 },  // 2
-    {   1,   1,   1,   1,   0,   0,   1 },  // 3
-    {   0,   1,   1,   0,   0,   1,   1 },  // 4
-    {   1,   0,   1,   1,   0,   1,   1 },  // 5
-    {   1,   0,   1,   1,   1,   1,   1 },  // 6
-    {   1,   1,   1,   0,   0,   0,   0 },  // 7
-    {   1,   1,   1,   1,   1,   1,   1 },  // 8
-    {   1,   1,   1,   1,   0,   1,   1 },  // 9
-    {   0,   0,   0,   0,   0,   0,   0 }   // blank
+      //  A    B    C    D    E    F    G
+      {1, 1, 1, 1, 1, 1, 0}, // 0
+      {0, 1, 1, 0, 0, 0, 0}, // 1
+      {1, 1, 0, 1, 1, 0, 1}, // 2
+      {1, 1, 1, 1, 0, 0, 1}, // 3
+      {0, 1, 1, 0, 0, 1, 1}, // 4
+      {1, 0, 1, 1, 0, 1, 1}, // 5
+      {1, 0, 1, 1, 1, 1, 1}, // 6
+      {1, 1, 1, 0, 0, 0, 0}, // 7
+      {1, 1, 1, 1, 1, 1, 1}, // 8
+      {1, 1, 1, 1, 0, 1, 1}, // 9
+      {0, 0, 0, 0, 0, 0, 0}  // blank
   };
 
-  //String to reduce flash memory usage
+  // String to reduce flash memory usage
   static const char _str_name[];
   static const char _str_ldrEnabled[];
   static const char _str_timeEnabled[];
@@ -99,17 +98,17 @@ private:
 #ifdef USERMOD_SN_PHOTORESISTOR
   Usermod_SN_Photoresistor *ptr;
 #else
-  void* ptr = nullptr;
+  void *ptr = nullptr;
 #endif
 #ifdef USERMOD_BH1750
-  Usermod_BH1750* bh1750 = nullptr;
+  Usermod_BH1750 *bh1750 = nullptr;
 #else
-  void* bh1750 = nullptr;
+  void *bh1750 = nullptr;
 #endif
 
   void _overlaySevenSegmentDraw() {
-    int displayMaskLen = static_cast<int>(umSSDRDisplayMask.length());
-    bool colonsDone = false;
+    int  displayMaskLen = static_cast<int>(umSSDRDisplayMask.length());
+    bool colonsDone     = false;
     _setAllFalse();
     for (int index = 0; index < displayMaskLen; index++) {
       int timeVar = 0;
@@ -151,7 +150,7 @@ private:
           _showElements(&umSSDRYears, timeVar, 0, 0);
           break;
         case ':':
-          if (!colonsDone) { // only call _setColons once as all colons are printed when the first colon is found
+          if (!colonsDone) {  // only call _setColons once as all colons are printed when the first colon is found
             _setColons();
             colonsDone = true;
           }
@@ -162,8 +161,8 @@ private:
   }
 
   void _setColons() {
-    if ( umSSDRColonblink ) {
-      if ( second(localTime) % 2 == 0 ) {
+    if (umSSDRColonblink) {
+      if (second(localTime) % 2 == 0) {
         _showElements(&umSSDRColons, 0, 1, 0);
       }
     } else {
@@ -173,65 +172,64 @@ private:
 
   void _showElements(String *map, int timevar, bool isColon, bool removeZero
 
-) {
+  ) {
     if ((map != nullptr) && (*map != nullptr) && !(*map).equals("")) {
-      int length = String(timevar).length();
+      int  length  = String(timevar).length();
       bool addZero = false;
       if (length == 1) {
-        length = 2;
+        length  = 2;
         addZero = true;
       }
       int timeArr[length];
-      if(addZero) {
-        if(removeZero)
-          {
-            timeArr[1] = 10;
-            timeArr[0] = timevar;
-          }
-        else
-        {
+      if (addZero) {
+        if (removeZero) {
+          timeArr[1] = 10;
+          timeArr[0] = timevar;
+        } else {
           timeArr[1] = 0;
           timeArr[0] = timevar;
         }
       } else {
         int count = 0;
         while (timevar) {
-          timeArr[count] = timevar%10;
+          timeArr[count] = timevar % 10;
           timevar /= 10;
           count++;
         };
       }
 
-
-      int colonsLen = static_cast<int>((*map).length());
-      int count = 0;
-      int countSegments = 0;
-      int countDigit = 0;
-      bool range = false;
-      int lastSeenLedNr = 0;
+      int  colonsLen     = static_cast<int>((*map).length());
+      int  count         = 0;
+      int  countSegments = 0;
+      int  countDigit    = 0;
+      bool range         = false;
+      int  lastSeenLedNr = 0;
 
       for (int index = 0; index < colonsLen; index++) {
         switch ((*map)[index]) {
           case '-':
             lastSeenLedNr = _checkForNumber(count, index, map);
-            count = 0;
-            range = true;
+            count         = 0;
+            range         = true;
             break;
           case ':':
-            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit], isColon);
+            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit],
+                     isColon);
             count = 0;
             range = false;
             countDigit++;
             countSegments = 0;
             break;
           case ';':
-            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit], isColon);
+            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit],
+                     isColon);
             count = 0;
             range = false;
             countSegments++;
             break;
           case ',':
-            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit], isColon);
+            _setLeds(_checkForNumber(count, index, map), lastSeenLedNr, range, countSegments, timeArr[countDigit],
+                     isColon);
             count = 0;
             range = false;
             break;
@@ -240,18 +238,22 @@ private:
             break;
         }
       }
-      _setLeds(_checkForNumber(count, colonsLen, map), lastSeenLedNr, range, countSegments, timeArr[countDigit], isColon);
+      _setLeds(_checkForNumber(count, colonsLen, map), lastSeenLedNr, range, countSegments, timeArr[countDigit],
+               isColon);
     }
   }
 
   void _setLeds(int lednr, int lastSeenLedNr, bool range, int countSegments, int number, bool colon) {
-    if ((lednr < 0) || (lednr >= umSSDRLength)) return;                                   // prevent array bounds violation
+    if ((lednr < 0) || (lednr >= umSSDRLength)) {
+      return;  // prevent array bounds violation
+    }
 
-    if (!(colon && umSSDRColonblink) && ((number < 0) || (countSegments < 0))) return;
+    if (!(colon && umSSDRColonblink) && ((number < 0) || (countSegments < 0))) {
+      return;
+    }
     if ((colon && umSSDRColonblink) || umSSDRNumbers[number][countSegments]) {
-
       if (range) {
-        for(int i = max(0, lastSeenLedNr); i <= lednr; i++) {
+        for (int i = max(0, lastSeenLedNr); i <= lednr; i++) {
           umSSDRMask[i] = true;
         }
       } else {
@@ -261,7 +263,7 @@ private:
   }
 
   void _setMaskToLeds() {
-    for(int i = 0; i <= umSSDRLength; i++) {
+    for (int i = 0; i <= umSSDRLength; i++) {
       if ((!umSSDRInverted && !umSSDRMask[i]) || (umSSDRInverted && umSSDRMask[i])) {
         strip.setPixelColor(i, 0x000000);
       }
@@ -269,7 +271,7 @@ private:
   }
 
   void _setAllFalse() {
-    for(int i = 0; i <= umSSDRLength; i++) {
+    for (int i = 0; i <= umSSDRLength; i++) {
       umSSDRMask[i] = false;
     }
   }
@@ -279,9 +281,10 @@ private:
     return number.toInt();
   }
 
-  void _publishMQTTint_P(const char *subTopic, int value)
-  {
-    if(mqtt == NULL) return;
+  void _publishMQTTint_P(const char *subTopic, int value) {
+    if (mqtt == NULL) {
+      return;
+    }
 
     char buffer[64];
     char valBuffer[12];
@@ -290,18 +293,17 @@ private:
     mqtt->publish(buffer, 2, true, valBuffer);
   }
 
-  void _publishMQTTstr_P(const char *subTopic, String Value)
-  {
-    if(mqtt == NULL) return;
+  void _publishMQTTstr_P(const char *subTopic, String Value) {
+    if (mqtt == NULL) {
+      return;
+    }
     char buffer[64];
     sprintf(buffer, "%s/%S/%S", mqttDeviceTopic, _str_name, subTopic);
     mqtt->publish(buffer, 2, true, Value.c_str(), Value.length());
   }
 
-  bool _cmpIntSetting_P(char *topic, char *payload, const char *setting, void *value)
-  {
-    if (strcmp(topic, setting) == 0)
-    {
+  bool _cmpIntSetting_P(char *topic, char *payload, const char *setting, void *value) {
+    if (strcmp(topic, setting) == 0) {
       *((int *)value) = strtol(payload, NULL, 10);
       _publishMQTTint_P(setting, *((int *)value));
       return true;
@@ -333,8 +335,7 @@ private:
     return false;
   }
 
-  void _updateMQTT()
-  {
+  void _updateMQTT() {
     _publishMQTTint_P(_str_timeEnabled, umSSDRDisplayTime);
     _publishMQTTint_P(_str_ldrEnabled, umSSDREnableLDR);
     _publishMQTTint_P(_str_inverted, umSSDRInverted);
@@ -354,88 +355,88 @@ private:
     _publishMQTTint_P(_str_maxBrightness, umSSDRBrightnessMax);
   }
 
-  void _addJSONObject(JsonObject& root) {
+  void _addJSONObject(JsonObject &root) {
     JsonObject ssdrObj = root[_str_name];
     if (ssdrObj.isNull()) {
       ssdrObj = root.createNestedObject(_str_name);
     }
 
-    ssdrObj[_str_timeEnabled] = umSSDRDisplayTime;
-    ssdrObj[_str_ldrEnabled] = umSSDREnableLDR;
-    ssdrObj[_str_inverted] = umSSDRInverted;
-    ssdrObj[_str_colonblink] = umSSDRColonblink;
-    ssdrObj[_str_leadingZero] = umSSDRLeadingZero;
-    ssdrObj[_str_displayMask] = umSSDRDisplayMask;
-    ssdrObj[_str_hours] = umSSDRHours;
-    ssdrObj[_str_minutes] = umSSDRMinutes;
-    ssdrObj[_str_seconds] = umSSDRSeconds;
-    ssdrObj[_str_colons] = umSSDRColons;
-    ssdrObj[_str_days] = umSSDRDays;
-    ssdrObj[_str_months] = umSSDRMonths;
-    ssdrObj[_str_years] = umSSDRYears;
+    ssdrObj[_str_timeEnabled]   = umSSDRDisplayTime;
+    ssdrObj[_str_ldrEnabled]    = umSSDREnableLDR;
+    ssdrObj[_str_inverted]      = umSSDRInverted;
+    ssdrObj[_str_colonblink]    = umSSDRColonblink;
+    ssdrObj[_str_leadingZero]   = umSSDRLeadingZero;
+    ssdrObj[_str_displayMask]   = umSSDRDisplayMask;
+    ssdrObj[_str_hours]         = umSSDRHours;
+    ssdrObj[_str_minutes]       = umSSDRMinutes;
+    ssdrObj[_str_seconds]       = umSSDRSeconds;
+    ssdrObj[_str_colons]        = umSSDRColons;
+    ssdrObj[_str_days]          = umSSDRDays;
+    ssdrObj[_str_months]        = umSSDRMonths;
+    ssdrObj[_str_years]         = umSSDRYears;
     ssdrObj[_str_minBrightness] = umSSDRBrightnessMin;
     ssdrObj[_str_maxBrightness] = umSSDRBrightnessMax;
   }
 
-public:
-  //Functions called by WLED
+ public:
+  // Functions called by WLED
 
   /*
-     * setup() is called once at boot. WiFi is not yet connected at this point.
-     * You can use it to initialize variables, sensors or similar.
-     */
+   * setup() is called once at boot. WiFi is not yet connected at this point.
+   * You can use it to initialize variables, sensors or similar.
+   */
   void setup() {
     umSSDRLength = strip.getLengthTotal();
     if (umSSDRMask != 0) {
-      umSSDRMask = (bool*) realloc(umSSDRMask, umSSDRLength * sizeof(bool));
+      umSSDRMask = (bool *)realloc(umSSDRMask, umSSDRLength * sizeof(bool));
     } else {
-      umSSDRMask = (bool*) malloc(umSSDRLength * sizeof(bool));
+      umSSDRMask = (bool *)malloc(umSSDRLength * sizeof(bool));
     }
     _setAllFalse();
 
-    #ifdef USERMOD_SN_PHOTORESISTOR
-      ptr = (Usermod_SN_Photoresistor*) UsermodManager::lookup(USERMOD_ID_SN_PHOTORESISTOR);
-    #endif
-    #ifdef USERMOD_BH1750
-      bh1750 = (Usermod_BH1750*) UsermodManager::lookup(USERMOD_ID_BH1750);
-    #endif
+#ifdef USERMOD_SN_PHOTORESISTOR
+    ptr = (Usermod_SN_Photoresistor *)UsermodManager::lookup(USERMOD_ID_SN_PHOTORESISTOR);
+#endif
+#ifdef USERMOD_BH1750
+    bh1750 = (Usermod_BH1750 *)UsermodManager::lookup(USERMOD_ID_BH1750);
+#endif
     DEBUG_PRINTLN("Setup done");
   }
 
   /*
-     * loop() is called continuously. Here you can check for events, read sensors, etc.
-     */
+   * loop() is called continuously. Here you can check for events, read sensors, etc.
+   */
   void loop() {
     if (!umSSDRDisplayTime || strip.isUpdating()) {
       return;
     }
-    #ifdef USERMOD_SN_PHOTORESISTOR
-      if(bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
-        if (ptr != nullptr) {
-          uint16_t lux = ptr->getLastLDRValue();
-          uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
-          if (bri != brightness) {
-            bri = brightness;
-            stateUpdated(1);
-          }
+#ifdef USERMOD_SN_PHOTORESISTOR
+    if (bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
+      if (ptr != nullptr) {
+        uint16_t lux        = ptr->getLastLDRValue();
+        uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
+        if (bri != brightness) {
+          bri = brightness;
+          stateUpdated(1);
         }
-        umSSDRLastRefresh = millis();
       }
-    #endif
-    #ifdef USERMOD_BH1750
-      if(bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
-        if (bh1750 != nullptr) {
-          float lux = bh1750->getIlluminance();
-          uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
-          if (bri != brightness) {
-            DEBUG_PRINTF("Adjusting brightness based on lux value: %.2f lx, new brightness: %d\n", lux, brightness);
-            bri = brightness;
-            stateUpdated(1);
-          }
+      umSSDRLastRefresh = millis();
+    }
+#endif
+#ifdef USERMOD_BH1750
+    if (bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
+      if (bh1750 != nullptr) {
+        float    lux        = bh1750->getIlluminance();
+        uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
+        if (bri != brightness) {
+          DEBUG_PRINTF("Adjusting brightness based on lux value: %.2f lx, new brightness: %d\n", lux, brightness);
+          bri = brightness;
+          stateUpdated(1);
         }
-        umSSDRLastRefresh = millis();
       }
-    #endif
+      umSSDRLastRefresh = millis();
+    }
+#endif
   }
 
   void handleOverlayDraw() {
@@ -444,12 +445,12 @@ public:
     }
   }
 
-/*
-  * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-  * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-  * Below it is shown how this could be used for e.g. a light sensor
-  */
-  void addToJsonInfo(JsonObject& root) {
+  /*
+   * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+   * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+   * Below it is shown how this could be used for e.g. a light sensor
+   */
+  void addToJsonInfo(JsonObject &root) {
     JsonObject user = root["u"];
     if (user.isNull()) {
       user = root.createNestedObject("u");
@@ -464,14 +465,13 @@ public:
     zero.add(umSSDRLeadingZero);
     JsonArray ldrEnable = user.createNestedArray("Auto Brightness enabled");
     ldrEnable.add(umSSDREnableLDR);
-
   }
 
- /*
-  * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-  * Values in the state object may be modified by connected clients
-  */
-  void addToJsonState(JsonObject& root) {
+  /*
+   * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+   * Values in the state object may be modified by connected clients
+   */
+  void addToJsonState(JsonObject &root) {
     JsonObject user = root["u"];
     if (user.isNull()) {
       user = root.createNestedObject("u");
@@ -479,58 +479,52 @@ public:
     _addJSONObject(user);
   }
 
- /*
-  * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-  * Values in the state object may be modified by connected clients
-  */
-  void readFromJsonState(JsonObject& root) {
+  /*
+   * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state
+   * object). Values in the state object may be modified by connected clients
+   */
+  void readFromJsonState(JsonObject &root) {
     JsonObject user = root["u"];
     if (!user.isNull()) {
       JsonObject ssdrObj = user[_str_name];
-      umSSDRDisplayTime = ssdrObj[_str_timeEnabled] | umSSDRDisplayTime;
-      umSSDREnableLDR = ssdrObj[_str_ldrEnabled] | umSSDREnableLDR;
-      umSSDRInverted = ssdrObj[_str_inverted] | umSSDRInverted;
-      umSSDRColonblink = ssdrObj[_str_colonblink] | umSSDRColonblink;
-      umSSDRLeadingZero = ssdrObj[_str_leadingZero] | umSSDRLeadingZero;
-      umSSDRDisplayMask = ssdrObj[_str_displayMask] | umSSDRDisplayMask;
+      umSSDRDisplayTime  = ssdrObj[_str_timeEnabled] | umSSDRDisplayTime;
+      umSSDREnableLDR    = ssdrObj[_str_ldrEnabled] | umSSDREnableLDR;
+      umSSDRInverted     = ssdrObj[_str_inverted] | umSSDRInverted;
+      umSSDRColonblink   = ssdrObj[_str_colonblink] | umSSDRColonblink;
+      umSSDRLeadingZero  = ssdrObj[_str_leadingZero] | umSSDRLeadingZero;
+      umSSDRDisplayMask  = ssdrObj[_str_displayMask] | umSSDRDisplayMask;
     }
   }
 
   void onMqttConnect(bool sessionPresent) {
     char subBuffer[48];
-    if (mqttDeviceTopic[0] != 0)
-    {
+    if (mqttDeviceTopic[0] != 0) {
       _updateMQTT();
-      //subscribe for sevenseg messages on the device topic
+      // subscribe for sevenseg messages on the device topic
       sprintf(subBuffer, "%s/%S/+/set", mqttDeviceTopic, _str_name);
       mqtt->subscribe(subBuffer, 2);
     }
 
-    if (mqttGroupTopic[0] != 0)
-    {
-      //subscribe for sevenseg messages on the group topic
+    if (mqttGroupTopic[0] != 0) {
+      // subscribe for sevenseg messages on the group topic
       sprintf(subBuffer, "%s/%S/+/set", mqttGroupTopic, _str_name);
       mqtt->subscribe(subBuffer, 2);
     }
   }
 
   bool onMqttMessage(char *topic, char *payload) {
-    //If topic begins with sevenSeg cut it off, otherwise not our message.
+    // If topic begins with sevenSeg cut it off, otherwise not our message.
     size_t topicPrefixLen = strlen("/wledSS/");
     if (strncmp(topic, "/wledSS/", topicPrefixLen) == 0) {
       topic += topicPrefixLen;
     } else {
       return false;
     }
-    //We only care if the topic ends with /set
+    // We only care if the topic ends with /set
     size_t topicLen = strlen(topic);
-    if (topicLen > 4 &&
-        topic[topicLen - 4] == '/' &&
-        topic[topicLen - 3] == 's' &&
-        topic[topicLen - 2] == 'e' &&
-        topic[topicLen - 1] == 't')
-    {
-      //Trim /set and handle it
+    if (topicLen > 4 && topic[topicLen - 4] == '/' && topic[topicLen - 3] == 's' && topic[topicLen - 2] == 'e' &&
+        topic[topicLen - 1] == 't') {
+      // Trim /set and handle it
       topic[topicLen - 4] = '\0';
       _handleSetting(topic, payload);
     }
@@ -538,7 +532,7 @@ public:
   }
 
   void addToConfig(JsonObject &root) {
-     _addJSONObject(root);
+    _addJSONObject(root);
   }
 
   bool readFromConfig(JsonObject &root) {
@@ -550,22 +544,22 @@ public:
       return false;
     }
 
-    umSSDRDisplayTime      = (top[_str_timeEnabled] | umSSDRDisplayTime);
-    umSSDREnableLDR        = (top[_str_ldrEnabled] | umSSDREnableLDR);
-    umSSDRInverted         = (top[_str_inverted] | umSSDRInverted);
-    umSSDRColonblink       = (top[_str_colonblink] | umSSDRColonblink);
-    umSSDRLeadingZero      = (top[_str_leadingZero] | umSSDRLeadingZero);
+    umSSDRDisplayTime = (top[_str_timeEnabled] | umSSDRDisplayTime);
+    umSSDREnableLDR   = (top[_str_ldrEnabled] | umSSDREnableLDR);
+    umSSDRInverted    = (top[_str_inverted] | umSSDRInverted);
+    umSSDRColonblink  = (top[_str_colonblink] | umSSDRColonblink);
+    umSSDRLeadingZero = (top[_str_leadingZero] | umSSDRLeadingZero);
 
-    umSSDRDisplayMask      = top[_str_displayMask] | umSSDRDisplayMask;
-    umSSDRHours            = top[_str_hours] | umSSDRHours;
-    umSSDRMinutes          = top[_str_minutes] | umSSDRMinutes;
-    umSSDRSeconds          = top[_str_seconds] | umSSDRSeconds;
-    umSSDRColons           = top[_str_colons] | umSSDRColons;
-    umSSDRDays             = top[_str_days] | umSSDRDays;
-    umSSDRMonths           = top[_str_months] | umSSDRMonths;
-    umSSDRYears            = top[_str_years] | umSSDRYears;
-    umSSDRBrightnessMin    = top[_str_minBrightness] | umSSDRBrightnessMin;
-    umSSDRBrightnessMax    = top[_str_maxBrightness] | umSSDRBrightnessMax;
+    umSSDRDisplayMask   = top[_str_displayMask] | umSSDRDisplayMask;
+    umSSDRHours         = top[_str_hours] | umSSDRHours;
+    umSSDRMinutes       = top[_str_minutes] | umSSDRMinutes;
+    umSSDRSeconds       = top[_str_seconds] | umSSDRSeconds;
+    umSSDRColons        = top[_str_colons] | umSSDRColons;
+    umSSDRDays          = top[_str_days] | umSSDRDays;
+    umSSDRMonths        = top[_str_months] | umSSDRMonths;
+    umSSDRYears         = top[_str_years] | umSSDRYears;
+    umSSDRBrightnessMin = top[_str_minBrightness] | umSSDRBrightnessMin;
+    umSSDRBrightnessMax = top[_str_maxBrightness] | umSSDRBrightnessMax;
 
     DEBUG_PRINT(_str_name);
     DEBUG_PRINTLN(" config (re)loaded.");
@@ -573,31 +567,30 @@ public:
     return true;
   }
   /*
-     * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
-     * This could be used in the future for the system to determine whether your usermod is installed.
-     */
+   * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
+   * This could be used in the future for the system to determine whether your usermod is installed.
+   */
   uint16_t getId() {
     return USERMOD_ID_SSDR;
   }
 };
 
-const char UsermodSSDR::_str_name[] = "UsermodSSDR";
-const char UsermodSSDR::_str_timeEnabled[] = "enabled";
-const char UsermodSSDR::_str_inverted[] = "inverted";
-const char UsermodSSDR::_str_colonblink[] = "Colon-blinking";
-const char UsermodSSDR::_str_leadingZero[] = "Leading-Zero";
-const char UsermodSSDR::_str_displayMask[] = "Display-Mask";
-const char UsermodSSDR::_str_hours[] = "LED-Numbers-Hours";
-const char UsermodSSDR::_str_minutes[] = "LED-Numbers-Minutes";
-const char UsermodSSDR::_str_seconds[] = "LED-Numbers-Seconds";
-const char UsermodSSDR::_str_colons[] = "LED-Numbers-Colons";
-const char UsermodSSDR::_str_days[] = "LED-Numbers-Day";
-const char UsermodSSDR::_str_months[] = "LED-Numbers-Month";
-const char UsermodSSDR::_str_years[] = "LED-Numbers-Year";
-const char UsermodSSDR::_str_ldrEnabled[] = "enable-auto-brightness";
+const char UsermodSSDR::_str_name[]          = "UsermodSSDR";
+const char UsermodSSDR::_str_timeEnabled[]   = "enabled";
+const char UsermodSSDR::_str_inverted[]      = "inverted";
+const char UsermodSSDR::_str_colonblink[]    = "Colon-blinking";
+const char UsermodSSDR::_str_leadingZero[]   = "Leading-Zero";
+const char UsermodSSDR::_str_displayMask[]   = "Display-Mask";
+const char UsermodSSDR::_str_hours[]         = "LED-Numbers-Hours";
+const char UsermodSSDR::_str_minutes[]       = "LED-Numbers-Minutes";
+const char UsermodSSDR::_str_seconds[]       = "LED-Numbers-Seconds";
+const char UsermodSSDR::_str_colons[]        = "LED-Numbers-Colons";
+const char UsermodSSDR::_str_days[]          = "LED-Numbers-Day";
+const char UsermodSSDR::_str_months[]        = "LED-Numbers-Month";
+const char UsermodSSDR::_str_years[]         = "LED-Numbers-Year";
+const char UsermodSSDR::_str_ldrEnabled[]    = "enable-auto-brightness";
 const char UsermodSSDR::_str_minBrightness[] = "auto-brightness-min";
 const char UsermodSSDR::_str_maxBrightness[] = "auto-brightness-max";
-
 
 static UsermodSSDR seven_segment_display_reloaded;
 REGISTER_USERMOD(seven_segment_display_reloaded);

@@ -1,55 +1,44 @@
 #include "wled.h"
 
-class klipper_percentage : public Usermod
-{
-private:
+class klipper_percentage : public Usermod {
+ private:
   unsigned long lastTime = 0;
-  String ip = "0.0.0.0";
-  WiFiClient wifiClient;
-  char errorMessage[100] = "";
-  int printPercent = 0;
-  int direction = 0; // 0 for along the strip, 1 for reversed direction
+  String        ip       = "0.0.0.0";
+  WiFiClient    wifiClient;
+  char          errorMessage[100] = "";
+  int           printPercent      = 0;
+  int           direction         = 0;  // 0 for along the strip, 1 for reversed direction
 
   static const char _name[];
   static const char _enabled[];
-  bool enabled = false;
+  bool              enabled = false;
 
-  void httpGet(WiFiClient &client, char *errorMessage)
-  {
+  void httpGet(WiFiClient &client, char *errorMessage) {
     // https://arduinojson.org/v6/example/http-client/
     // is this the most compact way to do http get and put it in arduinojson object???
     // would like async response ... ???
     client.setTimeout(10000);
-    if (!client.connect(ip.c_str(), 80))
-    {
+    if (!client.connect(ip.c_str(), 80)) {
       strcat(errorMessage, "Connection failed");
-    }
-    else
-    {
+    } else {
       // Send HTTP request
       client.println("GET /printer/objects/query?virtual_sdcard=progress HTTP/1.0");
-      client.print("Host: "); client.println(ip);
+      client.print("Host: ");
+      client.println(ip);
       client.println("Connection: close");
-      if (client.println() == 0)
-      {
+      if (client.println() == 0) {
         strcat(errorMessage, "Failed to send request");
-      }
-      else
-      {
+      } else {
         // Check HTTP status
         char status[32] = {0};
         client.readBytesUntil('\r', status, sizeof(status));
-        if (strcmp(status, "HTTP/1.1 200 OK") != 0)
-        {
+        if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
           strcat(errorMessage, "Unexpected response: ");
           strcat(errorMessage, status);
-        }
-        else
-        {
+        } else {
           // Skip HTTP headers
           char endOfHeaders[] = "\r\n\r\n";
-          if (!client.find(endOfHeaders))
-          {
+          if (!client.find(endOfHeaders)) {
             strcat(errorMessage, "Invalid response");
           }
         }
@@ -57,30 +46,22 @@ private:
     }
   }
 
-public:
-  void setup()
-  {
+ public:
+  void setup() {
   }
 
-  void connected()
-  {
+  void connected() {
   }
 
-  void loop()
-  {
-    if (enabled)
-    {
-      if (WLED_CONNECTED)
-      {
-        if (millis() - lastTime > 10000)
-        {
+  void loop() {
+    if (enabled) {
+      if (WLED_CONNECTED) {
+        if (millis() - lastTime > 10000) {
           httpGet(wifiClient, errorMessage);
-          if (strcmp(errorMessage, "") == 0)
-          {
-            PSRAMDynamicJsonDocument klipperDoc(4096); // in practice about 2673
-            DeserializationError error = deserializeJson(klipperDoc, wifiClient);
-            if (error)
-            {
+          if (strcmp(errorMessage, "") == 0) {
+            PSRAMDynamicJsonDocument klipperDoc(4096);  // in practice about 2673
+            DeserializationError     error = deserializeJson(klipperDoc, wifiClient);
+            if (error) {
               strcat(errorMessage, "deserializeJson( failed: "));
               strcat(errorMessage, error.c_str());
             }
@@ -89,10 +70,9 @@ public:
             DEBUG_PRINT("Percent: ");
             DEBUG_PRINTLN((int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100));
             DEBUG_PRINT("LEDs: ");
-            DEBUG_PRINTLN(direction == 2 ? (strip.getLengthTotal() / 2) * printPercent / 100 : strip.getLengthTotal() * printPercent / 100);
-          }
-          else
-          {
+            DEBUG_PRINTLN(direction == 2 ? (strip.getLengthTotal() / 2) * printPercent / 100
+                                         : strip.getLengthTotal() * printPercent / 100);
+          } else {
             DEBUG_PRINTLN(errorMessage);
             DEBUG_PRINTLN(ip);
           }
@@ -102,18 +82,18 @@ public:
     }
   }
 
-  void addToConfig(JsonObject &root)
-  {
-    JsonObject top = root.createNestedObject("Klipper Printing Percentage");
-    top["Enabled"] = enabled;
+  void addToConfig(JsonObject &root) {
+    JsonObject top    = root.createNestedObject("Klipper Printing Percentage");
+    top["Enabled"]    = enabled;
     top["Klipper IP"] = ip;
-    top["Direction"] = direction;
+    top["Direction"]  = direction;
   }
 
-  bool readFromConfig(JsonObject &root)
-  {
-    // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
-    // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
+  bool readFromConfig(JsonObject &root) {
+    // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class
+    // definition or constructor setting them inside readFromConfig() is slightly more robust, handling the rare but
+    // plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value
+    // was removed)
 
     JsonObject top = root["Klipper Printing Percentage"];
 
@@ -129,14 +109,14 @@ public:
    * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
    * Below it is shown how this could be used for e.g. a light sensor
    */
-  void addToJsonInfo(JsonObject &root)
-  {
+  void addToJsonInfo(JsonObject &root) {
     JsonObject user = root["u"];
-    if (user.isNull())
+    if (user.isNull()) {
       user = root.createNestedObject("u");
+    }
 
-    JsonArray infoArr = user.createNestedArray(_name);
-    String uiDomString = "<button class=\"btn btn-xs\" onclick=\"requestJson({";
+    JsonArray infoArr     = user.createNestedArray(_name);
+    String    uiDomString = "<button class=\"btn btn-xs\" onclick=\"requestJson({";
     uiDomString += _name;
     uiDomString += ":{";
     uiDomString += _enabled;
@@ -148,22 +128,17 @@ public:
     infoArr.add(uiDomString);
   }
 
-  void addToJsonState(JsonObject &root)
-  {
+  void addToJsonState(JsonObject &root) {
     JsonObject usermod = root[_name];
-    if (usermod.isNull())
-    {
+    if (usermod.isNull()) {
       usermod = root.createNestedObject(_name);
     }
     usermod["on"] = enabled;
   }
-  void readFromJsonState(JsonObject &root)
-  {
+  void readFromJsonState(JsonObject &root) {
     JsonObject usermod = root[_name];
-    if (!usermod.isNull())
-    {
-      if (usermod[_enabled].is<bool>())
-      {
+    if (!usermod.isNull()) {
+      if (usermod[_enabled].is<bool>()) {
         enabled = usermod[_enabled].as<bool>();
       }
     }
@@ -174,34 +149,25 @@ public:
    * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.
    * Commonly used for custom clocks (Cronixie, 7 segment)
    */
-  void handleOverlayDraw()
-  {
-    if (enabled)
-    {
-      if (direction == 0) // normal
+  void handleOverlayDraw() {
+    if (enabled) {
+      if (direction == 0)  // normal
       {
-        for (int i = 0; i < strip.getLengthTotal() * printPercent / 100; i++)
-        {
+        for (int i = 0; i < strip.getLengthTotal() * printPercent / 100; i++) {
           strip.setPixelColor(i, strip.getSegment(0).colors[1]);
         }
-      }
-      else if (direction == 1) // reversed
+      } else if (direction == 1)  // reversed
       {
-        for (int i = 0; i < strip.getLengthTotal() * printPercent / 100; i++)
-        {
+        for (int i = 0; i < strip.getLengthTotal() * printPercent / 100; i++) {
           strip.setPixelColor(strip.getLengthTotal() - i, strip.getSegment(0).colors[1]);
         }
-      }
-      else if (direction == 2) // center
+      } else if (direction == 2)  // center
       {
-        for (int i = 0; i < (strip.getLengthTotal() / 2) * printPercent / 100; i++)
-        {
+        for (int i = 0; i < (strip.getLengthTotal() / 2) * printPercent / 100; i++) {
           strip.setPixelColor((strip.getLengthTotal() / 2) + i, strip.getSegment(0).colors[1]);
           strip.setPixelColor((strip.getLengthTotal() / 2) - i, strip.getSegment(0).colors[1]);
         }
-      }
-      else
-      {
+      } else {
         direction = 0;
       }
     }
@@ -211,12 +177,11 @@ public:
    * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
    * This could be used in the future for the system to determine whether your usermod is installed.
    */
-  uint16_t getId()
-  {
+  uint16_t getId() {
     return USERMOD_ID_KLIPPER;
   }
 };
-const char klipper_percentage::_name[] = "Klipper_Percentage";
+const char klipper_percentage::_name[]    = "Klipper_Percentage";
 const char klipper_percentage::_enabled[] = "enabled";
 
 static klipper_percentage usermod_v2_klipper_percentage;

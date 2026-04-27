@@ -1,8 +1,9 @@
-#include "wled.h"
 #include <Arduino.h>
-#include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
+#include <BME280I2C.h>  //BME280 sensor
+#include <U8x8lib.h>    // from https://github.com/olikraus/u8g2/
 #include <Wire.h>
-#include <BME280I2C.h> //BME280 sensor
+
+#include "wled.h"
 
 #ifdef WLED_DISABLE_MQTT
 #error "This user mod requires MQTT to be enabled."
@@ -10,21 +11,21 @@
 
 void UpdateBME280Data();
 
-#define Celsius // Show temperature measurement in Celsius otherwise is in Fahrenheit
-BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
-                  // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
+#define Celsius  // Show temperature measurement in Celsius otherwise is in Fahrenheit
+BME280I2C bme;   // Default : forced mode, standby time = 1000 ms
+                 // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
-#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+#ifdef ARDUINO_ARCH_ESP32  // ESP32 boards
 uint8_t SCL_PIN = 22;
 uint8_t SDA_PIN = 21;
 // uint8_t RST_PIN = 16; // Un-comment for Heltec WiFi-Kit-8
 #endif
 
-//The SCL and SDA pins are defined here.
-//ESP32 Wemos32 mini board use SCL=22 SDA=21
+// The SCL and SDA pins are defined here.
+// ESP32 Wemos32 mini board use SCL=22 SDA=21
 #define U8X8_PIN_SCL SCL_PIN
 #define U8X8_PIN_SDA SDA_PIN
-//#define U8X8_PIN_RESET RST_PIN // Un-comment for Heltec WiFi-Kit-8
+// #define U8X8_PIN_RESET RST_PIN // Un-comment for Heltec WiFi-Kit-8
 
 // If display does not work or looks corrupted check the
 // constructor reference:
@@ -32,15 +33,16 @@ uint8_t SDA_PIN = 21;
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
 // --> First choise of cheap I2C OLED 128X32 0.91"
-U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
+U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA);  // Pins are Reset, SCL, SDA
 // --> Second choice of cheap I2C OLED 128X64 0.96" or 1.3"
-//U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
+// U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // --> Third choice of Heltec WiFi-Kit-8 OLED 128X32 0.91"
-//U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constructor for Heltec WiFi-Kit-8
+// U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constructor for Heltec
+// WiFi-Kit-8
 // gets called once at boot. Do all initialization that doesn't depend on network here
 
 // BME280 sensor timer
-long tempTimer = millis();
+long tempTimer   = millis();
 long lastMeasure = 0;
 
 float SensorPressure(NAN);
@@ -51,18 +53,17 @@ void userSetup() {
   u8x8.begin();
   u8x8.setPowerSave(0);
   u8x8.setFlipMode(1);
-  u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
+  u8x8.setContrast(10);  // Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter
+                         // increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0, 0, "Loading...");
-  Wire.begin(SDA_PIN,SCL_PIN);
+  Wire.begin(SDA_PIN, SCL_PIN);
 
-while(!bme.begin())
-  {
+  while (!bme.begin()) {
     Serial.println("Could not find BME280I2C sensor!");
     delay(1000);
   }
-switch(bme.chipModel())
-  {
+  switch (bme.chipModel()) {
     case BME280::ChipModel_BME280:
       Serial.println("Found BME280 sensor! Success.");
       break;
@@ -76,43 +77,42 @@ switch(bme.chipModel())
 
 // gets called every time WiFi is (re-)connected. Initialize own network
 // interfaces here
-void userConnected() {}
+void userConnected() {
+}
 
 // needRedraw marks if redraw is required to prevent often redrawing.
 bool needRedraw = true;
 
 // Next variables hold the previous known values to determine if redraw is
 // required.
-String knownSsid = "";
+String    knownSsid = "";
 IPAddress knownIp;
-uint8_t knownBrightness = 0;
-uint8_t knownMode = 0;
-uint8_t knownPalette = 0;
+uint8_t   knownBrightness = 0;
+uint8_t   knownMode       = 0;
+uint8_t   knownPalette    = 0;
 
-long lastUpdate = 0;
-long lastRedraw = 0;
+long lastUpdate       = 0;
+long lastRedraw       = 0;
 bool displayTurnedOff = false;
 // How often we are redrawing screen
 #define USER_LOOP_REFRESH_RATE_MS 5000
 
 void userLoop() {
-
-// BME280 sensor MQTT publishing
+  // BME280 sensor MQTT publishing
   tempTimer = millis();
-// Timer to publish new sensor data every 60 seconds
-  if (tempTimer - lastMeasure > 60000)
-  {
+  // Timer to publish new sensor data every 60 seconds
+  if (tempTimer - lastMeasure > 60000) {
     lastMeasure = tempTimer;
 
-// Check if MQTT Connected, otherwise it will crash the 8266
-    if (mqtt != nullptr)
-    {
+    // Check if MQTT Connected, otherwise it will crash the 8266
+    if (mqtt != nullptr) {
       UpdateBME280Data();
       float board_temperature = SensorTemperature;
-      float board_pressure = SensorPressure;
-      float board_humidity = SensorHumidity;
+      float board_pressure    = SensorPressure;
+      float board_humidity    = SensorHumidity;
 
-// Create string populated with user defined device topic from the UI, and the read temperature, humidity and pressure. Then publish to MQTT server.
+      // Create string populated with user defined device topic from the UI, and the read temperature, humidity and
+      // pressure. Then publish to MQTT server.
       String t = String(mqttDeviceTopic);
       t += "/temperature";
       mqtt->publish(t.c_str(), 0, true, String(board_temperature).c_str());
@@ -132,7 +132,7 @@ void userLoop() {
   lastUpdate = millis();
 
   // Turn off display after 3 minutes with no change.
-  if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
+  if (!displayTurnedOff && millis() - lastRedraw > 3 * 60 * 1000) {
     u8x8.setPowerSave(1);
     displayTurnedOff = true;
   }
@@ -155,19 +155,18 @@ void userLoop() {
   }
   needRedraw = false;
 
-  if (displayTurnedOff)
-  {
+  if (displayTurnedOff) {
     u8x8.setPowerSave(0);
     displayTurnedOff = false;
   }
   lastRedraw = millis();
 
   // Update last known values.
-  knownSsid = WiFi.SSID();
-  knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
+  knownSsid       = WiFi.SSID();
+  knownIp         = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
-  knownMode = strip.getMainSegment().mode;
-  knownPalette = strip.getMainSegment().palette;
+  knownMode       = strip.getMainSegment().mode;
+  knownPalette    = strip.getMainSegment().palette;
   u8x8.clear();
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
@@ -175,16 +174,18 @@ void userLoop() {
   u8x8.setCursor(1, 0);
   u8x8.print(knownSsid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
   // Print `~` char to indicate that SSID is longer than our display
-  if (knownSsid.length() > u8x8.getCols())
+  if (knownSsid.length() > u8x8.getCols()) {
     u8x8.print("~");
+  }
 
   // Second row with IP or Password
   u8x8.setCursor(1, 1);
   // Print password in AP mode and if led is OFF.
-  if (apActive && bri == 0)
+  if (apActive && bri == 0) {
     u8x8.print(apPass);
-  else
+  } else {
     u8x8.print(knownIp);
+  }
 
   // Third row with mode name
   u8x8.setCursor(2, 2);
@@ -198,10 +199,10 @@ void userLoop() {
   u8x8.print(lineBuffer);
 
   u8x8.setFont(u8x8_font_open_iconic_embedded_1x1);
-  u8x8.drawGlyph(0, 0, 80); // wifi icon
-  u8x8.drawGlyph(0, 1, 68); // home icon
+  u8x8.drawGlyph(0, 0, 80);  // wifi icon
+  u8x8.drawGlyph(0, 1, 68);  // home icon
   u8x8.setFont(u8x8_font_open_iconic_weather_2x2);
-  u8x8.drawGlyph(0, 2, 66 + (bri > 0 ? 3 : 0)); // sun/moon icon
+  u8x8.drawGlyph(0, 2, 66 + (bri > 0 ? 3 : 0));  // sun/moon icon
 }
 
 void UpdateBME280Data() {
@@ -213,7 +214,7 @@ void UpdateBME280Data() {
 #endif
   BME280::PresUnit presUnit(BME280::PresUnit_Pa);
   bme.read(pres, temp, hum, tempUnit, presUnit);
-  SensorTemperature=temp;
-  SensorHumidity=hum;
-  SensorPressure=pres;
+  SensorTemperature = temp;
+  SensorHumidity    = hum;
+  SensorPressure    = pres;
 }

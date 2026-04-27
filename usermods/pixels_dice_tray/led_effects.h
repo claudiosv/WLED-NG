@@ -3,9 +3,8 @@
  */
 #pragma once
 
-#include "wled.h"
-
 #include "dice_state.h"
+#include "wled.h"
 
 // Reuse FX display functions.
 extern void mode_breath();
@@ -35,32 +34,37 @@ static pixels::RollEvent GetLastRollForSegment() {
   }
 }
 
-
 /*
  * Alternating pixels running function (copied static function).
  */
 // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
-#define PALETTE_SOLID_WRAP   (paletteBlend == 1 || paletteBlend == 3)
+#define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 static void running_copy(uint32_t color1, uint32_t color2, bool theatre = false) {
-  int width = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
-  uint32_t cycleTime = 50 + (255 - SEGMENT.speed);
-  uint32_t it = strip.now / cycleTime;
-  bool usePalette = color1 == SEGCOLOR(0);
+  int      width      = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
+  uint32_t cycleTime  = 50 + (255 - SEGMENT.speed);
+  uint32_t it         = strip.now / cycleTime;
+  bool     usePalette = color1 == SEGCOLOR(0);
 
   for (int i = 0; i < SEGLEN; i++) {
     uint32_t col = color2;
-    if (usePalette) color1 = SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0);
-    if (theatre) {
-      if ((i % width) == SEGENV.aux0) col = color1;
-    } else {
-      int pos = (i % (width<<1));
-      if ((pos < SEGENV.aux0-width) || ((pos >= SEGENV.aux0) && (pos < SEGENV.aux0+width))) col = color1;
+    if (usePalette) {
+      color1 = SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0);
     }
-    SEGMENT.setPixelColor(i,col);
+    if (theatre) {
+      if ((i % width) == SEGENV.aux0) {
+        col = color1;
+      }
+    } else {
+      int pos = (i % (width << 1));
+      if ((pos < SEGENV.aux0 - width) || ((pos >= SEGENV.aux0) && (pos < SEGENV.aux0 + width))) {
+        col = color1;
+      }
+    }
+    SEGMENT.setPixelColor(i, col);
   }
 
   if (it != SEGENV.step) {
-    SEGENV.aux0 = (SEGENV.aux0 +1) % (theatre ? width : (width<<1));
+    SEGENV.aux0 = (SEGENV.aux0 + 1) % (theatre ? width : (width << 1));
     SEGENV.step = it;
   }
 }
@@ -87,8 +91,7 @@ static void simple_roll() {
 // Palette - Not used
 // Flags - Effect is optimized for use on 1D LED strips.
 // Defaults - Selected Die set to 0xFF (USER_ANY_DIE)
-static const char _data_FX_MODE_SIMPLE_DIE[] =
-    "DieSimple@,,Selected Die;!,!;;1;c1=255";
+static const char _data_FX_MODE_SIMPLE_DIE[] = "DieSimple@,,Selected Die;!,!;;1;c1=255";
 
 static void pulse_roll() {
   auto roll = GetLastRollForSegment();
@@ -103,8 +106,7 @@ static void pulse_roll() {
     }
   }
 }
-static const char _data_FX_MODE_PULSE_DIE[] =
-    "DiePulse@!,!,Selected Die;!,!;!;1;sx=24,pal=50,c1=255";
+static const char _data_FX_MODE_PULSE_DIE[] = "DiePulse@!,!,Selected Die;!,!;!;1;sx=24,pal=50,c1=255";
 
 static void check_roll() {
   auto roll = GetLastRollForSegment();

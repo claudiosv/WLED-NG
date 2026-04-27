@@ -4,25 +4,24 @@
 #pragma once
 
 #ifndef TFT_WIDTH
-  #warning TFT parameters not specified, not using screen.
+#warning TFT parameters not specified, not using screen.
 #else
-  #include <TFT_eSPI.h>
-  #include <pixels_dice_interface.h>  // https://github.com/axlan/arduino-pixels-dice
-  #include "wled.h"
+#include <TFT_eSPI.h>
+#include <pixels_dice_interface.h>  // https://github.com/axlan/arduino-pixels-dice
 
-  #include "dice_state.h"
-  #include "roll_info.h"
+#include "dice_state.h"
+#include "roll_info.h"
+#include "wled.h"
 
-  #define USING_TFT_DISPLAY 1
+#define USING_TFT_DISPLAY 1
 
-  #ifndef TFT_BL
-    #define TFT_BL -1
-  #endif
+#ifndef TFT_BL
+#define TFT_BL -1
+#endif
 
 // Bitmask for icon
 const uint8_t LIGHTNING_ICON_8X8[] = {
-    0b00001111, 0b00010010, 0b00100100, 0b01001111,
-    0b10000001, 0b11110010, 0b00010100, 0b00011000,
+    0b00001111, 0b00010010, 0b00100100, 0b01001111, 0b10000001, 0b11110010, 0b00010100, 0b00011000,
 };
 
 TFT_eSPI tft = TFT_eSPI(TFT_WIDTH, TFT_HEIGHT);
@@ -76,35 +75,36 @@ static uint8_t* GetCurrentRollTarget() {
  */
 class RollCountWidget {
  private:
-  int16_t xs = 0;
-  int16_t ys = 0;
-  uint16_t border_color = TFT_RED;
-  uint16_t bar_color = TFT_GREEN;
-  uint16_t bar_width = 6;
-  uint16_t max_bar_height = 60;
+  int16_t  xs              = 0;
+  int16_t  ys              = 0;
+  uint16_t border_color    = TFT_RED;
+  uint16_t bar_color       = TFT_GREEN;
+  uint16_t bar_width       = 6;
+  uint16_t max_bar_height  = 60;
   unsigned roll_counts[20] = {0};
-  unsigned total = 0;
-  unsigned max_count = 0;
+  unsigned total           = 0;
+  unsigned max_count       = 0;
 
  public:
-  RollCountWidget(int16_t xs = 0, int16_t ys = 0,
-                  uint16_t border_color = TFT_RED,
-                  uint16_t bar_color = TFT_GREEN, uint16_t bar_width = 6,
-                  uint16_t max_bar_height = 60)
+  RollCountWidget(int16_t xs = 0, int16_t ys = 0, uint16_t border_color = TFT_RED, uint16_t bar_color = TFT_GREEN,
+                  uint16_t bar_width = 6, uint16_t max_bar_height = 60)
       : xs(xs),
         ys(ys),
         border_color(border_color),
         bar_color(bar_color),
         bar_width(bar_width),
-        max_bar_height(max_bar_height) {}
+        max_bar_height(max_bar_height) {
+  }
 
   void Clear() {
     memset(roll_counts, 0, sizeof(roll_counts));
-    total = 0;
+    total     = 0;
     max_count = 0;
   }
 
-  unsigned GetNumRolls() const { return total; }
+  unsigned GetNumRolls() const {
+    return total;
+  }
 
   void AddRoll(unsigned val) {
     if (val > 19) {
@@ -121,20 +121,22 @@ class RollCountWidget {
     for (size_t i = 0; i < 20; i++) {
       if (roll_counts[i] > 0) {
         // Scale bar by highest count.
-        uint16_t bar_height = round(float(roll_counts[i]) / float(max_count) *
-                                    float(max_bar_height));
+        uint16_t bar_height = round(float(roll_counts[i]) / float(max_count) * float(max_bar_height));
         // Add space between bars
         uint16_t padding = (bar_width > 1) ? 1 : 0;
         // Need to start from top of bar and draw down
-        tft.fillRect(xs + 1 + bar_width * i,
-                     ys + 1 + max_bar_height - bar_height, bar_width - padding,
-                     bar_height, bar_color);
+        tft.fillRect(xs + 1 + bar_width * i, ys + 1 + max_bar_height - bar_height, bar_width - padding, bar_height,
+                     bar_color);
       }
     }
   }
 };
 
-enum class ButtonType { SINGLE, DOUBLE, LONG };
+enum class ButtonType {
+  SINGLE,
+  DOUBLE,
+  LONG
+};
 
 // Base class for different menu pages.
 class MenuBase {
@@ -166,13 +168,15 @@ DiceSettings* MenuBase::settings = nullptr;
 class DiceStatusMenu : public MenuBase {
  public:
   DiceStatusMenu()
-      : die_roll_counts{RollCountWidget{0, 20, TFT_BLUE, TFT_GREEN, 6, 40},
-                        RollCountWidget{0, SECTION_HEIGHT + 20, TFT_BLUE,
-                                        TFT_GREEN, 6, 40}} {}
+      : die_roll_counts{
+            RollCountWidget{0,                  20, TFT_BLUE, TFT_GREEN, 6, 40},
+            RollCountWidget{0, SECTION_HEIGHT + 20, TFT_BLUE, TFT_GREEN, 6, 40}
+  } {
+  }
 
   void Update(const DiceUpdate& dice_update) override {
     for (size_t i = 0; i < MAX_NUM_DICE; i++) {
-      const auto die_id = dice_update.connected_die_ids[i];
+      const auto die_id    = dice_update.connected_die_ids[i];
       const auto connected = die_id != 0;
       // Redraw if connection status changed.
       die_updated[i] |= die_id != last_die_ids[i];
@@ -191,8 +195,7 @@ class DiceStatusMenu : public MenuBase {
         }
 
         for (const auto& roll : dice_update.roll_updates) {
-          if (roll.first == die_id &&
-              roll.second.state == pixels::RollState::ON_FACE) {
+          if (roll.first == die_id && roll.second.state == pixels::RollState::ON_FACE) {
             die_roll_counts[i].AddRoll(roll.second.current_face);
             die_updated[i] = true;
           }
@@ -204,14 +207,13 @@ class DiceStatusMenu : public MenuBase {
   void Draw(const DiceUpdate& dice_update, bool force_redraw) override {
     // This could probably be optimized for partial redraws.
     for (size_t i = 0; i < MAX_NUM_DICE; i++) {
-      const int16_t ys = SECTION_HEIGHT * i;
-      const auto die_id = dice_update.connected_die_ids[i];
-      const auto connected = die_id != 0;
+      const int16_t ys        = SECTION_HEIGHT * i;
+      const auto    die_id    = dice_update.connected_die_ids[i];
+      const auto    connected = die_id != 0;
       // Screen updates might be slow, yield in case network task needs to do
       // work.
       yield();
-      bool battery_update =
-          connected && (millis() - last_update[i] > BATTERY_REFRESH_RATE_MS);
+      bool battery_update = connected && (millis() - last_update[i] > BATTERY_REFRESH_RATE_MS);
       if (force_redraw || die_updated[i] || battery_update) {
         last_update[i] = millis();
         tft.fillRect(0, ys, TFT_WIDTH, SECTION_HEIGHT, TFT_BLACK);
@@ -242,8 +244,7 @@ class DiceStatusMenu : public MenuBase {
             tft.print(die_battery[i].battery_level);
             tft.print("%");
             if (die_battery[i].is_charging) {
-              tft.drawBitmap(tft.getCursorX(), tft.getCursorY(),
-                             LIGHTNING_ICON_8X8, 8, 8, TFT_YELLOW);
+              tft.drawBitmap(tft.getCursorX(), tft.getCursorY(), LIGHTNING_ICON_8X8, 8, 8, TFT_YELLOW);
             }
           }
           die_roll_counts[i].Draw();
@@ -263,15 +264,16 @@ class DiceStatusMenu : public MenuBase {
   };
 
  private:
-  static constexpr long BATTERY_REFRESH_RATE_MS = 60 * 1000;
-  static constexpr int16_t SECTION_HEIGHT = TFT_HEIGHT / MAX_NUM_DICE;
-  static constexpr uint8_t INVALID_BATTERY = 0xFF;
-  std::array<long, MAX_NUM_DICE> last_update{0, 0};
-  std::array<pixels::PixelsDieID, MAX_NUM_DICE> last_die_ids{0, 0};
-  std::array<bool, MAX_NUM_DICE> die_updated{false, false};
+  static constexpr long                          BATTERY_REFRESH_RATE_MS = 60 * 1000;
+  static constexpr int16_t                       SECTION_HEIGHT          = TFT_HEIGHT / MAX_NUM_DICE;
+  static constexpr uint8_t                       INVALID_BATTERY         = 0xFF;
+  std::array<long, MAX_NUM_DICE>                 last_update{0, 0};
+  std::array<pixels::PixelsDieID, MAX_NUM_DICE>  last_die_ids{0, 0};
+  std::array<bool, MAX_NUM_DICE>                 die_updated{false, false};
   std::array<pixels::BatteryEvent, MAX_NUM_DICE> die_battery = {
       pixels::BatteryEvent{INVALID_BATTERY, false},
-      pixels::BatteryEvent{INVALID_BATTERY, false}};
+      pixels::BatteryEvent{INVALID_BATTERY, false}
+  };
   std::array<RollCountWidget, MAX_NUM_DICE> die_roll_counts;
 };
 
@@ -283,7 +285,8 @@ class EffectMenu : public MenuBase {
  public:
   EffectMenu() = default;
 
-  void Update(const DiceUpdate& dice_update) override {}
+  void Update(const DiceUpdate& dice_update) override {
+  }
 
   void Draw(const DiceUpdate& dice_update, bool force_redraw) override {
     // NOTE: This doesn't update automatically if the effect is updated on the
@@ -299,8 +302,7 @@ class EffectMenu : public MenuBase {
         tft.setTextSize(2);
         PrintLnInBox(lineBuffer, (field_idx == 0) ? TFT_BLUE : TFT_BLACK);
         if (mode == FX_MODE_CHECK_D20) {
-          snprintf(lineBuffer, sizeof(lineBuffer), "PASS: %u",
-                   *GetCurrentRollTarget());
+          snprintf(lineBuffer, sizeof(lineBuffer), "PASS: %u", *GetCurrentRollTarget());
           PrintLnInBox(lineBuffer, (field_idx == 1) ? TFT_BLUE : TFT_BLACK);
         }
       } else {
@@ -321,9 +323,8 @@ class EffectMenu : public MenuBase {
    * the current die effect.
    */
   void HandleButton(ButtonType type, uint8_t b) override {
-    Segment& seg = strip.getFirstSelectedSeg();
-    auto mode_itr =
-        std::find(DIE_LED_MODES.begin(), DIE_LED_MODES.end(), seg.mode);
+    Segment& seg      = strip.getFirstSelectedSeg();
+    auto     mode_itr = std::find(DIE_LED_MODES.begin(), DIE_LED_MODES.end(), seg.mode);
     if (mode_itr != DIE_LED_MODES.end()) {
       mode_idx = mode_itr - DIE_LED_MODES.begin();
     }
@@ -342,8 +343,7 @@ class EffectMenu : public MenuBase {
         if (field_idx == 0) {
           mode_idx = (mode_idx + 1) % DIE_LED_MODES.size();
           seg.setMode(DIE_LED_MODES[mode_idx]);
-        } else if (DIE_LED_MODES[mode_idx] == FX_MODE_CHECK_D20 &&
-                   field_idx == 1) {
+        } else if (DIE_LED_MODES[mode_idx] == FX_MODE_CHECK_D20 && field_idx == 1) {
           *GetCurrentRollTarget() = GetLastRoll().current_face + 1;
         }
       }
@@ -352,10 +352,10 @@ class EffectMenu : public MenuBase {
 
  private:
   static constexpr std::array<uint8_t, 3> DIE_LED_MODE_NUM_FIELDS = {1, 1, 2};
-  static constexpr size_t CHAR_WIDTH_BIG = 10;
-  static constexpr size_t CHAR_WIDTH_SMALL = 21;
-  size_t mode_idx = 0;
-  size_t field_idx = 0;
+  static constexpr size_t                 CHAR_WIDTH_BIG          = 10;
+  static constexpr size_t                 CHAR_WIDTH_SMALL        = 21;
+  size_t                                  mode_idx                = 0;
+  size_t                                  field_idx               = 0;
 };
 
 constexpr std::array<uint8_t, 3> EffectMenu::DIE_LED_MODE_NUM_FIELDS;
@@ -367,7 +367,8 @@ class InfoMenu : public MenuBase {
  public:
   InfoMenu() = default;
 
-  void Update(const DiceUpdate& dice_update) override {}
+  void Update(const DiceUpdate& dice_update) override {
+  }
 
   void Draw(const DiceUpdate& dice_update, bool force_redraw) override {
     if (force_redraw) {
@@ -391,18 +392,14 @@ class InfoMenu : public MenuBase {
     if (settings->roll_label >= NUM_ROLL_INFOS) {
       settings->roll_label = 0;
     } else if (b == 0) {
-      settings->roll_label = (settings->roll_label == 0)
-                                 ? NUM_ROLL_INFOS - 1
-                                 : settings->roll_label - 1;
+      settings->roll_label = (settings->roll_label == 0) ? NUM_ROLL_INFOS - 1 : settings->roll_label - 1;
     } else if (b == 1) {
       settings->roll_label = (settings->roll_label + 1) % NUM_ROLL_INFOS;
     }
     if (WLED_MQTT_CONNECTED) {
       char mqtt_topic_buffer[MQTT_MAX_TOPIC_LEN + 16];
-      snprintf(mqtt_topic_buffer, sizeof(mqtt_topic_buffer), "%s/%s",
-               mqttDeviceTopic, "dice/settings->roll_label");
-      mqtt->publish(mqtt_topic_buffer, 0, false,
-                    GetRollName(settings->roll_label));
+      snprintf(mqtt_topic_buffer, sizeof(mqtt_topic_buffer), "%s/%s", mqttDeviceTopic, "dice/settings->roll_label");
+      mqtt->publish(mqtt_topic_buffer, 0, false, GetRollName(settings->roll_label));
     }
   };
 };
@@ -412,7 +409,9 @@ class InfoMenu : public MenuBase {
  */
 class MenuController {
  public:
-  MenuController(DiceSettings* settings) { MenuBase::settings = settings; }
+  MenuController(DiceSettings* settings) {
+    MenuBase::settings = settings;
+  }
 
   void Init(unsigned rotation) {
     tft.init();
@@ -429,12 +428,12 @@ class MenuController {
 
   // Set the pin to turn the backlight on or off if available.
   static void EnableBacklight(bool enable) {
-  #if TFT_BL > 0
-    #if USERMOD_PIXELS_DICE_TRAY_BL_ACTIVE_LOW
+#if TFT_BL > 0
+#if USERMOD_PIXELS_DICE_TRAY_BL_ACTIVE_LOW
     enable = !enable;
-    #endif
+#endif
     digitalWrite(TFT_BL, enable);
-  #endif
+#endif
   }
 
   /**
@@ -446,8 +445,7 @@ class MenuController {
     // Switch menus with double click
     if (ButtonType::DOUBLE == type) {
       if (b == 0) {
-        current_index =
-            (current_index == 0) ? menu_ptrs.size() - 1 : current_index - 1;
+        current_index = (current_index == 0) ? menu_ptrs.size() - 1 : current_index - 1;
       } else {
         current_index = (current_index + 1) % menu_ptrs.size();
       }
@@ -464,16 +462,17 @@ class MenuController {
     force_redraw = false;
   }
 
-  void Redraw() { force_redraw = true; }
+  void Redraw() {
+    force_redraw = true;
+  }
 
  private:
   size_t current_index = 0;
-  bool force_redraw = true;
+  bool   force_redraw  = true;
 
-  DiceStatusMenu status_menu;
-  EffectMenu effect_menu;
-  InfoMenu info_menu;
-  const std::array<MenuBase*, 3> menu_ptrs = {&status_menu, &effect_menu,
-                                              &info_menu};
+  DiceStatusMenu                 status_menu;
+  EffectMenu                     effect_menu;
+  InfoMenu                       info_menu;
+  const std::array<MenuBase*, 3> menu_ptrs = {&status_menu, &effect_menu, &info_menu};
 };
 #endif

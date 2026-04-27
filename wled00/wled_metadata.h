@@ -4,27 +4,27 @@
   Manages and exports information about the current WLED build.
 */
 
-
 #pragma once
 
-#include <cstdint>
-#include <string.h>
 #include <WString.h>
+#include <string.h>
+
+#include <cstdint>
 
 #ifndef WLED_VERSION
-  #warning WLED_VERSION was not set - using default value of 'dev'
-  #define WLED_VERSION dev
+#warning WLED_VERSION was not set - using default value of 'dev'
+#define WLED_VERSION dev
 #endif
 #ifndef WLED_RELEASE_NAME
-  #warning WLED_RELEASE_NAME was not set - using default value of 'Custom'
-  #define WLED_RELEASE_NAME "Custom"
+#warning WLED_RELEASE_NAME was not set - using default value of 'Custom'
+#define WLED_RELEASE_NAME "Custom"
 #endif
 #ifndef WLED_REPO
-  // No warning for this one: integrators are not always on GitHub
-  #define WLED_REPO "unknown"
+// No warning for this one: integrators are not always on GitHub
+#define WLED_REPO "unknown"
 #endif
 
-#define WLED_VERSION_MAX_LEN 48
+#define WLED_VERSION_MAX_LEN      48
 #define WLED_RELEASE_NAME_MAX_LEN 48
 
 /**
@@ -34,23 +34,23 @@
  * by the OTA process.
  */
 typedef struct {
-    uint32_t magic;               // Magic number to identify WLED custom description
-    uint32_t desc_version;        // Structure version for future compatibility
-    char wled_version[WLED_VERSION_MAX_LEN];
-    char release_name[WLED_RELEASE_NAME_MAX_LEN]; // Release name (null-terminated)
-    uint32_t hash;               // Structure sanity check
-    uint8_t safe_update_version[3]; // Indicates version it's known to be safe to install this update from: major, minor, patch
+  uint32_t magic;         // Magic number to identify WLED custom description
+  uint32_t desc_version;  // Structure version for future compatibility
+  char     wled_version[WLED_VERSION_MAX_LEN];
+  char     release_name[WLED_RELEASE_NAME_MAX_LEN];  // Release name (null-terminated)
+  uint32_t hash;                                     // Structure sanity check
+  uint8_t safe_update_version[3];  // Indicates version it's known to be safe to install this update from: major, minor,
+                                   // patch
 } __attribute__((packed)) wled_metadata_t;
-
 
 // Global build description
 extern const wled_metadata_t WLED_BUILD_DESCRIPTION;
 
 // Convenient metdata pointers
-#define versionString (WLED_BUILD_DESCRIPTION.wled_version)   // Build version, WLED_VERSION
-#define releaseString (WLED_BUILD_DESCRIPTION.release_name)   // Release name,  WLED_RELEASE_NAME
-inline constexpr char repoString[]    = WLED_REPO; // Github repository (if available)
-inline constexpr char brandString[]   = WLED_BRAND; // Brand
+#define versionString (WLED_BUILD_DESCRIPTION.wled_version)  // Build version, WLED_VERSION
+#define releaseString (WLED_BUILD_DESCRIPTION.release_name)  // Release name,  WLED_RELEASE_NAME
+inline constexpr char repoString[]  = WLED_REPO;             // Github repository (if available)
+inline constexpr char brandString[] = WLED_BRAND;            // Brand
 
 // Metadata analysis functions
 

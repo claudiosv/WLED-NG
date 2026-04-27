@@ -14,18 +14,19 @@
 // #else
 // // for compatibility with Arduino Due and Teensy 3.0 and maybe others?
 // #define PROGMEM
-#define PGM_P  const char *
-#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
-#define pgm_read_word(addr) (*(const unsigned char **)(addr))
+#define PGM_P               const char*
+#define pgm_read_byte(addr) (*(const unsigned char*)(addr))
+#define pgm_read_word(addr) (*(const unsigned char**)(addr))
 // #define strcpy_P(dest, src) strcpy((dest), (src))
 // #endif
-#include <string.h> // for strcpy or strcpy
+#include <string.h>  // for strcpy or strcpy
+
 #include "TimeLib.h"
 
 // the short strings for each day or month must be exactly dt_SHORT_STR_LEN
-#define dt_SHORT_STR_LEN  3 // the length of short strings
+#define dt_SHORT_STR_LEN 3  // the length of short strings
 
-static char buffer[dt_MAX_STRING_LEN+1];  // must be big enough for longest string and the terminating null
+static char buffer[dt_MAX_STRING_LEN + 1];  // must be big enough for longest string and the terminating null
 
 // const char monthStr0[] = "";
 // const char monthStr1[] = "January";
@@ -46,22 +47,9 @@ static char buffer[dt_MAX_STRING_LEN+1];  // must be big enough for longest stri
 //     monthStr0,monthStr1,monthStr2,monthStr3,monthStr4,monthStr5,monthStr6,
 //     monthStr7,monthStr8,monthStr9,monthStr10,monthStr11,monthStr12
 // };
-inline constexpr const char* const monthNames[] = {
-  "",
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December"
-};
-
+inline constexpr const char* const monthNames[] = {"",        "January",  "February", "March",  "April",
+                                                   "May",     "June",     "July",     "August", "September",
+                                                   "October", "November", "December"};
 
 // const char monthShortNames_P[] = "ErrJanFebMarAprMayJunJulAugSepOctNovDec";
 inline constexpr char monthShortNames[] = "ErrJanFebMarAprMayJunJulAugSepOctNovDec";
@@ -80,47 +68,37 @@ inline constexpr char monthShortNames[] = "ErrJanFebMarAprMayJunJulAugSepOctNovD
 //    dayStr0,dayStr1,dayStr2,dayStr3,dayStr4,dayStr5,dayStr6,dayStr7
 // };
 
-inline constexpr const char* const dayNames[] = {
-  "Err",
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday"
-};
+inline constexpr const char* const dayNames[] = {"Err",       "Sunday",   "Monday", "Tuesday",
+                                                 "Wednesday", "Thursday", "Friday", "Saturday"};
 
 // const char dayShortNames_P[] = "ErrSunMonTueWedThuFriSat";
 inline constexpr char dayShortNames[] = "ErrSunMonTueWedThuFriSat";
 
 /* functions to return date strings */
 
-char* monthStr(uint8_t month)
-{
-    strcpy(buffer, (PGM_P)pgm_read_word(&(monthNames[month])));
-    return buffer;
+char* monthStr(uint8_t month) {
+  strcpy(buffer, (PGM_P)pgm_read_word(&(monthNames[month])));
+  return buffer;
 }
 
-char* monthShortStr(uint8_t month)
-{
-   for (int i=0; i < dt_SHORT_STR_LEN; i++)
-      buffer[i] = pgm_read_byte(&(monthShortNames[i+ (month*dt_SHORT_STR_LEN)]));
-   buffer[dt_SHORT_STR_LEN] = 0;
-   return buffer;
+char* monthShortStr(uint8_t month) {
+  for (int i = 0; i < dt_SHORT_STR_LEN; i++) {
+    buffer[i] = pgm_read_byte(&(monthShortNames[i + (month * dt_SHORT_STR_LEN)]));
+  }
+  buffer[dt_SHORT_STR_LEN] = 0;
+  return buffer;
 }
 
-char* dayStr(uint8_t day)
-{
-   strcpy(buffer, (PGM_P)pgm_read_word(&(dayNames[day])));
-   return buffer;
+char* dayStr(uint8_t day) {
+  strcpy(buffer, (PGM_P)pgm_read_word(&(dayNames[day])));
+  return buffer;
 }
 
-char* dayShortStr(uint8_t day)
-{
-   uint8_t index = day*dt_SHORT_STR_LEN;
-   for (int i=0; i < dt_SHORT_STR_LEN; i++)
-      buffer[i] = pgm_read_byte(&(dayShortNames[index + i]));
-   buffer[dt_SHORT_STR_LEN] = 0;
-   return buffer;
+char* dayShortStr(uint8_t day) {
+  uint8_t index = day * dt_SHORT_STR_LEN;
+  for (int i = 0; i < dt_SHORT_STR_LEN; i++) {
+    buffer[i] = pgm_read_byte(&(dayShortNames[index + i]));
+  }
+  buffer[dt_SHORT_STR_LEN] = 0;
+  return buffer;
 }

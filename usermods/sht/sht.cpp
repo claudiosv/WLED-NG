@@ -1,11 +1,11 @@
-#include "ShtUsermod.h"
 #include "SHT85.h"
+#include "ShtUsermod.h"
 
 // Strings to reduce flash memory usage (used more than twice)
-const char ShtUsermod::_name[] = "SHT-Sensor";
-const char ShtUsermod::_enabled[] = "Enabled";
-const char ShtUsermod::_shtType[] = "SHT-Type";
-const char ShtUsermod::_unitOfTemp[] = "Unit";
+const char ShtUsermod::_name[]            = "SHT-Sensor";
+const char ShtUsermod::_enabled[]         = "Enabled";
+const char ShtUsermod::_shtType[]         = "SHT-Type";
+const char ShtUsermod::_unitOfTemp[]      = "Unit";
 const char ShtUsermod::_haMqttDiscovery[] = "Add-To-HA-MQTT-Discovery";
 
 /**
@@ -16,16 +16,23 @@ const char ShtUsermod::_haMqttDiscovery[] = "Add-To-HA-MQTT-Discovery";
  *
  * @return void
  */
-void ShtUsermod::initShtTempHumiditySensor()
-{
+void ShtUsermod::initShtTempHumiditySensor() {
   switch (shtType) {
-    case USERMOD_SHT_TYPE_SHT30: shtTempHumidSensor = (SHT *) new SHT30(); break;
-    case USERMOD_SHT_TYPE_SHT31: shtTempHumidSensor = (SHT *) new SHT31(); break;
-    case USERMOD_SHT_TYPE_SHT35: shtTempHumidSensor = (SHT *) new SHT35(); break;
-    case USERMOD_SHT_TYPE_SHT85: shtTempHumidSensor = (SHT *) new SHT85(); break;
+    case USERMOD_SHT_TYPE_SHT30:
+      shtTempHumidSensor = (SHT *)new SHT30();
+      break;
+    case USERMOD_SHT_TYPE_SHT31:
+      shtTempHumidSensor = (SHT *)new SHT31();
+      break;
+    case USERMOD_SHT_TYPE_SHT35:
+      shtTempHumidSensor = (SHT *)new SHT35();
+      break;
+    case USERMOD_SHT_TYPE_SHT85:
+      shtTempHumidSensor = (SHT *)new SHT85();
+      break;
   }
 
-  shtTempHumidSensor->begin(shtI2cAddress); // uses &Wire
+  shtTempHumidSensor->begin(shtI2cAddress);  // uses &Wire
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
     DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
     cleanup();
@@ -42,8 +49,7 @@ void ShtUsermod::initShtTempHumiditySensor()
  *
  * @return void
  */
-void ShtUsermod::cleanupShtTempHumiditySensor()
-{
+void ShtUsermod::cleanupShtTempHumiditySensor() {
   if (isShtReady()) {
     shtTempHumidSensor->reset();
     delete shtTempHumidSensor;
@@ -60,8 +66,7 @@ void ShtUsermod::cleanupShtTempHumiditySensor()
  *
  * @return void
  */
-void ShtUsermod::cleanup()
-{
+void ShtUsermod::cleanup() {
   cleanupShtTempHumiditySensor();
   enabled = false;
 }
@@ -75,7 +80,9 @@ void ShtUsermod::cleanup()
  * @return void
  */
 void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
-  if (!WLED_MQTT_CONNECTED) return;
+  if (!WLED_MQTT_CONNECTED) {
+    return;
+  }
   char buf[128];
 
   snprintf(buf, 127, "%s/temperature", mqttDeviceTopic);
@@ -94,20 +101,22 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
  * @return void
  */
 void ShtUsermod::publishHomeAssistantAutodiscovery() {
-  if (!WLED_MQTT_CONNECTED) return;
+  if (!WLED_MQTT_CONNECTED) {
+    return;
+  }
 
-  char json_str[1024], buf[128];
-  size_t payload_size;
+  char                     json_str[1024], buf[128];
+  size_t                   payload_size;
   StaticJsonDocument<1024> json;
 
   snprintf(buf, 127, "%s Temperature", serverDescription);
   json["name"] = buf;
   snprintf(buf, 127, "%s/temperature", mqttDeviceTopic);
-  json["stat_t"] = buf;
-  json["dev_cla"] = "temperature";
+  json["stat_t"]   = buf;
+  json["dev_cla"]  = "temperature";
   json["stat_cla"] = "measurement";
   snprintf(buf, 127, "%s-temperature", escapedMac.c_str());
-  json["uniq_id"] = buf;
+  json["uniq_id"]      = buf;
   json["unit_of_meas"] = unitOfTemp ? "°F" : "°C";
   appendDeviceToMqttDiscoveryMessage(json);
   payload_size = serializeJson(json, json_str);
@@ -119,11 +128,11 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   snprintf(buf, 127, "%s Humidity", serverDescription);
   json["name"] = buf;
   snprintf(buf, 127, "%s/humidity", mqttDeviceTopic);
-  json["stat_t"] = buf;
-  json["dev_cla"] = "humidity";
+  json["stat_t"]   = buf;
+  json["dev_cla"]  = "humidity";
   json["stat_cla"] = "measurement";
   snprintf(buf, 127, "%s-humidity", escapedMac.c_str());
-  json["uniq_id"] = buf;
+  json["uniq_id"]      = buf;
   json["unit_of_meas"] = "%";
   appendDeviceToMqttDiscoveryMessage(json);
   payload_size = serializeJson(json, json_str);
@@ -138,13 +147,13 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
  *
  * @return void
  */
-void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
+void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument &root) {
   JsonObject device = root.createNestedObject("dev");
-  device["ids"] = escapedMac.c_str();
-  device["name"] = serverDescription;
-  device["sw"] = versionString;
-  device["mdl"] = ESP.getChipModel();
-  device["mf"] = "espressif";
+  device["ids"]     = escapedMac.c_str();
+  device["name"]    = serverDescription;
+  device["sw"]      = versionString;
+  device["mdl"]     = ESP.getChipModel();
+  device["mf"]      = "espressif";
 }
 
 /**
@@ -158,8 +167,7 @@ void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
  *
  * @return void
  */
-void ShtUsermod::setup()
-{
+void ShtUsermod::setup() {
   if (enabled) {
     // GPIOs can be set to -1 , so check they're gt zero
     if (i2c_sda < 0 || i2c_scl < 0) {
@@ -189,9 +197,10 @@ void ShtUsermod::setup()
  *
  * @return void
  */
-void ShtUsermod::loop()
-{
-  if (!enabled || !initDone || strip.isUpdating()) return;
+void ShtUsermod::loop() {
+  if (!enabled || !initDone || strip.isUpdating()) {
+    return;
+  }
 
   if (isShtReady()) {
     if (millis() - shtLastTimeUpdated > 30000 && !shtDataRequested) {
@@ -204,7 +213,7 @@ void ShtUsermod::loop()
     if (shtDataRequested) {
       if (shtTempHumidSensor->dataReady()) {
         if (shtTempHumidSensor->readData(false)) {
-          shtCurrentTempC = shtTempHumidSensor->getTemperature();
+          shtCurrentTempC    = shtTempHumidSensor->getTemperature();
           shtCurrentHumidity = shtTempHumidSensor->getHumidity();
 
           publishTemperatureAndHumidityViaMqtt();
@@ -230,7 +239,9 @@ void ShtUsermod::loop()
  * @return void
  */
 void ShtUsermod::onMqttConnect(bool sessionPresent) {
-  if (haMqttDiscovery && !haMqttDiscoveryDone) publishHomeAssistantAutodiscovery();
+  if (haMqttDiscovery && !haMqttDiscoveryDone) {
+    publishHomeAssistantAutodiscovery();
+  }
 }
 
 /**
@@ -268,13 +279,12 @@ void ShtUsermod::appendConfigData() {
  *
  * @return void
  */
-void ShtUsermod::addToConfig(JsonObject &root)
-{
-  JsonObject top = root.createNestedObject(_name); // usermodname
+void ShtUsermod::addToConfig(JsonObject &root) {
+  JsonObject top = root.createNestedObject(_name);  // usermodname
 
-  top[_enabled] = enabled;
-  top[_shtType] = shtType;
-  top[_unitOfTemp] = unitOfTemp;
+  top[_enabled]         = enabled;
+  top[_shtType]         = shtType;
+  top[_unitOfTemp]      = unitOfTemp;
   top[_haMqttDiscovery] = haMqttDiscovery;
 }
 
@@ -290,17 +300,16 @@ void ShtUsermod::addToConfig(JsonObject &root)
  *
  * @return bool
  */
-bool ShtUsermod::readFromConfig(JsonObject &root)
-{
+bool ShtUsermod::readFromConfig(JsonObject &root) {
   JsonObject top = root[_name];
   if (top.isNull()) {
     DEBUG_PRINTF("[%s] No config found. (Using defaults.)\n", _name);
     return false;
   }
 
-  bool oldEnabled = enabled;
-  byte oldShtType = shtType;
-  byte oldUnitOfTemp = unitOfTemp;
+  bool oldEnabled         = enabled;
+  byte oldShtType         = shtType;
+  byte oldUnitOfTemp      = unitOfTemp;
   bool oldHaMqttDiscovery = haMqttDiscovery;
 
   getJsonValue(top[_enabled], enabled);
@@ -349,16 +358,17 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
  *
  * @return void
  */
-void ShtUsermod::addToJsonInfo(JsonObject& root)
-{
+void ShtUsermod::addToJsonInfo(JsonObject &root) {
   if (!enabled && !isShtReady()) {
     return;
   }
 
   JsonObject user = root["u"];
-  if (user.isNull()) user = root.createNestedObject("u");
+  if (user.isNull()) {
+    user = root.createNestedObject("u");
+  }
 
-  JsonArray jsonTemp = user.createNestedArray("Temperature");
+  JsonArray jsonTemp     = user.createNestedArray("Temperature");
   JsonArray jsonHumidity = user.createNestedArray("Humidity");
 
   if (shtLastTimeUpdated == 0 || !shtReadDataSuccess) {
@@ -382,7 +392,9 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
 
   // sensor object
   JsonObject sensor = root["sensor"];
-  if (sensor.isNull()) sensor = root.createNestedObject("sensor");
+  if (sensor.isNull()) {
+    sensor = root.createNestedObject("sensor");
+  }
 
   jsonTemp = sensor.createNestedArray("temp");
   jsonTemp.add(getTemperature());
@@ -407,7 +419,7 @@ float ShtUsermod::getTemperature() {
  *
  * @return const char*
  */
-const char* ShtUsermod::getUnitString() {
+const char *ShtUsermod::getUnitString() {
   return unitOfTemp ? "°F" : "°C";
 }
 

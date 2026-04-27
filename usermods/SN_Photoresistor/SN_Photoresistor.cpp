@@ -1,82 +1,73 @@
-#include "wled.h"
 #include "SN_Photoresistor.h"
 
-//Pin defaults for QuinLed Dig-Uno (A0)
+#include "wled.h"
+
+// Pin defaults for QuinLed Dig-Uno (A0)
 #ifndef PHOTORESISTOR_PIN
 #define PHOTORESISTOR_PIN A0
 #endif
 
-static bool checkBoundSensor(float newValue, float prevValue, float maxDiff)
-{
+static bool checkBoundSensor(float newValue, float prevValue, float maxDiff) {
   return isnan(prevValue) || newValue <= prevValue - maxDiff || newValue >= prevValue + maxDiff;
 }
 
-uint16_t Usermod_SN_Photoresistor::getLuminance()
-{
+uint16_t Usermod_SN_Photoresistor::getLuminance() {
   // http://forum.arduino.cc/index.php?topic=37555.0
   // https://forum.arduino.cc/index.php?topic=185158.0
   float volts = analogRead(PHOTORESISTOR_PIN) * (referenceVoltage / adcPrecision);
-  float amps = volts / resistorValue;
-  float lux = amps * 1000000 * 2.0;
+  float amps  = volts / resistorValue;
+  float lux   = amps * 1000000 * 2.0;
 
-  lastMeasurement = millis();
+  lastMeasurement      = millis();
   getLuminanceComplete = true;
   return uint16_t(lux);
 }
 
-void Usermod_SN_Photoresistor::setup()
-{
+void Usermod_SN_Photoresistor::setup() {
   // set pinmode
   pinMode(PHOTORESISTOR_PIN, INPUT);
 }
 
-void Usermod_SN_Photoresistor::loop()
-{
-  if (disabled || strip.isUpdating())
+void Usermod_SN_Photoresistor::loop() {
+  if (disabled || strip.isUpdating()) {
     return;
+  }
 
   unsigned long now = millis();
 
   // check to see if we are due for taking a measurement
   // lastMeasurement will not be updated until the conversion
   // is complete the the reading is finished
-  if (now - lastMeasurement < readingInterval)
-  {
+  if (now - lastMeasurement < readingInterval) {
     return;
   }
 
   uint16_t currentLDRValue = getLuminance();
-  if (checkBoundSensor(currentLDRValue, lastLDRValue, offset))
-  {
+  if (checkBoundSensor(currentLDRValue, lastLDRValue, offset)) {
     lastLDRValue = currentLDRValue;
 
 #ifndef WLED_DISABLE_MQTT
-    if (WLED_MQTT_CONNECTED)
-    {
+    if (WLED_MQTT_CONNECTED) {
       char subuf[45];
       strcpy(subuf, mqttDeviceTopic);
       strcat(subuf, "/luminance");
       mqtt->publish(subuf, 0, true, String(lastLDRValue).c_str());
-    }
-    else
-    {
+    } else {
       DEBUG_PRINTLN("Missing MQTT connection. Not publishing data");
     }
   }
 #endif
 }
 
-
-void Usermod_SN_Photoresistor::addToJsonInfo(JsonObject &root)
-{
+void Usermod_SN_Photoresistor::addToJsonInfo(JsonObject &root) {
   JsonObject user = root["u"];
-  if (user.isNull())
+  if (user.isNull()) {
     user = root.createNestedObject("u");
+  }
 
   JsonArray lux = user.createNestedArray("Luminance");
 
-  if (!getLuminanceComplete)
-  {
+  if (!getLuminanceComplete) {
     // if we haven't read the sensor yet, let the user know
     // that we are still waiting for the first measurement
     lux.add((USERMOD_SN_PHOTORESISTOR_FIRST_MEASUREMENT_AT - millis()) / 1000);
@@ -88,29 +79,26 @@ void Usermod_SN_Photoresistor::addToJsonInfo(JsonObject &root)
   lux.add(" lux");
 }
 
-
 /**
-   * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
-   */
-void Usermod_SN_Photoresistor::addToConfig(JsonObject &root)
-{
+ * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
+ */
+void Usermod_SN_Photoresistor::addToConfig(JsonObject &root) {
   // we add JSON object.
-  JsonObject top = root.createNestedObject(_name); // usermodname
-  top[_enabled] = !disabled;
-  top[_readInterval] = readingInterval / 1000;
+  JsonObject top         = root.createNestedObject(_name);  // usermodname
+  top[_enabled]          = !disabled;
+  top[_readInterval]     = readingInterval / 1000;
   top[_referenceVoltage] = referenceVoltage;
-  top[_resistorValue] = resistorValue;
-  top[_adcPrecision] = adcPrecision;
-  top[_offset] = offset;
+  top[_resistorValue]    = resistorValue;
+  top[_adcPrecision]     = adcPrecision;
+  top[_offset]           = offset;
 
   DEBUG_PRINTLN("Photoresistor config saved.");
 }
 
 /**
-* readFromConfig() is called before setup() to populate properties from values stored in cfg.json
-*/
-bool Usermod_SN_Photoresistor::readFromConfig(JsonObject &root)
-{
+ * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+ */
+bool Usermod_SN_Photoresistor::readFromConfig(JsonObject &root) {
   // we look for JSON object.
   JsonObject top = root[_name];
   if (top.isNull()) {
@@ -120,7 +108,7 @@ bool Usermod_SN_Photoresistor::readFromConfig(JsonObject &root)
   }
 
   disabled         = !(top[_enabled] | !disabled);
-  readingInterval  = (top[_readInterval] | readingInterval/1000) * 1000; // convert to ms
+  readingInterval  = (top[_readInterval] | readingInterval / 1000) * 1000;  // convert to ms
   referenceVoltage = top[_referenceVoltage] | referenceVoltage;
   resistorValue    = top[_resistorValue] | resistorValue;
   adcPrecision     = top[_adcPrecision] | adcPrecision;
@@ -132,15 +120,14 @@ bool Usermod_SN_Photoresistor::readFromConfig(JsonObject &root)
   return true;
 }
 
-
 // strings to reduce flash memory usage (used more than twice)
-const char Usermod_SN_Photoresistor::_name[] = "Photoresistor";
-const char Usermod_SN_Photoresistor::_enabled[] = "enabled";
-const char Usermod_SN_Photoresistor::_readInterval[] = "read-interval-s";
+const char Usermod_SN_Photoresistor::_name[]             = "Photoresistor";
+const char Usermod_SN_Photoresistor::_enabled[]          = "enabled";
+const char Usermod_SN_Photoresistor::_readInterval[]     = "read-interval-s";
 const char Usermod_SN_Photoresistor::_referenceVoltage[] = "supplied-voltage";
-const char Usermod_SN_Photoresistor::_resistorValue[] = "resistor-value";
-const char Usermod_SN_Photoresistor::_adcPrecision[] = "adc-precision";
-const char Usermod_SN_Photoresistor::_offset[] = "offset";
+const char Usermod_SN_Photoresistor::_resistorValue[]    = "resistor-value";
+const char Usermod_SN_Photoresistor::_adcPrecision[]     = "adc-precision";
+const char Usermod_SN_Photoresistor::_offset[]           = "offset";
 
 static Usermod_SN_Photoresistor sn_photoresistor;
 REGISTER_USERMOD(sn_photoresistor);

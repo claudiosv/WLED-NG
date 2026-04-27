@@ -9,34 +9,35 @@
 static bool sendLiveLedsWs(uint32_t wsClient);
 
 // define some constants for binary protocols, dont use defines but C++ style constexpr
-constexpr uint8_t BINARY_PROTOCOL_GENERIC = 0xFF; // generic / auto detect NOT IMPLEMENTED
-constexpr uint8_t BINARY_PROTOCOL_E131    = P_E131; // = 0, untested!
-constexpr uint8_t BINARY_PROTOCOL_ARTNET  = P_ARTNET; // = 1, untested!
-constexpr uint8_t BINARY_PROTOCOL_DDP     = P_DDP; // = 2
+constexpr uint8_t BINARY_PROTOCOL_GENERIC = 0xFF;      // generic / auto detect NOT IMPLEMENTED
+constexpr uint8_t BINARY_PROTOCOL_E131    = P_E131;    // = 0, untested!
+constexpr uint8_t BINARY_PROTOCOL_ARTNET  = P_ARTNET;  // = 1, untested!
+constexpr uint8_t BINARY_PROTOCOL_DDP     = P_DDP;     // = 2
 
-static uint16_t wsLiveClientId = 0;
+static uint16_t      wsLiveClientId = 0;
 static unsigned long wsLastLiveTime = 0;
-//static uint8_t* wsFrameBuffer = nullptr;
+// static uint8_t* wsFrameBuffer = nullptr;
 
 #define WS_LIVE_INTERVAL 40
 
-void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
-{
-  if(type == WS_EVT_CONNECT){
-    //client connected
+void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data,
+             size_t len) {
+  if (type == WS_EVT_CONNECT) {
+    // client connected
     DEBUG_PRINTLN("WS client connected.");
     sendDataWs(client);
-  } else if(type == WS_EVT_DISCONNECT){
-    //client disconnected
-    if (client->id() == wsLiveClientId) wsLiveClientId = 0;
+  } else if (type == WS_EVT_DISCONNECT) {
+    // client disconnected
+    if (client->id() == wsLiveClientId) {
+      wsLiveClientId = 0;
+    }
     DEBUG_PRINTLN("WS client disconnected.");
-  } else if(type == WS_EVT_DATA){
+  } else if (type == WS_EVT_DATA) {
     // data packet
-    AwsFrameInfo * info = (AwsFrameInfo*)arg;
-    if(info->final && info->index == 0 && info->len == len){
+    AwsFrameInfo* info = (AwsFrameInfo*)arg;
+    if (info->final && info->index == 0 && info->len == len) {
       // the whole message is in a single frame and we got all of its data (max. 1428 bytes)
-      if(info->opcode == WS_TEXT)
-      {
+      if (info->opcode == WS_TEXT) {
         if (len > 0 && len < 10 && data[0] == 'p') {
           // application layer ping/pong heartbeat.
           // client-side socket layer ping packets are unanswered (investigate)
@@ -46,18 +47,18 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
         bool verboseResponse = false;
         if (!requestJSONBufferLock(JSON_LOCK_WS_RECEIVE)) {
-          client->text("{\"error\":3}"); // ERR_NOBUF
+          client->text("{\"error\":3}");  // ERR_NOBUF
           return;
         }
 
         DeserializationError error = deserializeJson(*pDoc, data, len);
-        JsonObject root = pDoc->as<JsonObject>();
+        JsonObject           root  = pDoc->as<JsonObject>();
         if (error || root.isNull()) {
           releaseJSONBufferLock();
           return;
         }
         if (root["v"] && root.size() == 1) {
-          //if the received value is just "{"v":true}", send only to this client
+          // if the received value is just "{"v":true}", send only to this client
           verboseResponse = true;
         } else if (root.containsKey("lv")) {
           wsLiveClientId = root["lv"] ? client->id() : 0;
@@ -66,25 +67,27 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         releaseJSONBufferLock();
 
-        if (!interfaceUpdateCallMode) { // individual client response only needed if no WS broadcast soon
+        if (!interfaceUpdateCallMode) {  // individual client response only needed if no WS broadcast soon
           if (verboseResponse) {
-            #ifndef WLED_DISABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
             // publish state to MQTT as requested in wled#4643 even if only WS response selected
             publishMqtt();
-            #endif
+#endif
             sendDataWs(client);
           } else {
             // we have to send something back otherwise WS connection closes
             client->text("{\"success\":true}");
           }
           // force broadcast in 500ms after updating client
-          //lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500); // ESP8266 does not like this
+          // lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500); // ESP8266 does not like this
         }
       } else if (info->opcode == WS_BINARY) {
         // first byte determines protocol. Note: since e131_packet_t is "packed", the compiler handles alignment issues
-        //DEBUG_PRINTF_P("WS binary message: len %u, byte0: %u\n", len, data[0]);
-        constexpr int offset = 1; // offset to skip protocol byte
-        if (!data || len < offset+1) return; // catch invalid / single-byte payload
+        // DEBUG_PRINTF_P("WS binary message: len %u, byte0: %u\n", len, data[0]);
+        constexpr int offset = 1;  // offset to skip protocol byte
+        if (!data || len < offset + 1) {
+          return;  // catch invalid / single-byte payload
+        }
         switch (data[0]) {
           case BINARY_PROTOCOL_E131:
             handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_E131);
@@ -93,42 +96,49 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
             handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_ARTNET);
             break;
           case BINARY_PROTOCOL_DDP:
-            if (len < 10 + offset) return; // DDP header is 10 bytes (+1 protocol byte)
-            size_t ddpDataLen = (data[8+offset] << 8) | data[9+offset]; // data length in bytes from DDP header
-            uint8_t flags = data[0+offset];
-            if ((flags & DDP_FLAGS_TIME) ) ddpDataLen += 4; // timecode flag adds 4 bytes to data length
-            if (len < (10 + offset + ddpDataLen)) return; // not enough data, prevent out of bounds read
+            if (len < 10 + offset) {
+              return;  // DDP header is 10 bytes (+1 protocol byte)
+            }
+            size_t  ddpDataLen = (data[8 + offset] << 8) | data[9 + offset];  // data length in bytes from DDP header
+            uint8_t flags      = data[0 + offset];
+            if ((flags & DDP_FLAGS_TIME)) {
+              ddpDataLen += 4;  // timecode flag adds 4 bytes to data length
+            }
+            if (len < (10 + offset + ddpDataLen)) {
+              return;  // not enough data, prevent out of bounds read
+            }
             // could be a valid DDP packet, forward to handler
             handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_DDP);
         }
       }
     } else {
-      DEBUG_PRINTF_P("WS multipart message: final %u index %u len %u total %u\n", info->final, info->index, len, (uint32_t)info->len);
-      //message is comprised of multiple frames or the frame is split into multiple packets
-      //if(info->index == 0){
-        //if (!wsFrameBuffer && len < 4096) wsFrameBuffer = new uint8_t[4096];
+      DEBUG_PRINTF_P("WS multipart message: final %u index %u len %u total %u\n", info->final, info->index, len,
+                     (uint32_t)info->len);
+      // message is comprised of multiple frames or the frame is split into multiple packets
+      // if(info->index == 0){
+      // if (!wsFrameBuffer && len < 4096) wsFrameBuffer = new uint8_t[4096];
       //}
 
-      //if (wsFrameBuffer && len < 4096 && info->index + info->)
+      // if (wsFrameBuffer && len < 4096 && info->index + info->)
       //{
 
       //}
 
-      if((info->index + len) == info->len){
-        if(info->final){
-          if(info->message_opcode == WS_TEXT) {
-            client->text("{\"error\":9}"); // ERR_JSON we do not handle split packets right now
+      if ((info->index + len) == info->len) {
+        if (info->final) {
+          if (info->message_opcode == WS_TEXT) {
+            client->text("{\"error\":9}");  // ERR_JSON we do not handle split packets right now
           }
         }
       }
       DEBUG_PRINTLN("WS multipart message.");
     }
-  } else if(type == WS_EVT_ERROR){
-    //error was received from the other end
+  } else if (type == WS_EVT_ERROR) {
+    // error was received from the other end
     DEBUG_PRINTLN("WS error.");
 
-  } else if(type == WS_EVT_PONG){
-    //pong message was received (in response to a ping request maybe)
+  } else if (type == WS_EVT_PONG) {
+    // pong message was received (in response to a ping request maybe)
     DEBUG_PRINTLN("WS pong.");
 
   } else {
@@ -136,23 +146,24 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   }
 }
 
-void sendDataWs(AsyncWebSocketClient * client)
-{
-  if (!ws.count()) return;
+void sendDataWs(AsyncWebSocketClient* client) {
+  if (!ws.count()) {
+    return;
+  }
 
   if (!requestJSONBufferLock(JSON_LOCK_WS_SEND)) {
     const char* error = "{\"error\":3}";
     if (client) {
-      client->text(error); // ERR_NOBUF
+      client->text(error);  // ERR_NOBUF
     } else {
-      ws.textAll(error); // ERR_NOBUF
+      ws.textAll(error);  // ERR_NOBUF
     }
     return;
   }
 
   JsonObject state = pDoc->createNestedObject("state");
   serializeState(state);
-  JsonObject info  = pDoc->createNestedObject("info");
+  JsonObject info = pDoc->createNestedObject("info");
   serializeInfo(info);
 
   size_t len = measureJson(*pDoc);
@@ -162,16 +173,16 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t heap1 = getFreeHeapSize();
   DEBUG_PRINTF_P("heap %u\n", getFreeHeapSize());
   AsyncWebSocketBuffer buffer(len);
-  size_t heap2 = 0;
+  size_t               heap2 = 0;
 
-  if (!buffer || heap1-heap2<len) {
+  if (!buffer || heap1 - heap2 < len) {
     releaseJSONBufferLock();
     DEBUG_PRINTLN("WS buffer allocation failed.");
-    ws.closeAll(1013); //code 1013 = temporary overload, try again later
-    ws.cleanupClients(0); //disconnect all clients to release memory
-    return; //out of memory
+    ws.closeAll(1013);     // code 1013 = temporary overload, try again later
+    ws.cleanupClients(0);  // disconnect all clients to release memory
+    return;                // out of memory
   }
-  serializeJson(*pDoc, (char *)buffer.data(), len);
+  serializeJson(*pDoc, (char*)buffer.data(), len);
 
   DEBUG_PRINT("Sending WS data ");
   if (client) {
@@ -185,74 +196,89 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
-static bool sendLiveLedsWs(uint32_t wsClient)
-{
-  AsyncWebSocketClient * wsc = ws.client(wsClient);
-  if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
+static bool sendLiveLedsWs(uint32_t wsClient) {
+  AsyncWebSocketClient* wsc = ws.client(wsClient);
+  if (!wsc || wsc->queueLength() > 0) {
+    return false;  // only send if queue free
+  }
 
-  size_t used = strip.getLengthTotal();
+  size_t       used             = strip.getLengthTotal();
   const size_t MAX_LIVE_LEDS_WS = 1024U;
-  size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  size_t pos = 2;  // start of data
+  size_t       n   = ((used - 1) / MAX_LIVE_LEDS_WS) + 1;  // only serve every n'th LED if count over MAX_LIVE_LEDS_WS
+  size_t       pos = 2;                                    // start of data
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     // ignore anything behid matrix (i.e. extra strip)
-    used = Segment::maxWidth*Segment::maxHeight; // always the size of matrix (more or less than strip.getLengthTotal())
+    used =
+        Segment::maxWidth * Segment::maxHeight;  // always the size of matrix (more or less than strip.getLengthTotal())
     n = 1;
-    if (used > MAX_LIVE_LEDS_WS) n = 2;
-    if (used > MAX_LIVE_LEDS_WS*4) n = 4;
+    if (used > MAX_LIVE_LEDS_WS) {
+      n = 2;
+    }
+    if (used > MAX_LIVE_LEDS_WS * 4) {
+      n = 4;
+    }
     pos = 4;
   }
 #endif
-  size_t bufSize = pos + (used/n)*3;
+  size_t bufSize = pos + (used / n) * 3;
 
   AsyncWebSocketBuffer wsBuf(bufSize);
-  if (!wsBuf) return false; //out of memory
+  if (!wsBuf) {
+    return false;  // out of memory
+  }
   uint8_t* buffer = reinterpret_cast<uint8_t*>(wsBuf.data());
-  if (!buffer) return false; //out of memory
+  if (!buffer) {
+    return false;  // out of memory
+  }
   buffer[0] = 'L';
-  buffer[1] = 1; //version
+  buffer[1] = 1;  // version
 
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
-    buffer[1] = 2; //version
-    buffer[2] = Segment::maxWidth/n;
-    buffer[3] = Segment::maxHeight/n;
+    buffer[1] = 2;  // version
+    buffer[2] = Segment::maxWidth / n;
+    buffer[3] = Segment::maxHeight / n;
   }
 #endif
 
-  for (size_t i = 0; pos < bufSize -2; i += n)
-  {
+  for (size_t i = 0; pos < bufSize - 2; i += n) {
 #ifndef WLED_DISABLE_2D
-    if (strip.isMatrix && n>1 && (i/Segment::maxWidth)%n) i += Segment::maxWidth * (n-1);
+    if (strip.isMatrix && n > 1 && (i / Segment::maxWidth) % n) {
+      i += Segment::maxWidth * (n - 1);
+    }
 #endif
-    uint32_t c = strip.getPixelColor(i); // note: LEDs mapped outside of valid range are set to black
-    uint8_t r = R(c);
-    uint8_t g = G(c);
-    uint8_t b = B(c);
-    uint8_t w = W(c);
-    buffer[pos++] = bri ? qadd8(w, r) : 0; //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = bri ? qadd8(w, g) : 0; //G
-    buffer[pos++] = bri ? qadd8(w, b) : 0; //B
+    uint32_t c    = strip.getPixelColor(i);  // note: LEDs mapped outside of valid range are set to black
+    uint8_t  r    = R(c);
+    uint8_t  g    = G(c);
+    uint8_t  b    = B(c);
+    uint8_t  w    = W(c);
+    buffer[pos++] = bri ? qadd8(w, r) : 0;  // R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = bri ? qadd8(w, g) : 0;  // G
+    buffer[pos++] = bri ? qadd8(w, b) : 0;  // B
   }
 
   wsc->binary(std::move(wsBuf));
   return true;
 }
 
-void handleWs()
-{
-  if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
-  {
+void handleWs() {
+  if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL) {
     ws.cleanupClients();
     bool success = true;
-    if (wsLiveClientId) success = sendLiveLedsWs(wsLiveClientId);
+    if (wsLiveClientId) {
+      success = sendLiveLedsWs(wsLiveClientId);
+    }
     wsLastLiveTime = millis();
-    if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
+    if (!success) {
+      wsLastLiveTime -= 20;  // try again in 20ms if failed due to non-empty WS queue
+    }
   }
 }
 
 #else
-void handleWs() {}
-void sendDataWs(AsyncWebSocketClient * client) {}
+void handleWs() {
+}
+void sendDataWs(AsyncWebSocketClient* client) {
+}
 #endif

@@ -1,20 +1,19 @@
 #include "wled.h"
 
-class InternalTemperatureUsermod : public Usermod
-{
-
-private:
+class InternalTemperatureUsermod : public Usermod {
+ private:
   static constexpr unsigned long minLoopInterval = 1000;  // minimum allowable interval (ms)
-  unsigned long loopInterval = 10000;
-  unsigned long lastTime = 0;
-  bool isEnabled = false;
-  float temperature = 0.0f;
-  uint8_t previousPlaylist = 0;         // Stores the playlist that was active before high-temperature activation
-  uint8_t previousPreset = 0;           // Stores the preset that was active before high-temperature activation
-  uint8_t presetToActivate = 0;         // Preset to activate when temp goes above threshold (0 = disabled)
-  float activationThreshold = 95.0f;    // Temperature threshold to trigger high-temperature actions
-  float resetMargin = 2.0f;             // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
-  bool isAboveThreshold = false;        // Flag to track if the high temperature preset is currently active
+  unsigned long                  loopInterval    = 10000;
+  unsigned long                  lastTime        = 0;
+  bool                           isEnabled       = false;
+  float                          temperature     = 0.0f;
+  uint8_t previousPlaylist    = 0;      // Stores the playlist that was active before high-temperature activation
+  uint8_t previousPreset      = 0;      // Stores the preset that was active before high-temperature activation
+  uint8_t presetToActivate    = 0;      // Preset to activate when temp goes above threshold (0 = disabled)
+  float   activationThreshold = 95.0f;  // Temperature threshold to trigger high-temperature actions
+  float   resetMargin =
+      2.0f;  // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
+  bool isAboveThreshold = false;  // Flag to track if the high temperature preset is currently active
 
   static const char _name[];
   static const char _enabled[];
@@ -23,84 +22,82 @@ private:
   static const char _presetToActivate[];
 
   // any private methods should go here (non-inline method should be defined out of class)
-  void publishMqtt(const char *state, bool retain = false); // example for publishing MQTT message
+  void publishMqtt(const char *state, bool retain = false);  // example for publishing MQTT message
 
-public:
-  void setup()
-  {
+ public:
+  void setup() {
   }
 
-  void loop()
-  {
+  void loop() {
     // if usermod is disabled or called during strip updating just exit
     // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-    if (!isEnabled || strip.isUpdating() || millis() - lastTime <= loopInterval)
+    if (!isEnabled || strip.isUpdating() || millis() - lastTime <= loopInterval) {
       return;
+    }
 
     lastTime = millis();
 
 // Measure the temperature
-#if defined(CONFIG_IDF_TARGET_ESP32S2) // ESP32S2
+#if defined(CONFIG_IDF_TARGET_ESP32S2)  // ESP32S2
     temperature = -1;
-#else                                    // ESP32 ESP32S3 and ESP32C3
+#else  // ESP32 ESP32S3 and ESP32C3
     temperature = roundf(temperatureRead() * 10) / 10;
 #endif
- if(presetToActivate != 0){
-    // Check if temperature has exceeded the activation threshold
-    if (temperature >= activationThreshold) {
-      // Update the state flag if not already set
-      if (!isAboveThreshold) {
-        isAboveThreshold = true;
+    if (presetToActivate != 0) {
+      // Check if temperature has exceeded the activation threshold
+      if (temperature >= activationThreshold) {
+        // Update the state flag if not already set
+        if (!isAboveThreshold) {
+          isAboveThreshold = true;
         }
-      // Check if a 'high temperature' preset is configured and it's not already active
-      if (currentPreset != presetToActivate) {
-        // If a playlist is active, store it for reactivation later
-        if (currentPlaylist > 0) {
-          previousPlaylist = currentPlaylist;
-        }
-        // If a preset is active, store it for reactivation later
-        else if (currentPreset > 0) {
-          previousPreset = currentPreset;
-        // If no playlist or preset is active, save current state for reactivation later
-        } else {
-          saveTemporaryPreset();
-        }
-        // Activate the 'high temperature' preset
-        applyPreset(presetToActivate);
+        // Check if a 'high temperature' preset is configured and it's not already active
+        if (currentPreset != presetToActivate) {
+          // If a playlist is active, store it for reactivation later
+          if (currentPlaylist > 0) {
+            previousPlaylist = currentPlaylist;
+          }
+          // If a preset is active, store it for reactivation later
+          else if (currentPreset > 0) {
+            previousPreset = currentPreset;
+            // If no playlist or preset is active, save current state for reactivation later
+          } else {
+            saveTemporaryPreset();
+          }
+          // Activate the 'high temperature' preset
+          applyPreset(presetToActivate);
         }
       }
-    // Check if temperature is back below the threshold
-    else if (temperature <= (activationThreshold - resetMargin)) {
-      // Update the state flag if not already set
-      if (isAboveThreshold){
-        isAboveThreshold = false;
+      // Check if temperature is back below the threshold
+      else if (temperature <= (activationThreshold - resetMargin)) {
+        // Update the state flag if not already set
+        if (isAboveThreshold) {
+          isAboveThreshold = false;
         }
-      // Check if the 'high temperature' preset is active
-      if (currentPreset == presetToActivate) {
-        // Check if a previous playlist was stored
-        if (previousPlaylist > 0) {
-          // Reactivate the stored playlist
-          applyPreset(previousPlaylist);
-          // Clear the stored playlist
-          previousPlaylist = 0;
+        // Check if the 'high temperature' preset is active
+        if (currentPreset == presetToActivate) {
+          // Check if a previous playlist was stored
+          if (previousPlaylist > 0) {
+            // Reactivate the stored playlist
+            applyPreset(previousPlaylist);
+            // Clear the stored playlist
+            previousPlaylist = 0;
           }
-        // Check if a previous preset was stored
-        else if (previousPreset > 0) {
-          // Reactivate the stored preset
-          applyPreset(previousPreset);
-          // Clear the stored preset
-          previousPreset = 0;
-          // If no previous playlist or preset was stored, revert to the stored state
-        } else {
-          applyTemporaryPreset();
+          // Check if a previous preset was stored
+          else if (previousPreset > 0) {
+            // Reactivate the stored preset
+            applyPreset(previousPreset);
+            // Clear the stored preset
+            previousPreset = 0;
+            // If no previous playlist or preset was stored, revert to the stored state
+          } else {
+            applyTemporaryPreset();
           }
         }
       }
- }
+    }
 
 #ifndef WLED_DISABLE_MQTT
-    if (WLED_MQTT_CONNECTED)
-    {
+    if (WLED_MQTT_CONNECTED) {
       char array[10];
       snprintf(array, sizeof(array), "%f", temperature);
       publishMqtt(array);
@@ -108,15 +105,16 @@ public:
 #endif
   }
 
-  void addToJsonInfo(JsonObject &root)
-  {
-    if (!isEnabled)
+  void addToJsonInfo(JsonObject &root) {
+    if (!isEnabled) {
       return;
+    }
 
     // if "u" object does not exist yet wee need to create it
     JsonObject user = root["u"];
-    if (user.isNull())
+    if (user.isNull()) {
       user = root.createNestedObject("u");
+    }
 
     JsonArray userTempArr = user.createNestedArray(_name);
     userTempArr.add(temperature);
@@ -124,64 +122,59 @@ public:
 
     // if "sensor" object does not exist yet wee need to create it
     JsonObject sensor = root["sensor"];
-    if (sensor.isNull())
+    if (sensor.isNull()) {
       sensor = root.createNestedObject("sensor");
+    }
 
     JsonArray sensorTempArr = sensor.createNestedArray(_name);
     sensorTempArr.add(temperature);
     sensorTempArr.add("°C");
   }
 
-  void addToConfig(JsonObject &root)
-  {
-    JsonObject top = root.createNestedObject(_name);
-    top[_enabled] = isEnabled;
-    top[_loopInterval] = loopInterval;
+  void addToConfig(JsonObject &root) {
+    JsonObject top            = root.createNestedObject(_name);
+    top[_enabled]             = isEnabled;
+    top[_loopInterval]        = loopInterval;
     top[_activationThreshold] = activationThreshold;
-    top[_presetToActivate] = presetToActivate;
+    top[_presetToActivate]    = presetToActivate;
   }
 
-    // Append useful info to the usermod settings gui
-    void appendConfigData()
-    {
+  // Append useful info to the usermod settings gui
+  void appendConfigData() {
     // Display 'ms' next to the 'Loop Interval' setting
     oappend("addInfo('Internal Temperature:Loop Interval', 1, 'ms');");
     // Display '°C' next to the 'Activation Threshold' setting
     oappend("addInfo('Internal Temperature:Activation Threshold', 1, '°C');");
     // Display '0 = Disabled' next to the 'Preset To Activate' setting
     oappend("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');");
-    }
+  }
 
-  bool readFromConfig(JsonObject &root)
-  {
-    JsonObject top = root[_name];
-    bool configComplete = !top.isNull();
+  bool readFromConfig(JsonObject &root) {
+    JsonObject top            = root[_name];
+    bool       configComplete = !top.isNull();
     configComplete &= getJsonValue(top[_enabled], isEnabled);
     configComplete &= getJsonValue(top[_loopInterval], loopInterval);
-    loopInterval = max(loopInterval, minLoopInterval);    // Makes sure the loop interval isn't too small.
+    loopInterval = max(loopInterval, minLoopInterval);  // Makes sure the loop interval isn't too small.
     configComplete &= getJsonValue(top[_presetToActivate], presetToActivate);
     configComplete &= getJsonValue(top[_activationThreshold], activationThreshold);
     return configComplete;
   }
 
-  uint16_t getId()
-  {
+  uint16_t getId() {
     return USERMOD_ID_INTERNAL_TEMPERATURE;
   }
 };
 
-const char InternalTemperatureUsermod::_name[] = "Internal Temperature";
-const char InternalTemperatureUsermod::_enabled[] = "Enabled";
-const char InternalTemperatureUsermod::_loopInterval[] = "Loop Interval";
+const char InternalTemperatureUsermod::_name[]                = "Internal Temperature";
+const char InternalTemperatureUsermod::_enabled[]             = "Enabled";
+const char InternalTemperatureUsermod::_loopInterval[]        = "Loop Interval";
 const char InternalTemperatureUsermod::_activationThreshold[] = "Activation Threshold";
-const char InternalTemperatureUsermod::_presetToActivate[] = "Preset To Activate";
+const char InternalTemperatureUsermod::_presetToActivate[]    = "Preset To Activate";
 
-void InternalTemperatureUsermod::publishMqtt(const char *state, bool retain)
-{
+void InternalTemperatureUsermod::publishMqtt(const char *state, bool retain) {
 #ifndef WLED_DISABLE_MQTT
   // Check if MQTT Connected, otherwise it will crash the 8266
-  if (WLED_MQTT_CONNECTED)
-  {
+  if (WLED_MQTT_CONNECTED) {
     char subuf[64];
     strcpy(subuf, mqttDeviceTopic);
     strcat(subuf, "/mcutemp");

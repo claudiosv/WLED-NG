@@ -4,8 +4,8 @@
 #ifndef ELEKSTUBEHAX_HARDWARE_H
 #define ELEKSTUBEHAX_HARDWARE_H
 
-#include <stdint.h> 
-#include <Arduino.h> // for HIGH and LOW
+#include <Arduino.h>  // for HIGH and LOW
+#include <stdint.h>
 
 // Common indexing scheme, used to identify the digit
 #define SECONDS_ONES (0)
@@ -27,8 +27,8 @@
 #define BACKLIGHTS_PIN (12)
 
 // Buttons, active low, externally pulled up (with actual resistors!)
-#define BUTTON_LEFT_PIN (33)
-#define BUTTON_MODE_PIN (32)
+#define BUTTON_LEFT_PIN  (33)
+#define BUTTON_MODE_PIN  (32)
 #define BUTTON_RIGHT_PIN (35)
 #define BUTTON_POWER_PIN (34)
 
@@ -37,7 +37,7 @@
 #define RTC_SDA_PIN (21)
 
 // Chip Select shift register, to select the display
-#define CSSR_DATA_PIN (14)
+#define CSSR_DATA_PIN  (14)
 #define CSSR_CLOCK_PIN (16)
 #define CSSR_LATCH_PIN (17)
 
@@ -49,4 +49,4 @@
 // Active HIGH.
 #define TFT_ENABLE_PIN (27)
 
-#endif // ELEKSTUBEHAX_HARDWARE_H
+#endif  // ELEKSTUBEHAX_HARDWARE_H

@@ -22,29 +22,41 @@
  */
 
 class BMPimage {
-    public:
-        int height()    {return _height; }
-        int width()     {return _width;  }
-        int rowSize()   {return _rowSize;}
-        bool isLoaded() {return _loaded; }
-        bool load();
-        void unload()   {_loaded=false;  }
-        byte * line(uint16_t n);
-        uint32_t pixelColor(uint16_t x,uint16_t  y);
-        bool init(const char* fn);
-        void clear();
-        char * getFilename() {return filename;};
+ public:
+  int height() {
+    return _height;
+  }
+  int width() {
+    return _width;
+  }
+  int rowSize() {
+    return _rowSize;
+  }
+  bool isLoaded() {
+    return _loaded;
+  }
+  bool load();
+  void unload() {
+    _loaded = false;
+  }
+  byte*    line(uint16_t n);
+  uint32_t pixelColor(uint16_t x, uint16_t y);
+  bool     init(const char* fn);
+  void     clear();
+  char*    getFilename() {
+    return filename;
+  };
 
-    private:
-        char filename[WLED_MAX_SEGNAME_LEN+1]="";
-        int _width=0;
-        int _height=0;
-        int _rowSize=0;
-        int _imageOffset=0;
-        bool _loaded=false;
-        bool _valid=false;
+ private:
+  char filename[WLED_MAX_SEGNAME_LEN + 1] = "";
+  int  _width                             = 0;
+  int  _height                            = 0;
+  int  _rowSize                           = 0;
+  int  _imageOffset                       = 0;
+  bool _loaded                            = false;
+  bool _valid                             = false;
 };
 
-extern byte * _buffer;
+extern byte* _buffer;
 
 #endif

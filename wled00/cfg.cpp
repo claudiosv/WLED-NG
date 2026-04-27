@@ -7,47 +7,49 @@
  */
 
 #ifndef PIXEL_COUNTS
-  #define PIXEL_COUNTS DEFAULT_LED_COUNT
+#define PIXEL_COUNTS DEFAULT_LED_COUNT
 #endif
 
 #ifndef DATA_PINS
-  #define DATA_PINS DEFAULT_LED_PIN
+#define DATA_PINS DEFAULT_LED_PIN
 #endif
 
 #ifndef LED_TYPES
-  #define LED_TYPES DEFAULT_LED_TYPE
+#define LED_TYPES DEFAULT_LED_TYPE
 #endif
 
 #ifndef DEFAULT_LED_COLOR_ORDER
-  #define DEFAULT_LED_COLOR_ORDER COL_ORDER_GRB  //default to GRB
+#define DEFAULT_LED_COLOR_ORDER COL_ORDER_GRB  // default to GRB
 #endif
 
 static constexpr unsigned sumPinsRequired(const unsigned* current, size_t count) {
-  return (count > 0) ? (Bus::getNumberOfPins(*current) + sumPinsRequired(current+1,count-1)) : 0;
+  return (count > 0) ? (Bus::getNumberOfPins(*current) + sumPinsRequired(current + 1, count - 1)) : 0;
 }
 
-static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTypes, unsigned numPins ) {
+static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTypes, unsigned numPins) {
   // Pins provided < pins required -> always invalid
   // Pins provided = pins required -> always valid
   // Pins provided > pins required -> valid if excess pins are a product of last type pins since it will be repeated
-  return (sumPinsRequired(types, numTypes) > numPins) ? false :
-          (numPins - sumPinsRequired(types, numTypes)) % Bus::getNumberOfPins(types[numTypes-1]) == 0;
+  return (sumPinsRequired(types, numTypes) > numPins)
+             ? false
+             : (numPins - sumPinsRequired(types, numTypes)) % Bus::getNumberOfPins(types[numTypes - 1]) == 0;
 }
 
-
-//simple macro for ArduinoJSON's or syntax
-#define CJSON(a,b) a = b | a
+// simple macro for ArduinoJSON's or syntax
+#define CJSON(a, b) a = b | a
 
 static inline void getStringFromJson(char* dest, const char* src, size_t len) {
-  if (src != nullptr) strlcpy(dest, src, len);
+  if (src != nullptr) {
+    strlcpy(dest, src, len);
+  }
 }
 
 bool deserializeConfig(JsonObject doc, bool fromFS) {
   bool needsSave = false;
-  //int rev_major = doc["rev"][0]; // 1
-  //int rev_minor = doc["rev"][1]; // 0
+  // int rev_major = doc["rev"][0]; // 1
+  // int rev_minor = doc["rev"][1]; // 0
 
-  //long vid = doc["vid"]; // 2010020
+  // long vid = doc["vid"]; // 2010020
 
   JsonObject id = doc["id"];
   getStringFromJson(cmDNS, id["mdns"], 33);
@@ -63,15 +65,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   linked_remotes.clear();
   JsonVariant lrem = nw["linked_remote"];
   if (!lrem.isNull()) {
-     if (lrem.is<JsonArray>()) {
+    if (lrem.is<JsonArray>()) {
       for (size_t i = 0; i < lrem.size(); i++) {
         std::array<char, 13> entry{};
         getStringFromJson(entry.data(), lrem[i], 13);
         entry[12] = '\0';
         linked_remotes.emplace_back(entry);
       }
-    }
-    else { // legacy support for single MAC address in config
+    } else {  // legacy support for single MAC address in config
       std::array<char, 13> entry{};
       getStringFromJson(entry.data(), lrem, 13);
       entry[12] = '\0';
@@ -80,37 +81,46 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
 #endif
 
-  size_t n = 0;
+  size_t    n      = 0;
   JsonArray nw_ins = nw["ins"];
   if (!nw_ins.isNull()) {
-    // as password are stored separately in wsec.json when reading configuration vector resize happens there, but for dynamic config we need to resize if necessary
-    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) multiWiFi.resize(nw_ins.size()); // resize constructs objects while resizing
+    // as password are stored separately in wsec.json when reading configuration vector resize happens there, but for
+    // dynamic config we need to resize if necessary
+    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) {
+      multiWiFi.resize(nw_ins.size());  // resize constructs objects while resizing
+    }
     for (JsonObject wifi : nw_ins) {
-      JsonArray ip = wifi["ip"];
-      JsonArray gw = wifi["gw"];
-      JsonArray sn = wifi["sn"];
-      char ssid[33] = "";
-      char pass[65] = "";
-      char bssid[13] = "";
-      IPAddress nIP = (uint32_t)0U, nGW = (uint32_t)0U, nSN = (uint32_t)0x00FFFFFF; // little endian
+      JsonArray ip        = wifi["ip"];
+      JsonArray gw        = wifi["gw"];
+      JsonArray sn        = wifi["sn"];
+      char      ssid[33]  = "";
+      char      pass[65]  = "";
+      char      bssid[13] = "";
+      IPAddress nIP = (uint32_t)0U, nGW = (uint32_t)0U, nSN = (uint32_t)0x00FFFFFF;  // little endian
       getStringFromJson(ssid, wifi["ssid"], 33);
-      getStringFromJson(pass, wifi["psk"], 65); // password is not normally present but if it is, use it
+      getStringFromJson(pass, wifi["psk"], 65);  // password is not normally present but if it is, use it
       getStringFromJson(bssid, wifi["bssid"], 13);
       for (size_t i = 0; i < 4; i++) {
         CJSON(nIP[i], ip[i]);
         CJSON(nGW[i], gw[i]);
         CJSON(nSN[i], sn[i]);
       }
-      if (strlen(ssid) > 0) strlcpy(multiWiFi[n].clientSSID, ssid, 33); // this will keep old SSID intact if not present in JSON
-      if (strlen(pass) > 0) strlcpy(multiWiFi[n].clientPass, pass, 65); // this will keep old password intact if not present in JSON
-      if (strlen(bssid) > 0) fillStr2MAC(multiWiFi[n].bssid, bssid);
+      if (strlen(ssid) > 0) {
+        strlcpy(multiWiFi[n].clientSSID, ssid, 33);  // this will keep old SSID intact if not present in JSON
+      }
+      if (strlen(pass) > 0) {
+        strlcpy(multiWiFi[n].clientPass, pass, 65);  // this will keep old password intact if not present in JSON
+      }
+      if (strlen(bssid) > 0) {
+        fillStr2MAC(multiWiFi[n].bssid, bssid);
+      }
       multiWiFi[n].staticIP = nIP;
       multiWiFi[n].staticGW = nGW;
       multiWiFi[n].staticSN = nSN;
 #ifdef WLED_ENABLE_WPA_ENTERPRISE
-      byte encType = WIFI_ENCRYPTION_TYPE_PSK;
+      byte encType       = WIFI_ENCRYPTION_TYPE_PSK;
       char anonIdent[65] = "";
-      char ident[65] = "";
+      char ident[65]     = "";
       CJSON(encType, wifi["enc_type"]);
       getStringFromJson(anonIdent, wifi["e_anon_ident"], 65);
       getStringFromJson(ident, wifi["e_ident"], 65);
@@ -118,7 +128,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       strlcpy(multiWiFi[n].enterpriseAnonIdentity, anonIdent, 65);
       strlcpy(multiWiFi[n].enterpriseIdentity, ident, 65);
 #endif
-      if (++n >= WLED_MAX_WIFI_COUNT) break;
+      if (++n >= WLED_MAX_WIFI_COUNT) {
+        break;
+      }
     }
   }
 
@@ -139,12 +151,16 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject ap = doc["ap"];
   getStringFromJson(apSSID, ap["ssid"], 33);
-  getStringFromJson(apPass, ap["psk"] , 65); //normally not present due to security
-  //int ap_pskl = ap["pskl"];
+  getStringFromJson(apPass, ap["psk"], 65);  // normally not present due to security
+  // int ap_pskl = ap["pskl"];
   CJSON(apChannel, ap["chan"]);
-  if (apChannel > 13 || apChannel < 1) apChannel = 6; // reset to default if invalid
+  if (apChannel > 13 || apChannel < 1) {
+    apChannel = 6;  // reset to default if invalid
+  }
   CJSON(apHide, ap["hide"]);
-  if (apHide > 1) apHide = 1;
+  if (apHide > 1) {
+    apHide = 1;
+  }
   CJSON(apBehavior, ap["behav"]);
   /*
   JsonArray ap_ip = ap["ip"];
@@ -154,9 +170,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   */
 
   JsonObject wifi = doc["wifi"];
-  noWifiSleep = !(wifi["sleep"] | !noWifiSleep); // inverted
-  //noWifiSleep = !noWifiSleep;
-  CJSON(force802_3g, wifi["phy"]); //force phy mode g?
+  noWifiSleep     = !(wifi["sleep"] | !noWifiSleep);  // inverted
+  // noWifiSleep = !noWifiSleep;
+  CJSON(force802_3g, wifi["phy"]);  // force phy mode g?
 #ifdef ARDUINO_ARCH_ESP32
   CJSON(txPower, wifi["txpwr"]);
   txPower = min(max((int)txPower, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
@@ -167,7 +183,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
-  uint16_t total = hw_led["total"] | strip.getLengthTotal();
+  uint16_t total           = hw_led["total"] | strip.getLengthTotal();
   uint16_t ablMilliampsMax = hw_led["maxpwr"] | BusManager::ablMilliampsMax();
   BusManager::setMilliampsMax(ablMilliampsMax);
   Bus::setGlobalAWMode(hw_led["rgbwm"] | AW_GLOBAL_DISABLED);
@@ -177,119 +193,141 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t cctBlending = hw_led["cb"] | Bus::getCCTBlend();
   Bus::setCCTBlend(cctBlending);
   unsigned targetFPS = hw_led["fps"] | WLED_FPS;
-  strip.setTargetFps(targetFPS); //unlimited if 0, default 42 FPS
+  strip.setTargetFps(targetFPS);  // unlimited if 0, default 42 FPS
 
-  #ifndef WLED_DISABLE_2D
+#ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
   JsonObject matrix = hw_led["matrix"];
   if (!matrix.isNull()) {
-    strip.isMatrix = true;
+    strip.isMatrix     = true;
     unsigned numPanels = matrix["mpc"] | 1;
-    numPanels = constrain(numPanels, 1, WLED_MAX_PANELS);
+    numPanels          = constrain(numPanels, 1, WLED_MAX_PANELS);
     strip.panel.clear();
     JsonArray panels = matrix["panels"];
-    unsigned s = 0;
+    unsigned  s      = 0;
     if (!panels.isNull()) {
       strip.panel.reserve(numPanels);  // pre-allocate default 8x8 panels
       for (JsonObject pnl : panels) {
         WS2812FX::Panel p;
         CJSON(p.bottomStart, pnl["b"]);
-        CJSON(p.rightStart,  pnl["r"]);
-        CJSON(p.vertical,    pnl["v"]);
-        CJSON(p.serpentine,  pnl["s"]);
-        CJSON(p.xOffset,     pnl["x"]);
-        CJSON(p.yOffset,     pnl["y"]);
-        CJSON(p.height,      pnl["h"]);
-        CJSON(p.width,       pnl["w"]);
+        CJSON(p.rightStart, pnl["r"]);
+        CJSON(p.vertical, pnl["v"]);
+        CJSON(p.serpentine, pnl["s"]);
+        CJSON(p.xOffset, pnl["x"]);
+        CJSON(p.yOffset, pnl["y"]);
+        CJSON(p.height, pnl["h"]);
+        CJSON(p.width, pnl["w"]);
         strip.panel.push_back(p);
-        if (++s >= numPanels) break; // max panels reached
+        if (++s >= numPanels) {
+          break;  // max panels reached
+        }
       }
     }
     strip.panel.shrink_to_fit();  // release unused memory (just in case)
     // cannot call strip.deserializeLedmap()/strip.setUpMatrix() here due to already locked JSON buffer
-    //if (!fromFS) doInit2D = true; // if called at boot (fromFS==true), WLED::beginStrip() will take care of setting up matrix
+    // if (!fromFS) doInit2D = true; // if called at boot (fromFS==true), WLED::beginStrip() will take care of setting
+    // up matrix
   }
-  #endif
+#endif
 
   DEBUG_PRINTF_P("Heap before buses: %d\n", getFreeHeapSize());
   JsonArray ins = hw_led["ins"];
   if (!ins.isNull()) {
     int s = 0;  // bus iterator
     for (JsonObject elm : ins) {
-      if (s >= WLED_MAX_BUSSES) break; // only counts physical buses
-      uint8_t pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
-      JsonArray pinArr = elm["pin"];
-      if (pinArr.size() == 0) continue;
-      //pins[0] = pinArr[0];
+      if (s >= WLED_MAX_BUSSES) {
+        break;  // only counts physical buses
+      }
+      uint8_t   pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
+      JsonArray pinArr                = elm["pin"];
+      if (pinArr.size() == 0) {
+        continue;
+      }
+      // pins[0] = pinArr[0];
       unsigned i = 0;
       for (int p : pinArr) {
         pins[i++] = p;
-        if (i>4) break;
+        if (i > 4) {
+          break;
+        }
       }
-      uint16_t length = elm["len"] | 1;
-      uint8_t colorOrder = (int)elm["order"]; // contains white channel swap option in upper nibble
-      uint8_t skipFirst = elm["skip"];
-      uint16_t start = elm["start"] | 0;
-      if (length==0 || start + length > MAX_LEDS) continue; // zero length or we reached max. number of LEDs, just stop
-      uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
-      bool reversed = elm["rev"];
-      bool refresh = elm["ref"] | false;
-      uint16_t freqkHz = elm["freq"] | 0;  // will be in kHz for DotStar and Hz for PWM
-      uint8_t AWmode = elm["rgbwm"] | RGBW_MODE_MANUAL_ONLY;
-      uint8_t maPerLed = elm["ledma"] | LED_MILLIAMPS_DEFAULT;
-      uint16_t maMax = elm["maxpwr"] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
-      // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if (Bus::isPWM(ledType) || Bus::isOnOff(ledType) || Bus::isVirtual(ledType)) { // analog and virtual
+      uint16_t length     = elm["len"] | 1;
+      uint8_t  colorOrder = (int)elm["order"];  // contains white channel swap option in upper nibble
+      uint8_t  skipFirst  = elm["skip"];
+      uint16_t start      = elm["start"] | 0;
+      if (length == 0 || start + length > MAX_LEDS) {
+        continue;  // zero length or we reached max. number of LEDs, just stop
+      }
+      uint8_t  ledType  = elm["type"] | TYPE_WS2812_RGB;
+      bool     reversed = elm["rev"];
+      bool     refresh  = elm["ref"] | false;
+      uint16_t freqkHz  = elm["freq"] | 0;  // will be in kHz for DotStar and Hz for PWM
+      uint8_t  AWmode   = elm["rgbwm"] | RGBW_MODE_MANUAL_ONLY;
+      uint8_t  maPerLed = elm["ledma"] | LED_MILLIAMPS_DEFAULT;
+      uint16_t maMax = elm["maxpwr"] | (ablMilliampsMax * length) /
+                                           total;  // rough (incorrect?) per strip ABL calculation when no config exists
+      // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose
+      // output max current)
+      if (Bus::isPWM(ledType) || Bus::isOnOff(ledType) || Bus::isVirtual(ledType)) {  // analog and virtual
         maPerLed = 0;
-        maMax = 0;
+        maMax    = 0;
       }
-      ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
-      uint8_t driverType = elm["drv"] | 0; // 0=RMT (default), 1=I2S note: polybus may override this if driver is not available
+      ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
+      uint8_t driverType =
+          elm["drv"] | 0;  // 0=RMT (default), 1=I2S note: polybus may override this if driver is not available
 
       String host = elm["text"] | String();
-      busConfigs.emplace_back(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, maPerLed, maMax, driverType, host);
+      busConfigs.emplace_back(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, maPerLed,
+                              maMax, driverType, host);
       doInitBusses = true;  // finalization done in beginStrip()
-      if (!Bus::isVirtual(ledType)) s++; // have as many virtual buses as you want
+      if (!Bus::isVirtual(ledType)) {
+        s++;  // have as many virtual buses as you want
+      }
     }
   } else if (fromFS) {
-    //if busses failed to load, add default (fresh install, FS issue, ...)
+    // if busses failed to load, add default (fresh install, FS issue, ...)
     BusManager::removeAll();
     busConfigs.clear();
 
     DEBUG_PRINTLN("No busses, init default");
     constexpr unsigned defDataTypes[] = {LED_TYPES};
-    constexpr unsigned defDataPins[] = {DATA_PINS};
-    constexpr unsigned defCounts[] = {PIXEL_COUNTS};
-    constexpr unsigned defNumTypes = (sizeof(defDataTypes) / sizeof(defDataTypes[0]));
-    constexpr unsigned defNumPins = (sizeof(defDataPins) / sizeof(defDataPins[0]));
-    constexpr unsigned defNumCounts = (sizeof(defCounts) / sizeof(defCounts[0]));
+    constexpr unsigned defDataPins[]  = {DATA_PINS};
+    constexpr unsigned defCounts[]    = {PIXEL_COUNTS};
+    constexpr unsigned defNumTypes    = (sizeof(defDataTypes) / sizeof(defDataTypes[0]));
+    constexpr unsigned defNumPins     = (sizeof(defDataPins) / sizeof(defDataPins[0]));
+    constexpr unsigned defNumCounts   = (sizeof(defCounts) / sizeof(defCounts[0]));
 
     static_assert(validatePinsAndTypes(defDataTypes, defNumTypes, defNumPins),
-                  "The default pin list defined in DATA_PINS does not match the pin requirements for the default buses defined in LED_TYPES");
+                  "The default pin list defined in DATA_PINS does not match the pin requirements for the default buses "
+                  "defined in LED_TYPES");
 
     unsigned pinsIndex = 0;
     for (unsigned i = 0; i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[OUTPUT_MAX_PINS];
       // if we have less types than requested outputs and they do not align, use last known type to set current type
-      unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes -1];
-      unsigned busPins = Bus::getNumberOfPins(dataType);
+      unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes - 1];
+      unsigned busPins  = Bus::getNumberOfPins(dataType);
 
       // if we need more pins than available all outputs have been configured
-      if (pinsIndex + busPins > defNumPins) break;
+      if (pinsIndex + busPins > defNumPins) {
+        break;
+      }
 
       // Assign all pins first so we can check for conflicts on this bus
-      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) defPin[j] = defDataPins[pinsIndex + j];
+      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
+        defPin[j] = defDataPins[pinsIndex + j];
+      }
 
       for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
         bool validPin = true;
-        // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
-        // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
-        // Pin should not be already allocated, read/only or defined for current bus
-        while (PinManager::isPinAllocated(defPin[j]) || !PinManager::isPinOk(defPin[j],true)) {
+        // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with
+        // hardware i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc. Pin
+        // should not be already allocated, read/only or defined for current bus
+        while (PinManager::isPinAllocated(defPin[j]) || !PinManager::isPinOk(defPin[j], true)) {
           if (validPin) {
             DEBUG_PRINTLN("Some of the provided pins cannot be used to configure this LED output.");
-            defPin[j] = 1; // start with GPIO1 and work upwards
-            validPin = false;
+            defPin[j] = 1;  // start with GPIO1 and work upwards
+            validPin  = false;
           } else if (defPin[j] < WLED_NUM_PINS) {
             defPin[j]++;
           } else {
@@ -302,7 +340,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
           do {
             clash = false;
             // check for conflicts on current bus
-            for (const auto &pin : defPin) {
+            for (const auto& pin : defPin) {
               if (&pin != &defPin[j] && pin == defPin[j]) {
                 clash = true;
                 break;
@@ -311,59 +349,73 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             // We already have a clash on current bus, no point checking next buses
             if (!clash) {
               // check for conflicts in defined pins
-              for (const auto &pin : defDataPins) {
+              for (const auto& pin : defDataPins) {
                 if (pin == defPin[j]) {
                   clash = true;
                   break;
                 }
               }
             }
-            if (clash) defPin[j]++;
-            if (defPin[j] >= WLED_NUM_PINS) break;
+            if (clash) {
+              defPin[j]++;
+            }
+            if (defPin[j] >= WLED_NUM_PINS) {
+              break;
+            }
           } while (clash);
         }
       }
       pinsIndex += busPins;
 
       // if we have less counts than pins and they do not align, use last known count to set current count
-      unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts - 1];
       unsigned start = 0;
       // analog always has length 1
-      if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) count = 1;
-      busConfigs.emplace_back(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, LED_MILLIAMPS_DEFAULT, ABL_MILLIAMPS_DEFAULT, 0); // driver=0 (RMT default)
-      doInitBusses = true;  // finalization done in beginStrip()
+      if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) {
+        count = 1;
+      }
+      busConfigs.emplace_back(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY,
+                              0, LED_MILLIAMPS_DEFAULT, ABL_MILLIAMPS_DEFAULT, 0);  // driver=0 (RMT default)
+      doInitBusses = true;                                                          // finalization done in beginStrip()
     }
   }
-  if (hw_led["rev"] && BusManager::getNumBusses()) BusManager::getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
+  if (hw_led["rev"] && BusManager::getNumBusses()) {
+    BusManager::getBus(0)->setReversed(true);  // set 0.11 global reversed setting for first bus
+  }
 
   // read color order map configuration
   JsonArray hw_com = hw["com"];
   if (!hw_com.isNull()) {
     BusManager::getColorOrderMap().reserve(std::min(hw_com.size(), (size_t)WLED_MAX_COLOR_ORDER_MAPPINGS));
     for (JsonObject entry : hw_com) {
-      uint16_t start = entry["start"] | 0;
-      uint16_t len = entry["len"] | 0;
-      uint8_t colorOrder = (int)entry["order"];
-      if (!BusManager::getColorOrderMap().add(start, len, colorOrder)) break;
+      uint16_t start      = entry["start"] | 0;
+      uint16_t len        = entry["len"] | 0;
+      uint8_t  colorOrder = (int)entry["order"];
+      if (!BusManager::getColorOrderMap().add(start, len, colorOrder)) {
+        break;
+      }
     }
   }
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
   CJSON(touchThreshold, btn_obj["tt"]);
-  bool pull = btn_obj["pull"] | (!disablePullUp); // if true, pullup is enabled
-  disablePullUp = !pull;
+  bool pull            = btn_obj["pull"] | (!disablePullUp);  // if true, pullup is enabled
+  disablePullUp        = !pull;
   JsonArray hw_btn_ins = btn_obj["ins"];
   if (!hw_btn_ins.isNull()) {
     // deallocate existing button pins
-    for (const auto &button : buttons) PinManager::deallocatePin(button.pin, PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
-    buttons.clear(); // clear existing buttons
+    for (const auto& button : buttons) {
+      PinManager::deallocatePin(
+          button.pin, PinOwner::Button);  // does nothing if trying to deallocate a pin with PinOwner != Button
+    }
+    buttons.clear();  // clear existing buttons
     unsigned s = 0;
     for (JsonObject btn : hw_btn_ins) {
       uint8_t type = btn["type"] | BTN_TYPE_NONE;
       int8_t  pin  = btn["pin"][0] | -1;
       if (pin > -1 && PinManager::allocatePin(pin, false, PinOwner::Button)) {
-        #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
         if ((type == BTN_TYPE_ANALOG) || (type == BTN_TYPE_ANALOG_INVERTED)) {
           if (digitalPinToAnalogChannel(pin) < 0) {
@@ -373,7 +425,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             pin = -1;
             continue;
           } else {
-            analogReadResolution(12); // see #4040
+            analogReadResolution(12);  // see #4040
           }
         } else if ((type == BTN_TYPE_TOUCH || type == BTN_TYPE_TOUCH_SWITCH)) {
           if (digitalPinToTouchChannel(pin) < 0) {
@@ -383,31 +435,37 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             pin = -1;
             continue;
           }
-          //if touch pin, enable the touch interrupt on ESP32 S2 & S3
-          #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to do so
-          else touchAttachInterrupt(pin, touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
-          #endif
+// if touch pin, enable the touch interrupt on ESP32 S2 & S3
+#ifdef SOC_TOUCH_VERSION_2  // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to
+                            // do so
+          else
+            touchAttachInterrupt(pin, touchButtonISR,
+                                 touchThreshold << 4);  // threshold on Touch V2 is much higher (1500 is a value given
+                                                        // by Espressif example, I measured changes of over 5000)
+#endif
         } else
-        #endif
+#endif
         {
           // regular buttons and switches
           if (disablePullUp) {
             pinMode(pin, INPUT);
           } else {
-            #ifdef ESP32
-            pinMode(pin, type==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-            #else
+#ifdef ESP32
+            pinMode(pin, type == BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+#else
             pinMode(pin, INPUT_PULLUP);
-            #endif
+#endif
           }
         }
         JsonArray hw_btn_ins_0_macros = btn["macros"];
-        uint8_t press       = hw_btn_ins_0_macros[0] | 0;
-        uint8_t longPress   = hw_btn_ins_0_macros[1] | 0;
-        uint8_t doublePress = hw_btn_ins_0_macros[2] | 0;
-        buttons.emplace_back(pin, type, press, longPress, doublePress); // add button to vector
+        uint8_t   press               = hw_btn_ins_0_macros[0] | 0;
+        uint8_t   longPress           = hw_btn_ins_0_macros[1] | 0;
+        uint8_t   doublePress         = hw_btn_ins_0_macros[2] | 0;
+        buttons.emplace_back(pin, type, press, longPress, doublePress);  // add button to vector
       }
-      if (++s >= WLED_MAX_BUTTONS) break; // max buttons reached
+      if (++s >= WLED_MAX_BUTTONS) {
+        break;  // max buttons reached
+      }
     }
   } else if (fromFS) {
     // new install/missing configuration (button 0 has defaults)
@@ -417,33 +475,38 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     constexpr unsigned numTypes   = (sizeof(defTypes) / sizeof(defTypes[0]));
     constexpr unsigned numPins    = (sizeof(defPins) / sizeof(defPins[0]));
     // check if the number of pins and types are valid; count of pins must be greater than or equal to types
-    static_assert(numTypes <= numPins, "The default button pins defined in BTNPIN do not match the button types defined in BTNTYPE");
+    static_assert(numTypes <= numPins,
+                  "The default button pins defined in BTNPIN do not match the button types defined in BTNTYPE");
 
     uint8_t type = BTN_TYPE_NONE;
-    buttons.clear(); // clear existing buttons (just in case)
+    buttons.clear();  // clear existing buttons (just in case)
     for (size_t s = 0; s < WLED_MAX_BUTTONS && s < numPins; s++) {
-      type = defTypes[s < numTypes ? s : numTypes - 1]; // use last known type to set current type if types less than pins
+      type =
+          defTypes[s < numTypes ? s : numTypes - 1];  // use last known type to set current type if types less than pins
       if (type == BTN_TYPE_NONE || defPins[s] < 0 || !PinManager::allocatePin(defPins[s], false, PinOwner::Button)) {
-        if (buttons.size() == 0) buttons.emplace_back(-1, BTN_TYPE_NONE); // add disabled button to vector (so we have at least one button defined)
-        continue; // pin not available or invalid, skip configuring this GPIO
+        if (buttons.size() == 0) {
+          buttons.emplace_back(
+              -1, BTN_TYPE_NONE);  // add disabled button to vector (so we have at least one button defined)
+        }
+        continue;  // pin not available or invalid, skip configuring this GPIO
       }
       if (disablePullUp) {
         pinMode(defPins[s], INPUT);
       } else {
-        #ifdef ESP32
-        pinMode(defPins[s], type==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-        #else
+#ifdef ESP32
+        pinMode(defPins[s], type == BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+#else
         pinMode(defPins[s], INPUT_PULLUP);
-        #endif
+#endif
       }
-      buttons.emplace_back(defPins[s], type); // add button to vector
+      buttons.emplace_back(defPins[s], type);  // add button to vector
     }
   }
 
   CJSON(buttonPublishMqtt, btn_obj["mqtt"]);
 
-  #ifndef WLED_DISABLE_INFRARED
-  int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
+#ifndef WLED_DISABLE_INFRARED
+  int hw_ir_pin = hw["ir"]["pin"] | -2;  // 4
   if (hw_ir_pin > -2) {
     PinManager::deallocatePin(irPin, PinOwner::IR);
     if (PinManager::allocatePin(hw_ir_pin, false, PinOwner::IR)) {
@@ -453,16 +516,16 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
   CJSON(irEnabled, hw["ir"]["type"]);
-  #endif
+#endif
   CJSON(irApplyToAllSelected, hw["ir"]["sel"]);
 
   JsonObject relay = hw["relay"];
 
-  rlyOpenDrain  = relay["odrain"] | rlyOpenDrain;
+  rlyOpenDrain     = relay["odrain"] | rlyOpenDrain;
   int hw_relay_pin = relay["pin"] | -2;
   if (hw_relay_pin > -2) {
     PinManager::deallocatePin(rlyPin, PinOwner::Relay);
-    if (PinManager::allocatePin(hw_relay_pin,true, PinOwner::Relay)) {
+    if (PinManager::allocatePin(hw_relay_pin, true, PinOwner::Relay)) {
       rlyPin = hw_relay_pin;
       pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
     } else {
@@ -474,20 +537,29 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
 
   CJSON(serialBaud, hw["baud"]);
-  if (serialBaud < 96 || serialBaud > 15000) serialBaud = 1152;
-  updateBaudRate(serialBaud *100);
+  if (serialBaud < 96 || serialBaud > 15000) {
+    serialBaud = 1152;
+  }
+  updateBaudRate(serialBaud * 100);
 
   JsonArray hw_if_i2c = hw["if"]["i2c-pin"];
   CJSON(i2c_sda, hw_if_i2c[0]);
   CJSON(i2c_scl, hw_if_i2c[1]);
-  PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
+  PinManagerPinType i2c[2] = {
+      {i2c_sda, true},
+      {i2c_scl, true}
+  };
   if (i2c_scl >= 0 && i2c_sda >= 0 && PinManager::allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
-    #ifdef ESP32
-    if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initialised (Wire.begin() called prior)
-    else Wire.begin();
-    #else
+#ifdef ESP32
+    if (!Wire.setPins(i2c_sda, i2c_scl)) {
+      i2c_scl = i2c_sda = -1;
+    }  // this will fail if Wire is initialised (Wire.begin() called prior)
+    else {
+      Wire.begin();
+    }
+#else
     Wire.begin(i2c_sda, i2c_scl);
-    #endif
+#endif
   } else {
     i2c_sda = -1;
     i2c_scl = -1;
@@ -496,43 +568,55 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(spi_mosi, hw_if_spi[0]);
   CJSON(spi_sclk, hw_if_spi[1]);
   CJSON(spi_miso, hw_if_spi[2]);
-  PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_miso, true }, { spi_sclk, true } };
+  PinManagerPinType spi[3] = {
+      {spi_mosi, true},
+      {spi_miso, true},
+      {spi_sclk, true}
+  };
   if (spi_mosi >= 0 && spi_sclk >= 0 && PinManager::allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-    #ifdef ESP32
+#ifdef ESP32
     SPI.begin(spi_sclk, spi_miso, spi_mosi);  // SPI global uses VSPI on ESP32 and FSPI on C3, S3
-    #else
+#else
     SPI.begin();
-    #endif
+#endif
   } else {
     spi_mosi = -1;
     spi_miso = -1;
     spi_sclk = -1;
   }
 
-  //int hw_status_pin = hw["status"]["pin"]; // -1
+  // int hw_status_pin = hw["status"]["pin"]; // -1
 
   JsonObject light = doc["light"];
   CJSON(briMultiplier, light["scale-bri"]);
   CJSON(paletteBlend, light["pal-mode"]);
   CJSON(strip.autoSegments, light["aseg"]);
 
-  CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.2
-  float light_gc_bri = light["gc"]["bri"] | 1.0f; // default to 1.0 (false)
-  float light_gc_col = light["gc"]["col"] | gammaCorrectVal; // default to gammaCorrectVal (true)
-  if (light_gc_bri != 1.0f) gammaCorrectBri = true;
-  else                      gammaCorrectBri = false;
-  if (light_gc_col != 1.0f) gammaCorrectCol = true;
-  else                      gammaCorrectCol = false;
+  CJSON(gammaCorrectVal, light["gc"]["val"]);                 // default 2.2
+  float light_gc_bri = light["gc"]["bri"] | 1.0f;             // default to 1.0 (false)
+  float light_gc_col = light["gc"]["col"] | gammaCorrectVal;  // default to gammaCorrectVal (true)
+  if (light_gc_bri != 1.0f) {
+    gammaCorrectBri = true;
+  } else {
+    gammaCorrectBri = false;
+  }
+  if (light_gc_col != 1.0f) {
+    gammaCorrectCol = true;
+  } else {
+    gammaCorrectCol = false;
+  }
   if (gammaCorrectVal < 0.1f || gammaCorrectVal > 3) {
-    gammaCorrectVal = 1.0f; // no gamma correction
+    gammaCorrectVal = 1.0f;  // no gamma correction
     gammaCorrectBri = false;
     gammaCorrectCol = false;
   }
-  NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal); // fill look-up tables
+  NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal);  // fill look-up tables
 
   JsonObject light_tr = light["tr"];
-  int tdd = light_tr["dur"] | -1;
-  if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
+  int        tdd      = light_tr["dur"] | -1;
+  if (tdd >= 0) {
+    transitionDelay = transitionDelayDefault = tdd * 100;
+  }
   strip.setTransition(transitionDelayDefault);
   CJSON(randomPaletteChangeTime, light_tr["rpc"]);
   CJSON(useHarmonicRandomPalette, light_tr["hrp"]);
@@ -541,21 +625,23 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(nightlightMode, light_nl["mode"]);
   byte prev = nightlightDelayMinsDefault;
   CJSON(nightlightDelayMinsDefault, light_nl["dur"]);
-  if (nightlightDelayMinsDefault != prev) nightlightDelayMins = nightlightDelayMinsDefault;
+  if (nightlightDelayMinsDefault != prev) {
+    nightlightDelayMins = nightlightDelayMinsDefault;
+  }
 
   CJSON(nightlightTargetBri, light_nl["tbri"]);
   CJSON(macroNl, light_nl["macro"]);
 
   JsonObject def = doc["def"];
   CJSON(bootPreset, def["ps"]);
-  CJSON(turnOnAtBoot, def["on"]); // true
-  CJSON(briS, def["bri"]); // 128
+  CJSON(turnOnAtBoot, def["on"]);  // true
+  CJSON(briS, def["bri"]);         // 128
 
   JsonObject interfaces = doc["if"];
 
   JsonObject if_sync = interfaces["sync"];
-  CJSON(udpPort, if_sync["port0"]); // 21324
-  CJSON(udpPort2, if_sync["port1"]); // 65506
+  CJSON(udpPort, if_sync["port0"]);   // 21324
+  CJSON(udpPort2, if_sync["port1"]);  // 65506
 
 #ifndef WLED_DISABLE_ESPNOW
   CJSON(useESPNowSync, if_sync["espnow"]);
@@ -578,7 +664,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(notifyAlexa, if_sync_send["va"]);
   CJSON(notifyHue, if_sync_send["hue"]);
   CJSON(syncGroups, if_sync_send["grp"]);
-  if (if_sync_send["twice"]) udpNumRetries = 1; // import setting from 0.13 and earlier
+  if (if_sync_send["twice"]) {
+    udpNumRetries = 1;  // import setting from 0.13 and earlier
+  }
   CJSON(udpNumRetries, if_sync_send["ret"]);
 
   JsonObject if_nodes = interfaces["nodes"];
@@ -589,37 +677,47 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveDirect, if_live["en"]);  // UDP/Hyperion realtime
   CJSON(useMainSegmentOnly, if_live["mso"]);
   CJSON(realtimeRespectLedMaps, if_live["rlm"]);
-  CJSON(e131Port, if_live["port"]); // 5568
-  if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
+  CJSON(e131Port, if_live["port"]);  // 5568
+  if (e131Port == DDP_DEFAULT_PORT) {
+    e131Port = E131_DEFAULT_PORT;  // prevent double DDP port allocation
+  }
   CJSON(e131Multicast, if_live["mc"]);
 
   JsonObject if_live_dmx = if_live["dmx"];
   CJSON(e131Universe, if_live_dmx["uni"]);
   CJSON(e131SkipOutOfSequence, if_live_dmx["seqskip"]);
   CJSON(DMXAddress, if_live_dmx["addr"]);
-  if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
+  if (!DMXAddress || DMXAddress > 510) {
+    DMXAddress = 1;
+  }
   CJSON(DMXSegmentSpacing, if_live_dmx["dss"]);
-  if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
+  if (DMXSegmentSpacing > 150) {
+    DMXSegmentSpacing = 0;
+  }
   CJSON(e131Priority, if_live_dmx["e131prio"]);
-  if (e131Priority > 200) e131Priority = 200;
+  if (e131Priority > 200) {
+    e131Priority = 200;
+  }
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live["timeout"] | -1;
-  if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
+  if (tdd >= 0) {
+    realtimeTimeoutMs = tdd * 100;
+  }
 
-  #ifdef WLED_ENABLE_DMX_INPUT
-    CJSON(dmxInputTransmitPin, if_live_dmx["inputRxPin"]);
-    CJSON(dmxInputReceivePin, if_live_dmx["inputTxPin"]);
-    CJSON(dmxInputEnablePin, if_live_dmx["inputEnablePin"]);
-    CJSON(dmxInputPort, if_live_dmx["dmxInputPort"]);
-  #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  CJSON(dmxInputTransmitPin, if_live_dmx["inputRxPin"]);
+  CJSON(dmxInputReceivePin, if_live_dmx["inputTxPin"]);
+  CJSON(dmxInputEnablePin, if_live_dmx["inputEnablePin"]);
+  CJSON(dmxInputPort, if_live_dmx["dmxInputPort"]);
+#endif
 
   CJSON(arlsForceMaxBri, if_live["maxbri"]);
-  CJSON(arlsDisableGammaCorrection, if_live["no-gc"]); // false
-  CJSON(arlsOffset, if_live["offset"]); // 0
+  CJSON(arlsDisableGammaCorrection, if_live["no-gc"]);  // false
+  CJSON(arlsOffset, if_live["offset"]);                 // 0
 
 #ifndef WLED_DISABLE_ALEXA
-  CJSON(alexaEnabled, interfaces["va"]["alexa"]); // false
+  CJSON(alexaEnabled, interfaces["va"]["alexa"]);  // false
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
@@ -628,14 +726,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 #ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
-  getStringFromJson(mqttServer, if_mqtt["broker"], MQTT_MAX_SERVER_LEN+1);
-  CJSON(mqttPort, if_mqtt["port"]); // 1883
+  getStringFromJson(mqttServer, if_mqtt["broker"], MQTT_MAX_SERVER_LEN + 1);
+  CJSON(mqttPort, if_mqtt["port"]);  // 1883
   getStringFromJson(mqttUser, if_mqtt["user"], 41);
-  getStringFromJson(mqttPass, if_mqtt["psk"], 65); //normally not present due to security
+  getStringFromJson(mqttPass, if_mqtt["psk"], 65);  // normally not present due to security
   getStringFromJson(mqttClientID, if_mqtt["cid"], 41);
 
-  getStringFromJson(mqttDeviceTopic, if_mqtt["topics"]["device"], MQTT_MAX_TOPIC_LEN+1); // "wled/test"
-  getStringFromJson(mqttGroupTopic, if_mqtt["topics"]["group"], MQTT_MAX_TOPIC_LEN+1); // ""
+  getStringFromJson(mqttDeviceTopic, if_mqtt["topics"]["device"], MQTT_MAX_TOPIC_LEN + 1);  // "wled/test"
+  getStringFromJson(mqttGroupTopic, if_mqtt["topics"]["group"], MQTT_MAX_TOPIC_LEN + 1);    // ""
   CJSON(retainMqttMsg, if_mqtt["rtn"]);
 #endif
 
@@ -644,7 +742,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(huePollingEnabled, if_hue["en"]);
   CJSON(huePollLightId, if_hue["id"]);
   tdd = if_hue["iv"] | -1;
-  if (tdd >= 2) huePollIntervalMs = tdd * 100;
+  if (tdd >= 2) {
+    huePollIntervalMs = tdd * 100;
+  }
 
   JsonObject if_hue_recv = if_hue["recv"];
   CJSON(hueApplyOnOff, if_hue_recv["on"]);
@@ -653,13 +753,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonArray if_hue_ip = if_hue["ip"];
 
-  for (unsigned i = 0; i < 4; i++)
+  for (unsigned i = 0; i < 4; i++) {
     CJSON(hueIP[i], if_hue_ip[i]);
+  }
 #endif
 
   JsonObject if_ntp = interfaces["ntp"];
   CJSON(ntpEnabled, if_ntp["en"]);
-  getStringFromJson(ntpServerName, if_ntp["host"], 33); // "1.wled.pool.ntp.org"
+  getStringFromJson(ntpServerName, if_ntp["host"], 33);  // "1.wled.pool.ntp.org"
   CJSON(currentTimezone, if_ntp["tz"]);
   CJSON(utcOffsetSecs, if_ntp["offset"]);
   CJSON(useAMPM, if_ntp["ampm"]);
@@ -667,7 +768,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(latitude, if_ntp["lt"]);
 
   JsonObject ol = doc["ol"];
-  CJSON(overlayCurrent ,ol["clock"]); // 0
+  CJSON(overlayCurrent, ol["clock"]);  // 0
   CJSON(countdownMode, ol["cntdwn"]);
 
   CJSON(overlayMin, ol["min"]);
@@ -677,16 +778,16 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(analogClockSecondsTrail, ol["osec"]);
   CJSON(analogClockSolidBlack, ol["osb"]);
 
-  //timed macro rules
-  JsonObject tm = doc["timers"];
-  JsonObject cntdwn = tm["cntdwn"];
-  JsonArray cntdwn_goal = cntdwn["goal"];
-  CJSON(countdownYear,  cntdwn_goal[0]);
+  // timed macro rules
+  JsonObject tm          = doc["timers"];
+  JsonObject cntdwn      = tm["cntdwn"];
+  JsonArray  cntdwn_goal = cntdwn["goal"];
+  CJSON(countdownYear, cntdwn_goal[0]);
   CJSON(countdownMonth, cntdwn_goal[1]);
-  CJSON(countdownDay,   cntdwn_goal[2]);
-  CJSON(countdownHour,  cntdwn_goal[3]);
-  CJSON(countdownMin,   cntdwn_goal[4]);
-  CJSON(countdownSec,   cntdwn_goal[5]);
+  CJSON(countdownDay, cntdwn_goal[2]);
+  CJSON(countdownHour, cntdwn_goal[3]);
+  CJSON(countdownMin, cntdwn_goal[4]);
+  CJSON(countdownSec, cntdwn_goal[5]);
   CJSON(macroCountdown, cntdwn["macro"]);
   setCountdown();
 
@@ -694,12 +795,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!timersArray.isNull()) {
     clearTimers();
     for (JsonObject timer : timersArray) {
-      uint8_t h = timer["hour"] | 0;
-      int8_t m = timer["min"] | 0;
-      uint8_t p = timer["macro"] | 0;
-      uint8_t dow = timer["dow"] | 127;
-      uint8_t wd = (dow << 1) | ((timer["en"] | 0) ? 1 : 0);
-      uint8_t ms = 1, me = 12, ds = 1, de = 31;
+      uint8_t    h   = timer["hour"] | 0;
+      int8_t     m   = timer["min"] | 0;
+      uint8_t    p   = timer["macro"] | 0;
+      uint8_t    dow = timer["dow"] | 127;
+      uint8_t    wd  = (dow << 1) | ((timer["en"] | 0) ? 1 : 0);
+      uint8_t    ms = 1, me = 12, ds = 1, de = 31;
       JsonObject start = timer["start"];
       if (!start.isNull()) {
         ms = start["mon"] | 1;
@@ -714,37 +815,41 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
 
-  JsonObject ota = doc["ota"];
-  const char* pwd = ota["psk"]; //normally not present due to security
+  JsonObject  ota = doc["ota"];
+  const char* pwd = ota["psk"];  // normally not present due to security
 
-  bool pwdCorrect = !otaLock; //always allow access if ota not locked
-  if (pwd != nullptr && strncmp(otaPass, pwd, 33) == 0) pwdCorrect = true;
+  bool pwdCorrect = !otaLock;  // always allow access if ota not locked
+  if (pwd != nullptr && strncmp(otaPass, pwd, 33) == 0) {
+    pwdCorrect = true;
+  }
 
-  if (pwdCorrect) { //only accept these values from cfg.json if ota is unlocked (else from wsec.json)
+  if (pwdCorrect) {  // only accept these values from cfg.json if ota is unlocked (else from wsec.json)
     CJSON(otaLock, ota["lock"]);
     CJSON(wifiLock, ota["lock-wifi"]);
-    #ifndef WLED_DISABLE_OTA
+#ifndef WLED_DISABLE_OTA
     CJSON(aOtaEnabled, ota["aota"]);
-    #endif
-    getStringFromJson(otaPass, pwd, 33); //normally not present due to security
+#endif
+    getStringFromJson(otaPass, pwd, 33);  // normally not present due to security
     CJSON(otaSameSubnet, ota["same-subnet"]);
   }
 
-  #ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX
   JsonObject dmx = doc["dmx"];
   CJSON(DMXChannels, dmx["chan"]);
-  CJSON(DMXGap,dmx["gap"]);
+  CJSON(DMXGap, dmx["gap"]);
   CJSON(DMXStart, dmx["start"]);
-  CJSON(DMXStartLED,dmx["start-led"]);
+  CJSON(DMXStartLED, dmx["start-led"]);
 
   JsonArray dmx_fixmap = dmx["fixmap"];
   for (int i = 0; i < dmx_fixmap.size(); i++) {
-    if (i > 14) break;
-    CJSON(DMXFixtureMap[i],dmx_fixmap[i]);
+    if (i > 14) {
+      break;
+    }
+    CJSON(DMXFixtureMap[i], dmx_fixmap[i]);
   }
 
   CJSON(e131ProxyUniverse, dmx["e131proxy"]);
-  #endif
+#endif
 
   DEBUG_PRINTLN("Starting usermod config.");
   JsonObject usermods_settings = doc["um"];
@@ -752,10 +857,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     needsSave = !UsermodManager::readFromConfig(usermods_settings);
   }
 
-  if (fromFS) return needsSave;
+  if (fromFS) {
+    return needsSave;
+  }
   // if from /json/cfg
   doReboot = doc["rb"] | doReboot;
-  if (doInitBusses) return false; // no save needed, will do after bus init in wled.cpp loop
+  if (doInitBusses) {
+    return false;  // no save needed, will do after bus init in wled.cpp loop
+  }
   return (doc["sv"] | true);
 }
 
@@ -792,7 +901,9 @@ void resetConfig() {
 bool deserializeConfigFromFS() {
   [[maybe_unused]] bool success = deserializeConfigSec();
 
-  if (!requestJSONBufferLock(JSON_LOCK_CFG_DES)) return false;
+  if (!requestJSONBufferLock(JSON_LOCK_CFG_DES)) {
+    return false;
+  }
 
   DEBUG_PRINTLN("Reading settings from /cfg.json...");
 
@@ -800,8 +911,8 @@ bool deserializeConfigFromFS() {
 
   // NOTE: This routine deserializes *and* applies the configuration
   //       Therefore, must also initialize ethernet from this function
-  JsonObject root = pDoc->as<JsonObject>();
-  bool needsSave = deserializeConfig(root, true);
+  JsonObject root      = pDoc->as<JsonObject>();
+  bool       needsSave = deserializeConfig(root, true);
   releaseJSONBufferLock();
 
   return needsSave;
@@ -809,18 +920,22 @@ bool deserializeConfigFromFS() {
 
 void serializeConfigToFS() {
   serializeConfigSec();
-  backupConfig(); // backup before writing new config
+  backupConfig();  // backup before writing new config
 
   DEBUG_PRINTLN("Writing settings to /cfg.json...");
 
-  if (!requestJSONBufferLock(JSON_LOCK_CFG_SER)) return;
+  if (!requestJSONBufferLock(JSON_LOCK_CFG_SER)) {
+    return;
+  }
 
   JsonObject root = pDoc->to<JsonObject>();
 
   serializeConfig(root);
 
   File f = WLED_FS.open(s_cfg_json, "w");
-  if (f) serializeJson(root, f);
+  if (f) {
+    serializeJson(root, f);
+  }
   f.close();
   releaseJSONBufferLock();
 
@@ -829,14 +944,14 @@ void serializeConfigToFS() {
 
 void serializeConfig(JsonObject root) {
   JsonArray rev = root.createNestedArray("rev");
-  rev.add(1); //major settings revision
-  rev.add(0); //minor settings revision
+  rev.add(1);  // major settings revision
+  rev.add(0);  // minor settings revision
 
   root["vid"] = VERSION;
 
   JsonObject id = root.createNestedObject("id");
-  id["mdns"] = cmDNS;
-  id["name"] = serverDescription;
+  id["mdns"]    = cmDNS;
+  id["name"]    = serverDescription;
 #ifndef WLED_DISABLE_ALEXA
   id["inv"] = alexaInvocationName;
 #endif
@@ -844,7 +959,7 @@ void serializeConfig(JsonObject root) {
 
   JsonObject nw = root.createNestedObject("nw");
 #ifndef WLED_DISABLE_ESPNOW
-  nw["espnow"] = enableESPNow;
+  nw["espnow"]   = enableESPNow;
   JsonArray lrem = nw.createNestedArray("linked_remote");
   for (size_t i = 0; i < linked_remotes.size(); i++) {
     lrem.add(linked_remotes[i].data());
@@ -854,11 +969,11 @@ void serializeConfig(JsonObject root) {
   JsonArray nw_ins = nw.createNestedArray("ins");
   for (size_t n = 0; n < multiWiFi.size(); n++) {
     JsonObject wifi = nw_ins.createNestedObject();
-    wifi["ssid"] = multiWiFi[n].clientSSID;
-    wifi["pskl"] = strlen(multiWiFi[n].clientPass);
+    wifi["ssid"]    = multiWiFi[n].clientSSID;
+    wifi["pskl"]    = strlen(multiWiFi[n].clientPass);
     char bssid[13];
     fillMAC2Str(bssid, multiWiFi[n].bssid);
-    wifi["bssid"] = bssid;
+    wifi["bssid"]     = bssid;
     JsonArray wifi_ip = wifi.createNestedArray("ip");
     JsonArray wifi_gw = wifi.createNestedArray("gw");
     JsonArray wifi_sn = wifi.createNestedArray("sn");
@@ -871,7 +986,7 @@ void serializeConfig(JsonObject root) {
     wifi["enc_type"] = multiWiFi[n].encryptionType;
     if (multiWiFi[n].encryptionType == WIFI_ENCRYPTION_TYPE_ENTERPRISE) {
       wifi["e_anon_ident"] = multiWiFi[n].enterpriseAnonIdentity;
-      wifi["e_ident"] = multiWiFi[n].enterpriseIdentity;
+      wifi["e_ident"]      = multiWiFi[n].enterpriseIdentity;
     }
 #endif
   }
@@ -882,11 +997,11 @@ void serializeConfig(JsonObject root) {
   }
 
   JsonObject ap = root.createNestedObject("ap");
-  ap["ssid"] = apSSID;
-  ap["pskl"] = strlen(apPass);
-  ap["chan"] = apChannel;
-  ap["hide"] = apHide;
-  ap["behav"] = apBehavior;
+  ap["ssid"]    = apSSID;
+  ap["pskl"]    = strlen(apPass);
+  ap["chan"]    = apChannel;
+  ap["hide"]    = apHide;
+  ap["behav"]   = apBehavior;
 
   JsonArray ap_ip = ap.createNestedArray("ip");
   ap_ip.add(4);
@@ -895,21 +1010,29 @@ void serializeConfig(JsonObject root) {
   ap_ip.add(1);
 
   JsonObject wifi = root.createNestedObject("wifi");
-  wifi["sleep"] = !noWifiSleep;
-  wifi["phy"] = force802_3g;
+  wifi["sleep"]   = !noWifiSleep;
+  wifi["phy"]     = force802_3g;
 #ifdef ARDUINO_ARCH_ESP32
   wifi["txpwr"] = txPower;
 #endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   JsonObject ethernet = root.createNestedObject("eth");
-  ethernet["type"] = ethernetType;
+  ethernet["type"]    = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     JsonArray pins = ethernet.createNestedArray("pin");
-    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
-    if (ethernetBoards[ethernetType].eth_power>=0)     pins.add(ethernetBoards[ethernetType].eth_power);
-    if (ethernetBoards[ethernetType].eth_mdc>=0)       pins.add(ethernetBoards[ethernetType].eth_mdc);
-    if (ethernetBoards[ethernetType].eth_mdio>=0)      pins.add(ethernetBoards[ethernetType].eth_mdio);
+    for (unsigned p = 0; p < WLED_ETH_RSVD_PINS_COUNT; p++) {
+      pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
+    }
+    if (ethernetBoards[ethernetType].eth_power >= 0) {
+      pins.add(ethernetBoards[ethernetType].eth_power);
+    }
+    if (ethernetBoards[ethernetType].eth_mdc >= 0) {
+      pins.add(ethernetBoards[ethernetType].eth_mdc);
+    }
+    if (ethernetBoards[ethernetType].eth_mdio >= 0) {
+      pins.add(ethernetBoards[ethernetType].eth_mdio);
+    }
     switch (ethernetBoards[ethernetType].eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
@@ -928,64 +1051,62 @@ void serializeConfig(JsonObject root) {
   JsonObject hw = root.createNestedObject("hw");
 
   JsonObject hw_led = hw.createNestedObject("led");
-  hw_led["total"] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
-  hw_led["maxpwr"] = BusManager::ablMilliampsMax();
-//  hw_led["ledma"] = 0; // no longer used
-  hw_led["cct"] = strip.correctWB;
-  hw_led["cr"] = strip.cctFromRgb;
-  hw_led["ic"] = cctICused;
-  hw_led["cb"] = Bus::getCCTBlend();
-  hw_led["fps"] = strip.getTargetFps();
-  hw_led["rgbwm"] = Bus::getGlobalAWMode(); // global auto white mode override
+  hw_led["total"]   = strip.getLengthTotal();  // provided for compatibility on downgrade and per-output ABL
+  hw_led["maxpwr"]  = BusManager::ablMilliampsMax();
+  //  hw_led["ledma"] = 0; // no longer used
+  hw_led["cct"]   = strip.correctWB;
+  hw_led["cr"]    = strip.cctFromRgb;
+  hw_led["ic"]    = cctICused;
+  hw_led["cb"]    = Bus::getCCTBlend();
+  hw_led["fps"]   = strip.getTargetFps();
+  hw_led["rgbwm"] = Bus::getGlobalAWMode();  // global auto white mode override
 
-  #ifndef WLED_DISABLE_2D
+#ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject("matrix");
-    matrix["mpc"] = strip.panel.size();
-    JsonArray panels = matrix.createNestedArray("panels");
+    matrix["mpc"]     = strip.panel.size();
+    JsonArray panels  = matrix.createNestedArray("panels");
     for (size_t i = 0; i < strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
-      pnl["b"] = strip.panel[i].bottomStart;
-      pnl["r"] = strip.panel[i].rightStart;
-      pnl["v"] = strip.panel[i].vertical;
-      pnl["s"] = strip.panel[i].serpentine;
-      pnl["x"] = strip.panel[i].xOffset;
-      pnl["y"] = strip.panel[i].yOffset;
-      pnl["h"] = strip.panel[i].height;
-      pnl["w"] = strip.panel[i].width;
+      pnl["b"]       = strip.panel[i].bottomStart;
+      pnl["r"]       = strip.panel[i].rightStart;
+      pnl["v"]       = strip.panel[i].vertical;
+      pnl["s"]       = strip.panel[i].serpentine;
+      pnl["x"]       = strip.panel[i].xOffset;
+      pnl["y"]       = strip.panel[i].yOffset;
+      pnl["h"]       = strip.panel[i].height;
+      pnl["w"]       = strip.panel[i].width;
     }
   }
-  #endif
+#endif
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
   for (size_t s = 0; s < BusManager::getNumBusses(); s++) {
     DEBUG_PRINTF_P("Cfg: Saving bus #%u\n", s);
-    const Bus *bus = BusManager::getBus(s);
-    if (!bus) break;  // Memory corruption, iterator invalid
-    DEBUG_PRINTF_P("  (%d-%d, type:%d, CO:%d, rev:%d, skip:%d, AW:%d kHz:%d, mA:%d/%d\n",
-      (int)bus->getStart(), (int)(bus->getStart()+bus->getLength()),
-      (int)(bus->getType() & 0x7F),
-      (int)bus->getColorOrder(),
-      (int)bus->isReversed(),
-      (int)bus->skippedLeds(),
-      (int)bus->getAutoWhiteMode(),
-      (int)bus->getFrequency(),
-      (int)bus->getLEDCurrent(), (int)bus->getMaxCurrent()
-    );
-    JsonObject ins = hw_led_ins.createNestedObject();
-    ins["start"] = bus->getStart();
-    ins["len"]   = bus->getLength();
+    const Bus* bus = BusManager::getBus(s);
+    if (!bus) {
+      break;  // Memory corruption, iterator invalid
+    }
+    DEBUG_PRINTF_P("  (%d-%d, type:%d, CO:%d, rev:%d, skip:%d, AW:%d kHz:%d, mA:%d/%d\n", (int)bus->getStart(),
+                   (int)(bus->getStart() + bus->getLength()), (int)(bus->getType() & 0x7F), (int)bus->getColorOrder(),
+                   (int)bus->isReversed(), (int)bus->skippedLeds(), (int)bus->getAutoWhiteMode(),
+                   (int)bus->getFrequency(), (int)bus->getLEDCurrent(), (int)bus->getMaxCurrent());
+    JsonObject ins    = hw_led_ins.createNestedObject();
+    ins["start"]      = bus->getStart();
+    ins["len"]        = bus->getLength();
     JsonArray ins_pin = ins.createNestedArray("pin");
-    uint8_t pins[5];
-    uint8_t nPins = bus->getPins(pins);
-    for (int i = 0; i < nPins; i++) ins_pin.add(pins[i]);
+    uint8_t   pins[5];
+    uint8_t   nPins = bus->getPins(pins);
+    for (int i = 0; i < nPins; i++) {
+      ins_pin.add(pins[i]);
+    }
     ins["order"]  = bus->getColorOrder();
-    ins["rev"]       = bus->isReversed();
+    ins["rev"]    = bus->isReversed();
     ins["skip"]   = bus->skippedLeds();
-    ins["type"]      = bus->getType() & 0x7F;
-    ins["ref"]       = bus->isOffRefreshRequired();
+    ins["type"]   = bus->getType() & 0x7F;
+    ins["ref"]    = bus->isOffRefreshRequired();
     ins["rgbwm"]  = bus->getAutoWhiteMode();
     ins["freq"]   = bus->getFrequency();
     ins["maxpwr"] = bus->getMaxCurrent();
@@ -994,27 +1115,29 @@ void serializeConfig(JsonObject root) {
     ins["text"]   = bus->getCustomText();
   }
 
-  JsonArray hw_com = hw.createNestedArray("com");
-  const ColorOrderMap& com = BusManager::getColorOrderMap();
+  JsonArray            hw_com = hw.createNestedArray("com");
+  const ColorOrderMap& com    = BusManager::getColorOrderMap();
   for (size_t s = 0; s < com.count(); s++) {
-    const ColorOrderMapEntry *entry = com.get(s);
-    if (!entry || !entry->len) break;
+    const ColorOrderMapEntry* entry = com.get(s);
+    if (!entry || !entry->len) {
+      break;
+    }
     JsonObject co = hw_com.createNestedObject();
-    co["start"] = entry->start;
-    co["len"] = entry->len;
-    co["order"] = entry->colorOrder;
+    co["start"]   = entry->start;
+    co["len"]     = entry->len;
+    co["order"]   = entry->colorOrder;
   }
 
   // button(s)
-  JsonObject hw_btn = hw.createNestedObject("btn");
-  hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
-  hw_btn["pull"] = !disablePullUp;
+  JsonObject hw_btn    = hw.createNestedObject("btn");
+  hw_btn["max"]        = WLED_MAX_BUTTONS;  // just information about max number of buttons (not actually used)
+  hw_btn["pull"]       = !disablePullUp;
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
   // configuration for all buttons
-  for (const auto &button : buttons) {
-    JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-    hw_btn_ins_0["type"] = button.type;
+  for (const auto& button : buttons) {
+    JsonObject hw_btn_ins_0    = hw_btn_ins.createNestedObject();
+    hw_btn_ins_0["type"]       = button.type;
     JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
     hw_btn_ins_0_pin.add(button.pin);
     JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
@@ -1023,25 +1146,25 @@ void serializeConfig(JsonObject root) {
     hw_btn_ins_0_macros.add(button.macroDoublePress);
   }
 
-  hw_btn["tt"] = touchThreshold;
+  hw_btn["tt"]   = touchThreshold;
   hw_btn["mqtt"] = buttonPublishMqtt;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
-  #ifndef WLED_DISABLE_INFRARED
-  hw_ir["pin"] = irPin;
+#ifndef WLED_DISABLE_INFRARED
+  hw_ir["pin"]  = irPin;
   hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
-  #endif
+#endif
   hw_ir["sel"] = irApplyToAllSelected;
 
   JsonObject hw_relay = hw.createNestedObject("relay");
-  hw_relay["pin"] = rlyPin;
-  hw_relay["rev"] = !rlyMde;
-  hw_relay["odrain"] = rlyOpenDrain;
+  hw_relay["pin"]     = rlyPin;
+  hw_relay["rev"]     = !rlyMde;
+  hw_relay["odrain"]  = rlyOpenDrain;
 
   hw["baud"] = serialBaud;
 
-  JsonObject hw_if = hw.createNestedObject("if");
-  JsonArray hw_if_i2c = hw_if.createNestedArray("i2c-pin");
+  JsonObject hw_if     = hw.createNestedObject("if");
+  JsonArray  hw_if_i2c = hw_if.createNestedArray("i2c-pin");
   hw_if_i2c.add(i2c_sda);
   hw_if_i2c.add(i2c_scl);
   JsonArray hw_if_spi = hw_if.createNestedArray("spi-pin");
@@ -1049,96 +1172,96 @@ void serializeConfig(JsonObject root) {
   hw_if_spi.add(spi_sclk);
   hw_if_spi.add(spi_miso);
 
-  //JsonObject hw_status = hw.createNestedObject("status");
-  //hw_status["pin"] = -1;
+  // JsonObject hw_status = hw.createNestedObject("status");
+  // hw_status["pin"] = -1;
 
-  JsonObject light = root.createNestedObject("light");
+  JsonObject light   = root.createNestedObject("light");
   light["scale-bri"] = briMultiplier;
-  light["pal-mode"] = paletteBlend;
-  light["aseg"] = strip.autoSegments;
+  light["pal-mode"]  = paletteBlend;
+  light["aseg"]      = strip.autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
-  light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
-  light_gc["col"] = (gammaCorrectCol) ? gammaCorrectVal : 1.0f;  // keep compatibility
-  light_gc["val"] = gammaCorrectVal;
+  light_gc["bri"]     = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["col"]     = (gammaCorrectCol) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["val"]     = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");
-  light_tr["dur"] = transitionDelayDefault / 100;
-  light_tr["rpc"] = randomPaletteChangeTime;
-  light_tr["hrp"] = useHarmonicRandomPalette;
+  light_tr["dur"]     = transitionDelayDefault / 100;
+  light_tr["rpc"]     = randomPaletteChangeTime;
+  light_tr["hrp"]     = useHarmonicRandomPalette;
 
   JsonObject light_nl = light.createNestedObject("nl");
-  light_nl["mode"] = nightlightMode;
-  light_nl["dur"] = nightlightDelayMinsDefault;
-  light_nl["tbri"] = nightlightTargetBri;
-  light_nl["macro"] = macroNl;
+  light_nl["mode"]    = nightlightMode;
+  light_nl["dur"]     = nightlightDelayMinsDefault;
+  light_nl["tbri"]    = nightlightTargetBri;
+  light_nl["macro"]   = macroNl;
 
   JsonObject def = root.createNestedObject("def");
-  def["ps"] = bootPreset;
-  def["on"] = turnOnAtBoot;
-  def["bri"] = briS;
+  def["ps"]      = bootPreset;
+  def["on"]      = turnOnAtBoot;
+  def["bri"]     = briS;
 
   JsonObject interfaces = root.createNestedObject("if");
 
   JsonObject if_sync = interfaces.createNestedObject("sync");
-  if_sync["port0"] = udpPort;
-  if_sync["port1"] = udpPort2;
+  if_sync["port0"]   = udpPort;
+  if_sync["port1"]   = udpPort2;
 
 #ifndef WLED_DISABLE_ESPNOW
   if_sync["espnow"] = useESPNowSync;
 #endif
 
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
-  if_sync_recv["bri"] = receiveNotificationBrightness;
-  if_sync_recv["col"] = receiveNotificationColor;
-  if_sync_recv["fx"]  = receiveNotificationEffects;
-  if_sync_recv["pal"] = receiveNotificationPalette;
-  if_sync_recv["grp"] = receiveGroups;
-  if_sync_recv["seg"] = receiveSegmentOptions;
-  if_sync_recv["sb"]  = receiveSegmentBounds;
+  if_sync_recv["bri"]     = receiveNotificationBrightness;
+  if_sync_recv["col"]     = receiveNotificationColor;
+  if_sync_recv["fx"]      = receiveNotificationEffects;
+  if_sync_recv["pal"]     = receiveNotificationPalette;
+  if_sync_recv["grp"]     = receiveGroups;
+  if_sync_recv["seg"]     = receiveSegmentOptions;
+  if_sync_recv["sb"]      = receiveSegmentBounds;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
-  if_sync_send["en"] = sendNotifications;
-  if_sync_send["dir"] = notifyDirect;
-  if_sync_send["btn"] = notifyButton;
-  if_sync_send["va"] = notifyAlexa;
-  if_sync_send["hue"] = notifyHue;
-  if_sync_send["grp"] = syncGroups;
-  if_sync_send["ret"] = udpNumRetries;
+  if_sync_send["en"]      = sendNotifications;
+  if_sync_send["dir"]     = notifyDirect;
+  if_sync_send["btn"]     = notifyButton;
+  if_sync_send["va"]      = notifyAlexa;
+  if_sync_send["hue"]     = notifyHue;
+  if_sync_send["grp"]     = syncGroups;
+  if_sync_send["ret"]     = udpNumRetries;
 
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
-  if_nodes["list"] = nodeListEnabled;
-  if_nodes["bcast"] = nodeBroadcastEnabled;
+  if_nodes["list"]    = nodeListEnabled;
+  if_nodes["bcast"]   = nodeBroadcastEnabled;
 
   JsonObject if_live = interfaces.createNestedObject("live");
-  if_live["en"] = receiveDirect; // UDP/Hyperion realtime
-  if_live["mso"] = useMainSegmentOnly;
-  if_live["rlm"] = realtimeRespectLedMaps;
-  if_live["port"] = e131Port;
-  if_live["mc"] = e131Multicast;
+  if_live["en"]      = receiveDirect;  // UDP/Hyperion realtime
+  if_live["mso"]     = useMainSegmentOnly;
+  if_live["rlm"]     = realtimeRespectLedMaps;
+  if_live["port"]    = e131Port;
+  if_live["mc"]      = e131Multicast;
 
-  JsonObject if_live_dmx = if_live.createNestedObject("dmx");
-  if_live_dmx["uni"] = e131Universe;
-  if_live_dmx["seqskip"] = e131SkipOutOfSequence;
+  JsonObject if_live_dmx  = if_live.createNestedObject("dmx");
+  if_live_dmx["uni"]      = e131Universe;
+  if_live_dmx["seqskip"]  = e131SkipOutOfSequence;
   if_live_dmx["e131prio"] = e131Priority;
-  if_live_dmx["addr"] = DMXAddress;
-  if_live_dmx["dss"] = DMXSegmentSpacing;
-  if_live_dmx["mode"] = DMXMode;
-  #ifdef WLED_ENABLE_DMX_INPUT
-    if_live_dmx["inputRxPin"] = dmxInputTransmitPin;
-    if_live_dmx["inputTxPin"] = dmxInputReceivePin;
-    if_live_dmx["inputEnablePin"] = dmxInputEnablePin;
-    if_live_dmx["dmxInputPort"] = dmxInputPort;
-  #endif
+  if_live_dmx["addr"]     = DMXAddress;
+  if_live_dmx["dss"]      = DMXSegmentSpacing;
+  if_live_dmx["mode"]     = DMXMode;
+#ifdef WLED_ENABLE_DMX_INPUT
+  if_live_dmx["inputRxPin"]     = dmxInputTransmitPin;
+  if_live_dmx["inputTxPin"]     = dmxInputReceivePin;
+  if_live_dmx["inputEnablePin"] = dmxInputEnablePin;
+  if_live_dmx["dmxInputPort"]   = dmxInputPort;
+#endif
 
   if_live["timeout"] = realtimeTimeoutMs / 100;
-  if_live["maxbri"] = arlsForceMaxBri;
-  if_live["no-gc"] = arlsDisableGammaCorrection;
-  if_live["offset"] = arlsOffset;
+  if_live["maxbri"]  = arlsForceMaxBri;
+  if_live["no-gc"]   = arlsDisableGammaCorrection;
+  if_live["offset"]  = arlsOffset;
 
 #ifndef WLED_DISABLE_ALEXA
   JsonObject if_va = interfaces.createNestedObject("va");
-  if_va["alexa"] = alexaEnabled;
+  if_va["alexa"]   = alexaEnabled;
 
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
@@ -1149,29 +1272,29 @@ void serializeConfig(JsonObject root) {
 
 #ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
-  if_mqtt["en"] = mqttEnabled;
-  if_mqtt["broker"] = mqttServer;
-  if_mqtt["port"] = mqttPort;
-  if_mqtt["user"] = mqttUser;
-  if_mqtt["pskl"] = strlen(mqttPass);
-  if_mqtt["cid"] = mqttClientID;
-  if_mqtt["rtn"] = retainMqttMsg;
+  if_mqtt["en"]      = mqttEnabled;
+  if_mqtt["broker"]  = mqttServer;
+  if_mqtt["port"]    = mqttPort;
+  if_mqtt["user"]    = mqttUser;
+  if_mqtt["pskl"]    = strlen(mqttPass);
+  if_mqtt["cid"]     = mqttClientID;
+  if_mqtt["rtn"]     = retainMqttMsg;
 
   JsonObject if_mqtt_topics = if_mqtt.createNestedObject("topics");
-  if_mqtt_topics["device"] = mqttDeviceTopic;
-  if_mqtt_topics["group"] = mqttGroupTopic;
+  if_mqtt_topics["device"]  = mqttDeviceTopic;
+  if_mqtt_topics["group"]   = mqttGroupTopic;
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
-  if_hue["en"] = huePollingEnabled;
-  if_hue["id"] = huePollLightId;
-  if_hue["iv"] = huePollIntervalMs / 100;
+  if_hue["en"]      = huePollingEnabled;
+  if_hue["id"]      = huePollLightId;
+  if_hue["iv"]      = huePollIntervalMs / 100;
 
   JsonObject if_hue_recv = if_hue.createNestedObject("recv");
-  if_hue_recv["on"] = hueApplyOnOff;
-  if_hue_recv["bri"] = hueApplyBri;
-  if_hue_recv["col"] = hueApplyColor;
+  if_hue_recv["on"]      = hueApplyOnOff;
+  if_hue_recv["bri"]     = hueApplyBri;
+  if_hue_recv["col"]     = hueApplyColor;
 
   JsonArray if_hue_ip = if_hue.createNestedArray("ip");
   for (unsigned i = 0; i < 4; i++) {
@@ -1180,65 +1303,71 @@ void serializeConfig(JsonObject root) {
 #endif
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
-  if_ntp["en"] = ntpEnabled;
-  if_ntp["host"] = ntpServerName;
-  if_ntp["tz"] = currentTimezone;
-  if_ntp["offset"] = utcOffsetSecs;
-  if_ntp["ampm"] = useAMPM;
-  if_ntp["ln"] = longitude;
-  if_ntp["lt"] = latitude;
+  if_ntp["en"]      = ntpEnabled;
+  if_ntp["host"]    = ntpServerName;
+  if_ntp["tz"]      = currentTimezone;
+  if_ntp["offset"]  = utcOffsetSecs;
+  if_ntp["ampm"]    = useAMPM;
+  if_ntp["ln"]      = longitude;
+  if_ntp["lt"]      = latitude;
 
   JsonObject ol = root.createNestedObject("ol");
-  ol["clock"] = overlayCurrent;
-  ol["cntdwn"] = countdownMode;
+  ol["clock"]   = overlayCurrent;
+  ol["cntdwn"]  = countdownMode;
 
-  ol["min"] = overlayMin;
-  ol["max"] = overlayMax;
+  ol["min"]    = overlayMin;
+  ol["max"]    = overlayMax;
   ol["o12pix"] = analogClock12pixel;
-  ol["o5m"] = analogClock5MinuteMarks;
-  ol["osec"] = analogClockSecondsTrail;
-  ol["osb"] = analogClockSolidBlack;
+  ol["o5m"]    = analogClock5MinuteMarks;
+  ol["osec"]   = analogClockSecondsTrail;
+  ol["osb"]    = analogClockSolidBlack;
 
   JsonObject timers = root.createNestedObject("timers");
 
   JsonObject cntdwn = timers.createNestedObject("cntdwn");
-  JsonArray goal = cntdwn.createNestedArray("goal");
-  goal.add(countdownYear); goal.add(countdownMonth); goal.add(countdownDay);
-  goal.add(countdownHour); goal.add(countdownMin); goal.add(countdownSec);
+  JsonArray  goal   = cntdwn.createNestedArray("goal");
+  goal.add(countdownYear);
+  goal.add(countdownMonth);
+  goal.add(countdownDay);
+  goal.add(countdownHour);
+  goal.add(countdownMin);
+  goal.add(countdownSec);
   cntdwn["macro"] = macroCountdown;
 
   JsonArray timers_ins = timers.createNestedArray("ins");
   for (size_t i = 0; i < ::timers.size(); i++) {
     const Timer& t = ::timers[i];
-    if (t.preset == 0 && t.hour == 0 && t.minute == 0) continue;
-    JsonObject ti = timers_ins.createNestedObject();
-    ti["en"] = t.isEnabled() ? 1 : 0;
-    ti["hour"] = t.hour;
-    ti["min"] = t.minute;
-    ti["macro"] = t.preset;
-    ti["dow"] = t.weekdays >> 1;
+    if (t.preset == 0 && t.hour == 0 && t.minute == 0) {
+      continue;
+    }
+    JsonObject ti    = timers_ins.createNestedObject();
+    ti["en"]         = t.isEnabled() ? 1 : 0;
+    ti["hour"]       = t.hour;
+    ti["min"]        = t.minute;
+    ti["macro"]      = t.preset;
+    ti["dow"]        = t.weekdays >> 1;
     JsonObject start = ti.createNestedObject("start");
-    start["mon"] = t.monthStart;
-    start["day"] = t.dayStart;
-    JsonObject end = ti.createNestedObject("end");
-    end["mon"] = t.monthEnd;
-    end["day"] = t.dayEnd;
+    start["mon"]     = t.monthStart;
+    start["day"]     = t.dayStart;
+    JsonObject end   = ti.createNestedObject("end");
+    end["mon"]       = t.monthEnd;
+    end["day"]       = t.dayEnd;
   }
 
-  JsonObject ota = root.createNestedObject("ota");
-  ota["lock"] = otaLock;
+  JsonObject ota   = root.createNestedObject("ota");
+  ota["lock"]      = otaLock;
   ota["lock-wifi"] = wifiLock;
-  ota["pskl"] = strlen(otaPass);
-  #ifndef WLED_DISABLE_OTA
+  ota["pskl"]      = strlen(otaPass);
+#ifndef WLED_DISABLE_OTA
   ota["aota"] = aOtaEnabled;
-  #endif
+#endif
   ota["same-subnet"] = otaSameSubnet;
 
-  #ifdef WLED_ENABLE_DMX
-  JsonObject dmx = root.createNestedObject("dmx");
-  dmx["chan"] = DMXChannels;
-  dmx["gap"] = DMXGap;
-  dmx["start"] = DMXStart;
+#ifdef WLED_ENABLE_DMX
+  JsonObject dmx   = root.createNestedObject("dmx");
+  dmx["chan"]      = DMXChannels;
+  dmx["gap"]       = DMXGap;
+  dmx["start"]     = DMXStart;
   dmx["start-led"] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
@@ -1247,20 +1376,21 @@ void serializeConfig(JsonObject root) {
   }
 
   dmx["e131proxy"] = e131ProxyUniverse;
-  #endif
+#endif
 
   JsonObject usermods_settings = root.createNestedObject("um");
   UsermodManager::addToConfig(usermods_settings);
 }
 
-
 static const char s_wsec_json[] = "/wsec.json";
 
-//settings in /wsec.json, not accessible via webserver, for passwords and tokens
+// settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
   DEBUG_PRINTLN("Reading settings from /wsec.json...");
 
-  if (!requestJSONBufferLock(JSON_LOCK_CFG_SEC_DES)) return false;
+  if (!requestJSONBufferLock(JSON_LOCK_CFG_SEC_DES)) {
+    return false;
+  }
 
   bool success = readObjectFromFile(s_wsec_json, nullptr, pDoc);
   if (!success) {
@@ -1270,20 +1400,24 @@ bool deserializeConfigSec() {
 
   JsonObject root = pDoc->as<JsonObject>();
 
-  size_t n = 0;
+  size_t    n      = 0;
   JsonArray nw_ins = root["nw"]["ins"];
   if (!nw_ins.isNull()) {
-    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) multiWiFi.resize(nw_ins.size()); // resize constructs objects while resizing
+    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) {
+      multiWiFi.resize(nw_ins.size());  // resize constructs objects while resizing
+    }
     for (JsonObject wifi : nw_ins) {
       char pw[65] = "";
       getStringFromJson(pw, wifi["psk"], 65);
       strlcpy(multiWiFi[n].clientPass, pw, 65);
-      if (++n >= WLED_MAX_WIFI_COUNT) break;
+      if (++n >= WLED_MAX_WIFI_COUNT) {
+        break;
+      }
     }
   }
 
   JsonObject ap = root["ap"];
-  getStringFromJson(apPass, ap["psk"] , 65);
+  getStringFromJson(apPass, ap["psk"], 65);
 
   [[maybe_unused]] JsonObject interfaces = root["if"];
 
@@ -1303,9 +1437,9 @@ bool deserializeConfigSec() {
   getStringFromJson(otaPass, ota["pwd"], 33);
   CJSON(otaLock, ota["lock"]);
   CJSON(wifiLock, ota["lock-wifi"]);
-  #ifndef WLED_DISABLE_OTA
+#ifndef WLED_DISABLE_OTA
   CJSON(aOtaEnabled, ota["aota"]);
-  #endif
+#endif
 
   releaseJSONBufferLock();
   return true;
@@ -1314,7 +1448,9 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN("Writing settings to /wsec.json...");
 
-  if (!requestJSONBufferLock(JSON_LOCK_CFG_SEC_SER)) return;
+  if (!requestJSONBufferLock(JSON_LOCK_CFG_SEC_SER)) {
+    return;
+  }
 
   JsonObject root = pDoc->to<JsonObject>();
 
@@ -1323,34 +1459,36 @@ void serializeConfigSec() {
   JsonArray nw_ins = nw.createNestedArray("ins");
   for (size_t i = 0; i < multiWiFi.size(); i++) {
     JsonObject wifi = nw_ins.createNestedObject();
-    wifi["psk"] = multiWiFi[i].clientPass;
+    wifi["psk"]     = multiWiFi[i].clientPass;
   }
 
   JsonObject ap = root.createNestedObject("ap");
-  ap["psk"] = apPass;
+  ap["psk"]     = apPass;
 
   [[maybe_unused]] JsonObject interfaces = root.createNestedObject("if");
 #ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
-  if_mqtt["psk"] = mqttPass;
+  if_mqtt["psk"]     = mqttPass;
 #endif
 #ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
-  if_hue["key"] = hueApiKey;
+  if_hue["key"]     = hueApiKey;
 #endif
 
   root["pin"] = settingsPIN;
 
-  JsonObject ota = root.createNestedObject("ota");
-  ota["pwd"] = otaPass;
-  ota["lock"] = otaLock;
+  JsonObject ota   = root.createNestedObject("ota");
+  ota["pwd"]       = otaPass;
+  ota["lock"]      = otaLock;
   ota["lock-wifi"] = wifiLock;
-  #ifndef WLED_DISABLE_OTA
+#ifndef WLED_DISABLE_OTA
   ota["aota"] = aOtaEnabled;
-  #endif
+#endif
 
   File f = WLED_FS.open(s_wsec_json, "w");
-  if (f) serializeJson(root, f);
+  if (f) {
+    serializeJson(root, f);
+  }
   f.close();
   releaseJSONBufferLock();
 }

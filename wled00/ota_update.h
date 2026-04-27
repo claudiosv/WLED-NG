@@ -10,7 +10,6 @@
 #define BUILD_METADATA_SECTION ".rodata_custom_desc"
 #endif
 
-
 class AsyncWebServerRequest;
 
 /**
@@ -90,4 +89,3 @@ std::pair<bool, String> getBootloaderOTAResult(AsyncWebServerRequest *request);
  */
 void handleBootloaderOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, size_t len, bool isFinal);
 #endif
-

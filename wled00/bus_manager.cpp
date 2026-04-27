@@ -6,9 +6,10 @@
 #include <IPAddress.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <ESPmDNS.h>
-#include "src/dependencies/network/Network.h" // for isConnected() (& WiFi)
+
 #include "driver/ledc.h"
 #include "soc/ledc_struct.h"
+#include "src/dependencies/network/Network.h"  // for isConnected() (& WiFi)
 #endif
 #include "bus_manager.h"
 #include "bus_wrapper.h"
@@ -17,60 +18,74 @@
 // functions to get/set bits in an array - based on functions created by Brandon for GOL
 //  toDo : make this a class that's completely defined in a header file
 // note: these functions are automatically inline by the compiler
-static inline bool getBitFromArray(const uint8_t* byteArray, size_t position) { // get bit value
-  size_t byteIndex = position >> 3;    // divide by 8
-  unsigned bitIndex = position & 0x07; // modulo 8
-  uint8_t byteValue = byteArray[byteIndex];
+static inline bool getBitFromArray(const uint8_t *byteArray, size_t position) {  // get bit value
+  size_t   byteIndex = position >> 3;                                            // divide by 8
+  unsigned bitIndex  = position & 0x07;                                          // modulo 8
+  uint8_t  byteValue = byteArray[byteIndex];
   return (byteValue >> bitIndex) & 1;
 }
 
-static inline void setBitInArray(uint8_t* byteArray, size_t position, bool value) {  // set bit - with error handling for nullptr
-    //if (byteArray == nullptr) return;
-    size_t byteIndex = position >> 3;    // divide by 8
-    unsigned bitIndex = position & 0x07; // modulo 8
-    if (value)
-        byteArray[byteIndex] |= (1 << bitIndex);
-    else
-        byteArray[byteIndex] &= ~(1 << bitIndex);
+static inline void setBitInArray(uint8_t *byteArray, size_t position,
+                                 bool value) {  // set bit - with error handling for nullptr
+  // if (byteArray == nullptr) return;
+  size_t   byteIndex = position >> 3;    // divide by 8
+  unsigned bitIndex  = position & 0x07;  // modulo 8
+  if (value) {
+    byteArray[byteIndex] |= (1 << bitIndex);
+  } else {
+    byteArray[byteIndex] &= ~(1 << bitIndex);
+  }
 }
 
-static inline size_t getBitArrayBytes(size_t num_bits) { // number of bytes needed for an array with num_bits bits
+static inline size_t getBitArrayBytes(size_t num_bits) {  // number of bytes needed for an array with num_bits bits
   return (num_bits + 7) >> 3;
 }
 
-static inline void setBitArray(uint8_t* byteArray, size_t numBits, bool value) {  // set all bits to same value
-  if (byteArray == nullptr) return;
-  size_t len =  getBitArrayBytes(numBits);
-  if (value) memset(byteArray, 0xFF, len);
-  else memset(byteArray, 0x00, len);
+static inline void setBitArray(uint8_t *byteArray, size_t numBits, bool value) {  // set all bits to same value
+  if (byteArray == nullptr) {
+    return;
+  }
+  size_t len = getBitArrayBytes(numBits);
+  if (value) {
+    memset(byteArray, 0xFF, len);
+  } else {
+    memset(byteArray, 0x00, len);
+  }
 }
 
 static ColorOrderMap _colorOrderMap = {};
 
 bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
-  if (count() >= WLED_MAX_COLOR_ORDER_MAPPINGS || len == 0 || (colorOrder & 0x0F) > COL_ORDER_MAX) return false; // upper nibble contains W swap information
-  _mappings.push_back({start,len,colorOrder});
+  if (count() >= WLED_MAX_COLOR_ORDER_MAPPINGS || len == 0 || (colorOrder & 0x0F) > COL_ORDER_MAX) {
+    return false;  // upper nibble contains W swap information
+  }
+  _mappings.push_back({start, len, colorOrder});
   DEBUGBUS_PRINTF_P("Bus: Add COM (%d,%d,%d\n", (int)start, (int)len, (int)colorOrder);
   return true;
 }
 
 uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
   // upper nibble contains W swap information
-  // when ColorOrderMap's upper nibble contains value >0 then swap information is used from it, otherwise global swap is used
-  for (const auto& map : _mappings) {
-    if (pix >= map.start && pix < (map.start + map.len)) return map.colorOrder | ((map.colorOrder >> 4) ? 0 : (defaultColorOrder & 0xF0));
+  // when ColorOrderMap's upper nibble contains value >0 then swap information is used from it, otherwise global swap is
+  // used
+  for (const auto &map : _mappings) {
+    if (pix >= map.start && pix < (map.start + map.len)) {
+      return map.colorOrder | ((map.colorOrder >> 4) ? 0 : (defaultColorOrder & 0xF0));
+    }
   }
   return defaultColorOrder;
 }
 
-
 void Bus::calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
-  unsigned cct = 0; //0 - full warm white, 255 - full cold white
-  unsigned w = W(c);
+  unsigned cct = 0;  // 0 - full warm white, 255 - full cold white
+  unsigned w   = W(c);
 
-  if (_cct > -1) {                                    // using RGB?
-    if (_cct >= 1900)    cct = (_cct - 1900) >> 5;    // convert K in relative format
-    else if (_cct < 256) cct = _cct;                  // already relative
+  if (_cct > -1) {  // using RGB?
+    if (_cct >= 1900) {
+      cct = (_cct - 1900) >> 5;  // convert K in relative format
+    } else if (_cct < 256) {
+      cct = _cct;  // already relative
+    }
   } else {
     cct = (approximateKelvinFromRGB(c) - 1900) >> 5;  // convert K (from RGB value) to relative format
   }
@@ -81,107 +96,122 @@ void Bus::calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
   int32_t ww_val, cw_val;
   if (_cctBlend < 0) {
     uint16_t range = 255 - 2 * (uint16_t)(-_cctBlend);
-    if (range > 255) range = 255; // prevent overflow
-    ww_val = range ? ((int32_t)(255 + _cctBlend - cct) * 255) / range : (cct < 128 ? 255 : 0); // exclusive blending
+    if (range > 255) {
+      range = 255;  // prevent overflow
+    }
+    ww_val = range ? ((int32_t)(255 + _cctBlend - cct) * 255) / range : (cct < 128 ? 255 : 0);  // exclusive blending
     cw_val = 255 - ww_val;
   } else {
-    ww_val = _cctBlend ? ((int32_t)(255 - cct) * 255) / (255 - _cctBlend) : 255 - cct; // additive blending
-    cw_val = _cctBlend ? ((int32_t) cct      * 255) / (255 - _cctBlend) : cct;
+    ww_val = _cctBlend ? ((int32_t)(255 - cct) * 255) / (255 - _cctBlend) : 255 - cct;  // additive blending
+    cw_val = _cctBlend ? ((int32_t)cct * 255) / (255 - _cctBlend) : cct;
   }
   ww = (uint8_t)(ww_val < 0 ? 0 : ww_val > 255 ? 255 : ww_val);
   cw = (uint8_t)(cw_val < 0 ? 0 : cw_val > 255 ? 255 : cw_val);
 
-  ww = (w * ww) / 255; //brightness scaling
+  ww = (w * ww) / 255;  // brightness scaling
   cw = (w * cw) / 255;
 }
 
 // calculates white channel and CCT values based on given settings
 uint32_t Bus::autoWhiteCalc(uint32_t c, uint8_t &ww, uint8_t &cw) const {
   unsigned aWM = _autoWhiteMode;
-  if (_gAWM < AW_GLOBAL_DISABLED) aWM = _gAWM;
-  CRGBW cIn = c; // save original color for CCT calculation
-  unsigned w = W(c);
+  if (_gAWM < AW_GLOBAL_DISABLED) {
+    aWM = _gAWM;
+  }
+  CRGBW    cIn = c;  // save original color for CCT calculation
+  unsigned w   = W(c);
   if (aWM != RGBW_MODE_MANUAL_ONLY) {
-    unsigned r = R(c); // note: using uint8_t generates larger code
+    unsigned r = R(c);  // note: using uint8_t generates larger code
     unsigned g = G(c);
     unsigned b = B(c);
     if (aWM == RGBW_MODE_DUAL && w > 0) {
-      //ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
+      // ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
     } else if (aWM == RGBW_MODE_MAX) {
-      w = r > g ? (r > b ? r : b) : (g > b ? g : b); // brightest RGB channel
+      w = r > g ? (r > b ? r : b) : (g > b ? g : b);  // brightest RGB channel
     } else {
-      w = r < g ? (r < b ? r : b) : (g < b ? g : b); // darkest RGB channel
-      if (aWM == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);  // darkest RGB channel
+      if (aWM == RGBW_MODE_AUTO_ACCURATE) {
+        r -= w;
+        g -= w;
+        b -= w;
+      }  // subtract w in ACCURATE mode
     }
     c = RGBW32(r, g, b, w);
   }
   if (_hasCCT) {
-    cIn.w = w; // need original rgb values in case CCT is derived from RGB
+    cIn.w = w;  // need original rgb values in case CCT is derived from RGB
     calculateCCT(cIn, ww, cw);
   }
   return c;
 }
 
-
 BusDigital::BusDigital(const BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, (bc.refreshReq || bc.type == TYPE_TM1814))
-, _skip(bc.skipAmount) //sacrificial pixels
-, _colorOrder(bc.colorOrder)
-, _milliAmpsPerLed(bc.milliAmpsPerLed)
-, _milliAmpsMax(bc.milliAmpsMax)
-, _driverType(bc.driverType) // Store driver preference (0=RMT, 1=I2S)
+    : Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, (bc.refreshReq || bc.type == TYPE_TM1814)),
+      _skip(bc.skipAmount)  // sacrificial pixels
+      ,
+      _colorOrder(bc.colorOrder),
+      _milliAmpsPerLed(bc.milliAmpsPerLed),
+      _milliAmpsMax(bc.milliAmpsMax),
+      _driverType(bc.driverType)  // Store driver preference (0=RMT, 1=I2S)
 {
   DEBUGBUS_PRINTLN("Bus: Creating digital bus.");
-  if (!isDigital(bc.type) || !bc.count) { DEBUGBUS_PRINTLN("Not digial or empty bus!"); return; }
-  _iType = bc.iType; // reuse the iType that was determined by polyBus in getI() in finalizeInit()
-  if (_iType == I_NONE) { DEBUGBUS_PRINTLN("Incorrect iType!"); return; }
+  if (!isDigital(bc.type) || !bc.count) {
+    DEBUGBUS_PRINTLN("Not digial or empty bus!");
+    return;
+  }
+  _iType = bc.iType;  // reuse the iType that was determined by polyBus in getI() in finalizeInit()
+  if (_iType == I_NONE) {
+    DEBUGBUS_PRINTLN("Incorrect iType!");
+    return;
+  }
 
-  if (!PinManager::allocatePin(bc.pins[0], true, PinOwner::BusDigital)) { DEBUGBUS_PRINTLN("Pin 0 allocated!"); return; }
+  if (!PinManager::allocatePin(bc.pins[0], true, PinOwner::BusDigital)) {
+    DEBUGBUS_PRINTLN("Pin 0 allocated!");
+    return;
+  }
   _frequencykHz = 0U;
-  _colorSum = 0;
-  _pins[0] = bc.pins[0];
+  _colorSum     = 0;
+  _pins[0]      = bc.pins[0];
   if (is2Pin(bc.type)) {
     if (!PinManager::allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
       cleanup();
       DEBUGBUS_PRINTLN("Pin 1 allocated!");
       return;
     }
-    _pins[1] = bc.pins[1];
-    _frequencykHz = bc.frequency ? bc.frequency : 2000U; // 2MHz clock if undefined
+    _pins[1]      = bc.pins[1];
+    _frequencykHz = bc.frequency ? bc.frequency : 2000U;  // 2MHz clock if undefined
   }
 
-  _hasRgb = hasRGB(bc.type);
-  _hasWhite = hasWhite(bc.type);
-  _hasCCT = hasCCT(bc.type);
+  _hasRgb              = hasRGB(bc.type);
+  _hasWhite            = hasWhite(bc.type);
+  _hasCCT              = hasCCT(bc.type);
   uint16_t lenToCreate = bc.count;
-  if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
-  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip);
-  _valid = (_busPtr != nullptr) && bc.count > 0;
-  // fix for wled#4759
-  if (_valid) for (unsigned i = 0; i < _skip; i++) {
-    PolyBus::setPixelColor(_busPtr, _iType, i, 0, COL_ORDER_GRB); // set sacrificial pixels to black (CO does not matter here)
+  if (bc.type == TYPE_WS2812_1CH_X3) {
+    lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count);  // only needs a third of "RGB" LEDs for NeoPixelBus
   }
-  else {
+  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip);
+  _valid  = (_busPtr != nullptr) && bc.count > 0;
+  // fix for wled#4759
+  if (_valid) {
+    for (unsigned i = 0; i < _skip; i++) {
+      PolyBus::setPixelColor(_busPtr, _iType, i, 0,
+                             COL_ORDER_GRB);  // set sacrificial pixels to black (CO does not matter here)
+    }
+  } else {
     cleanup();
   }
   DEBUGBUS_PRINTF_P("Bus len:%u, type:%u (RGB:%d, W:%d, CCT:%d, pins:%u,%u [itype:%u, driver:%s] mA=%d/%d %s\n",
-    (int)bc.count,
-    (int)bc.type,
-    (int)_hasRgb, (int)_hasWhite, (int)_hasCCT,
-    (unsigned)_pins[0], is2Pin(bc.type)?(unsigned)_pins[1]:255U,
-    (unsigned)_iType,
-    isI2S() ? "I2S" : "RMT",
-    (int)_milliAmpsPerLed, (int)_milliAmpsMax,
-    _valid ? " " : "FAILED"
-  );
+                    (int)bc.count, (int)bc.type, (int)_hasRgb, (int)_hasWhite, (int)_hasCCT, (unsigned)_pins[0],
+                    is2Pin(bc.type) ? (unsigned)_pins[1] : 255U, (unsigned)_iType, isI2S() ? "I2S" : "RMT",
+                    (int)_milliAmpsPerLed, (int)_milliAmpsMax, _valid ? " " : "FAILED");
 }
 
-//DISCLAIMER
-//The following function attemps to calculate the current LED power usage,
-//and will limit the brightness to stay below a set amperage threshold.
-//It is NOT a measurement and NOT guaranteed to stay within the ablMilliampsMax margin.
-//Stay safe with high amperage and have a reasonable safety margin!
-//I am NOT to be held liable for burned down garages or houses!
+// DISCLAIMER
+// The following function attemps to calculate the current LED power usage,
+// and will limit the brightness to stay below a set amperage threshold.
+// It is NOT a measurement and NOT guaranteed to stay within the ablMilliampsMax margin.
+// Stay safe with high amperage and have a reasonable safety margin!
+// I am NOT to be held liable for burned down garages or houses!
 
 // note on ABL implementation:
 // ABL is set up in finalizeInit()
@@ -194,111 +224,150 @@ void BusDigital::estimateCurrent() {
   uint32_t actualMilliampsPerLed = _milliAmpsPerLed;
   if (_milliAmpsPerLed == 255) {
     // use wacky WS2815 power model, see WLED issue #549
-    _colorSum *= 3; // sum is sum of max value for each color, need to multiply by three to account for clrUnitsPerChannel being 3*255
-    actualMilliampsPerLed = 12; // from testing an actual strip
+    _colorSum *= 3;              // sum is sum of max value for each color, need to multiply by three to account for
+                                 // clrUnitsPerChannel being 3*255
+    actualMilliampsPerLed = 12;  // from testing an actual strip
   }
-  // _colorSum has all the values of color channels summed, max would be getLength()*(3*255 + (255 if hasWhite()): convert to milliAmps
-  uint32_t clrUnitsPerChannel = hasWhite() ? 4*255 : 3*255;
-  _milliAmpsTotal = ((uint64_t)_colorSum * actualMilliampsPerLed) / clrUnitsPerChannel + getLength(); // add 1mA standby current per LED to total (WS2812: ~0.7mA, WS2815: ~2mA)
+  // _colorSum has all the values of color channels summed, max would be getLength()*(3*255 + (255 if hasWhite()):
+  // convert to milliAmps
+  uint32_t clrUnitsPerChannel = hasWhite() ? 4 * 255 : 3 * 255;
+  _milliAmpsTotal             = ((uint64_t)_colorSum * actualMilliampsPerLed) / clrUnitsPerChannel +
+                                getLength();  // add 1mA standby current per LED to total (WS2812: ~0.7mA, WS2815: ~2mA)
 }
 
 void BusDigital::applyBriLimit(uint8_t newBri) {
   // a newBri of 0 means calculate per-bus brightness limit
-  _NPBbri = 255; // reset, intermediate value is set below, final value is calculated in bus::show()
+  _NPBbri = 255;  // reset, intermediate value is set below, final value is calculated in bus::show()
   if (newBri == 0) {
-    if (_milliAmpsLimit == 0 || _milliAmpsTotal == 0) return; // ABL not used for this bus
+    if (_milliAmpsLimit == 0 || _milliAmpsTotal == 0) {
+      return;  // ABL not used for this bus
+    }
     newBri = 255;
 
-    if (_milliAmpsLimit > getLength()) { // each LED uses about 1mA in standby
+    if (_milliAmpsLimit > getLength()) {  // each LED uses about 1mA in standby
       if (_milliAmpsTotal > _milliAmpsLimit) {
         // scale brightness down to stay in current limit
-        newBri = ((uint32_t)_milliAmpsLimit * 255) / _milliAmpsTotal + 1; // +1 to avoid 0 brightness
+        newBri          = ((uint32_t)_milliAmpsLimit * 255) / _milliAmpsTotal + 1;  // +1 to avoid 0 brightness
         _milliAmpsTotal = _milliAmpsLimit;
       }
     } else {
-      newBri = 1; // limit too low, set brightness to 1, this will dim down all colors to minimum since we use video scaling
-      _milliAmpsTotal = getLength(); // estimate bus current as minimum
+      newBri =
+          1;  // limit too low, set brightness to 1, this will dim down all colors to minimum since we use video scaling
+      _milliAmpsTotal = getLength();  // estimate bus current as minimum
     }
   }
 
   if (newBri < 255) {
-    _NPBbri = newBri; // store value so it can be updated in show() (must be updated even if ABL is not used)
-    uint16_t wwcw = 0;
+    _NPBbri        = newBri;  // store value so it can be updated in show() (must be updated even if ABL is not used)
+    uint16_t wwcw  = 0;
     unsigned hwLen = _len;
-    if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
+    if (_type == TYPE_WS2812_1CH_X3) {
+      hwLen = NUM_ICS_WS2812_1CH_3X(_len);  // only needs a third of "RGB" LEDs for NeoPixelBus
+    }
     for (unsigned i = 0; i < hwLen; i++) {
-      uint8_t co = _colorOrderMap.getPixelColorOrder(i+_start, _colorOrder); // need to revert color order for correct color scaling and CCT calc in case white is swapped
-      uint32_t c = PolyBus::getPixelColor(_busPtr, _iType, i, co); // Note: if ABL would be calculated as a seperate loop (as it was before) it is slower but could use original color, making it more color-accurate
+      uint8_t co = _colorOrderMap.getPixelColorOrder(
+          i + _start,
+          _colorOrder);  // need to revert color order for correct color scaling and CCT calc in case white is swapped
+      uint32_t c = PolyBus::getPixelColor(
+          _busPtr, _iType, i, co);  // Note: if ABL would be calculated as a seperate loop (as it was before) it is
+                                    // slower but could use original color, making it more color-accurate
       if (hasCCT()) {
         uint8_t cctWW, cctCW;
-        Bus::calculateCCT(c, cctWW, cctCW); // calculate CCT before fade (more accurate) | Note: if using "accurate" white calculation mode, approximateKelvinFromRGB can be very inaccurate (white is subtracted)
-        wwcw = ((cctCW + 1) * newBri) & 0xFF00; // apply brightness to CCT (leave it in upper byte for 16bit NeoPixelBus value)
+        Bus::calculateCCT(
+            c, cctWW,
+            cctCW);  // calculate CCT before fade (more accurate) | Note: if using "accurate" white calculation mode,
+                     // approximateKelvinFromRGB can be very inaccurate (white is subtracted)
+        wwcw = ((cctCW + 1) * newBri) &
+               0xFF00;  // apply brightness to CCT (leave it in upper byte for 16bit NeoPixelBus value)
         wwcw |= ((cctWW + 1) * newBri) >> 8;
       }
-      c = color_fade(c, newBri, true); // apply additional dimming  note: using inline version is a bit faster but overhead of getPixelColor() dominates the speed impact by far
-      PolyBus::setPixelColor(_busPtr, _iType, i, c, co, wwcw); // repaint all pixels with new brightness
+      c = color_fade(c, newBri, true);  // apply additional dimming  note: using inline version is a bit faster but
+                                        // overhead of getPixelColor() dominates the speed impact by far
+      PolyBus::setPixelColor(_busPtr, _iType, i, c, co, wwcw);  // repaint all pixels with new brightness
     }
   }
 
-  _colorSum = 0; // reset for next frame
+  _colorSum = 0;  // reset for next frame
 }
 
 void BusDigital::show() {
-  if (!_valid) return;
-  _NPBbri = (_NPBbri * _bri) / 255;      // total applied brightness for use in restoreColorLossy (see applyBriLimit())
-  PolyBus::show(_busPtr, _iType, _skip); // faster if buffer consistency is not important (no skipped LEDs)
+  if (!_valid) {
+    return;
+  }
+  _NPBbri = (_NPBbri * _bri) / 255;       // total applied brightness for use in restoreColorLossy (see applyBriLimit())
+  PolyBus::show(_busPtr, _iType, _skip);  // faster if buffer consistency is not important (no skipped LEDs)
 }
 
 bool BusDigital::canShow() const {
-  if (!_valid) return true;
+  if (!_valid) {
+    return true;
+  }
   return PolyBus::canShow(_busPtr, _iType);
 }
 
-//If LEDs are skipped, it is possible to use the first as a status LED.
-//TODO only show if no new show due in the next 50ms
+// If LEDs are skipped, it is possible to use the first as a status LED.
+// TODO only show if no new show due in the next 50ms
 void BusDigital::setStatusPixel(uint32_t c) {
   if (_valid && _skip) {
     PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
-    if (canShow()) PolyBus::show(_busPtr, _iType);
+    if (canShow()) {
+      PolyBus::show(_busPtr, _iType);
+    }
   }
 }
 
 // note: using WLED_O2_ATTR makes this function ~7% faster at the expense of 600 bytes of flash
 void IRAM_ATTR BusDigital::setPixelColor(unsigned pix, uint32_t c) {
-  if (!_valid) return;
-  if (Bus::_cct >= 1900) c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
-  uint8_t cctWW = 0, cctCW = 0;
+  if (!_valid) {
+    return;
+  }
+  if (Bus::_cct >= 1900) {
+    c = colorBalanceFromKelvin(Bus::_cct, c);  // color correction from CCT
+  }
+  uint8_t  cctWW = 0, cctCW = 0;
   uint16_t wwcw = 0;
-  if (hasWhite()) c = autoWhiteCalc(c, cctWW, cctCW);
-  c = color_fade(c, _bri, true); // apply brightness
+  if (hasWhite()) {
+    c = autoWhiteCalc(c, cctWW, cctCW);
+  }
+  c = color_fade(c, _bri, true);  // apply brightness
 
   if (hasCCT()) {
-    wwcw = ((cctCW + 1) * _bri) & 0xFF00; // apply brightness to CCT (store CW in upper byte)
+    wwcw = ((cctCW + 1) * _bri) & 0xFF00;  // apply brightness to CCT (store CW in upper byte)
     wwcw |= ((cctWW + 1) * _bri) >> 8;
-    if (_type == TYPE_WS2812_WWA) c = RGBW32(wwcw, wwcw >> 8, 0, W(c)); // ww,cw, 0, w
+    if (_type == TYPE_WS2812_WWA) {
+      c = RGBW32(wwcw, wwcw >> 8, 0, W(c));  // ww,cw, 0, w
+    }
   }
 
   if (BusManager::_useABL) {
     // if using ABL, sum all color channels to estimate current and limit brightness in show()
     uint8_t r = R(c), g = G(c), b = B(c);
-    if (_milliAmpsPerLed < 255) { // normal ABL
+    if (_milliAmpsPerLed < 255) {  // normal ABL
       _colorSum += r + g + b + W(c);
-    } else { // wacky WS2815 power model, ignore white channel, use max of RGB (issue #549)
+    } else {  // wacky WS2815 power model, ignore white channel, use max of RGB (issue #549)
       _colorSum += ((r > g) ? ((r > b) ? r : b) : ((g > b) ? g : b));
     }
   }
 
-  if (_reversed) pix = _len - pix -1;
+  if (_reversed) {
+    pix = _len - pix - 1;
+  }
   pix += _skip;
-  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
-  if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
+  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
+  if (_type == TYPE_WS2812_1CH_X3) {  // map to correct IC, each controls 3 LEDs
     unsigned pOld = pix;
-    pix = IC_INDEX_WS2812_1CH_3X(pix);
+    pix           = IC_INDEX_WS2812_1CH_3X(pix);
     uint32_t cOld = PolyBus::getPixelColor(_busPtr, _iType, pix, co);
-    switch (pOld % 3) { // change only the single channel (TODO: this can cause loss because of get/set)
-      case 0: c = RGBW32(R(cOld), W(c)   , B(cOld), 0); break;
-      case 1: c = RGBW32(W(c)   , G(cOld), B(cOld), 0); break;
-      case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
+    switch (pOld % 3) {  // change only the single channel (TODO: this can cause loss because of get/set)
+      case 0:
+        c = RGBW32(R(cOld), W(c), B(cOld), 0);
+        break;
+      case 1:
+        c = RGBW32(W(c), G(cOld), B(cOld), 0);
+        break;
+      case 2:
+        c = RGBW32(R(cOld), G(cOld), W(c), 0);
+        break;
     }
   }
 
@@ -307,161 +376,201 @@ void IRAM_ATTR BusDigital::setPixelColor(unsigned pix, uint32_t c) {
 
 // returns lossly restored color from bus
 uint32_t IRAM_ATTR BusDigital::getPixelColor(unsigned pix) const {
-  if (!_valid) return 0;
-  if (_reversed) pix = _len - pix -1;
+  if (!_valid) {
+    return 0;
+  }
+  if (_reversed) {
+    pix = _len - pix - 1;
+  }
   pix += _skip;
-  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
-  uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, (_type==TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co),_NPBbri);
-  if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
+  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
+  uint32_t      c  = restoreColorLossy(
+      PolyBus::getPixelColor(_busPtr, _iType, (_type == TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co),
+      _NPBbri);
+  if (_type == TYPE_WS2812_1CH_X3) {  // map to correct IC, each controls 3 LEDs
     uint8_t r = R(c);
-    uint8_t g = _reversed ? B(c) : G(c); // should G and B be switched if _reversed?
+    uint8_t g = _reversed ? B(c) : G(c);  // should G and B be switched if _reversed?
     uint8_t b = _reversed ? G(c) : B(c);
-    switch (pix % 3) { // get only the single channel
-      case 0: c = RGBW32(g, g, g, g); break;
-      case 1: c = RGBW32(r, r, r, r); break;
-      case 2: c = RGBW32(b, b, b, b); break;
+    switch (pix % 3) {  // get only the single channel
+      case 0:
+        c = RGBW32(g, g, g, g);
+        break;
+      case 1:
+        c = RGBW32(r, r, r, r);
+        break;
+      case 2:
+        c = RGBW32(b, b, b, b);
+        break;
     }
   }
   if (_type == TYPE_WS2812_WWA) {
     uint8_t w = R(c) | G(c);
-    c = RGBW32(w, w, 0, w);
+    c         = RGBW32(w, w, 0, w);
   }
   return c;
 }
 
-size_t BusDigital::getPins(uint8_t* pinArray) const {
+size_t BusDigital::getPins(uint8_t *pinArray) const {
   unsigned numPins = is2Pin(_type) + 1;
-  if (pinArray) for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+  if (pinArray) {
+    for (unsigned i = 0; i < numPins; i++) {
+      pinArray[i] = _pins[i];
+    }
+  }
   return numPins;
 }
 
 size_t BusDigital::getBusSize() const {
-  return sizeof(BusDigital) + (isOk() ? PolyBus::getDataSize(_busPtr, _iType) : 0); // does not include common I2S DMA buffer
+  return sizeof(BusDigital) +
+         (isOk() ? PolyBus::getDataSize(_busPtr, _iType) : 0);  // does not include common I2S DMA buffer
 }
 
 void BusDigital::setColorOrder(uint8_t colorOrder) {
   // upper nibble contains W swap information
-  if ((colorOrder & 0x0F) > 5) return;
+  if ((colorOrder & 0x0F) > 5) {
+    return;
+  }
   _colorOrder = colorOrder;
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
 std::vector<LEDType> BusDigital::getLEDTypes() {
   return {
-    {TYPE_WS2812_RGB,    "D",  "WS281x"},
-    {TYPE_SK6812_RGBW,   "D",  "SK6812/WS2814 RGBW"},
-    {TYPE_TM1814,        "D",  "TM1814"},
-    {TYPE_WS2811_400KHZ, "D",  "400kHz"},
-    {TYPE_TM1829,        "D",  "TM1829"},
-    {TYPE_UCS8903,       "D",  "UCS8903"},
-    {TYPE_APA106,        "D",  "APA106/PL9823"},
-    {TYPE_TM1914,        "D",  "TM1914"},
-    {TYPE_FW1906,        "D",  "FW1906 GRBCW"},
-    {TYPE_UCS8904,       "D",  "UCS8904 RGBW"},
-    {TYPE_WS2805,        "D",  "WS2805 RGBCW"},
-    {TYPE_SM16825,       "D",  "SM16825 RGBCW"},
-    {TYPE_WS2812_1CH_X3, "D",  "WS2811 White"},
-    //{TYPE_WS2812_2CH_X3, "D",  "WS281x CCT"}, // not implemented
-    {TYPE_WS2812_WWA,    "D",  "WS281x WWA"}, // amber ignored
-    {TYPE_WS2801,        "2P", "WS2801"},
-    {TYPE_APA102,        "2P", "APA102"},
-    {TYPE_LPD8806,       "2P", "LPD8806"},
-    {TYPE_LPD6803,       "2P", "LPD6803"},
-    {TYPE_P9813,         "2P", "PP9813"},
+      {   TYPE_WS2812_RGB,  "D",             "WS281x"},
+      {  TYPE_SK6812_RGBW,  "D", "SK6812/WS2814 RGBW"},
+      {       TYPE_TM1814,  "D",             "TM1814"},
+      {TYPE_WS2811_400KHZ,  "D",             "400kHz"},
+      {       TYPE_TM1829,  "D",             "TM1829"},
+      {      TYPE_UCS8903,  "D",            "UCS8903"},
+      {       TYPE_APA106,  "D",      "APA106/PL9823"},
+      {       TYPE_TM1914,  "D",             "TM1914"},
+      {       TYPE_FW1906,  "D",       "FW1906 GRBCW"},
+      {      TYPE_UCS8904,  "D",       "UCS8904 RGBW"},
+      {       TYPE_WS2805,  "D",       "WS2805 RGBCW"},
+      {      TYPE_SM16825,  "D",      "SM16825 RGBCW"},
+      {TYPE_WS2812_1CH_X3,  "D",       "WS2811 White"},
+      //{TYPE_WS2812_2CH_X3, "D",  "WS281x CCT"}, // not implemented
+      {   TYPE_WS2812_WWA,  "D",         "WS281x WWA"}, // amber ignored
+      {       TYPE_WS2801, "2P",             "WS2801"},
+      {       TYPE_APA102, "2P",             "APA102"},
+      {      TYPE_LPD8806, "2P",            "LPD8806"},
+      {      TYPE_LPD6803, "2P",            "LPD6803"},
+      {        TYPE_P9813, "2P",             "PP9813"},
   };
 }
 
 bool BusDigital::isI2S() {
-  return (_iType & 0x01) == 0; // I2S types have even iType values
+  return (_iType & 0x01) == 0;  // I2S types have even iType values
 }
 
 void BusDigital::begin() {
-  if (!_valid) return;
+  if (!_valid) {
+    return;
+  }
   PolyBus::begin(_busPtr, _iType, _pins, _frequencykHz);
 }
 
 void BusDigital::cleanup() {
   DEBUGBUS_PRINTLN("Digital Cleanup.");
   PolyBus::cleanup(_busPtr, _iType);
-  _iType = I_NONE;
-  _valid = false;
+  _iType  = I_NONE;
+  _valid  = false;
   _busPtr = nullptr;
   PinManager::deallocatePin(_pins[1], PinOwner::BusDigital);
   PinManager::deallocatePin(_pins[0], PinOwner::BusDigital);
 }
 
-
 // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
 // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
 #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
-  #define CLOCK_FREQUENCY 40000000UL
+#define CLOCK_FREQUENCY 40000000UL
 #else
-  #define CLOCK_FREQUENCY 80000000UL
+#define CLOCK_FREQUENCY 80000000UL
 #endif
 
 #ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
-  // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
-  #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM
+// C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
+#define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM
 #else
-  // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
-  #define MAX_BIT_WIDTH 14
+// ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
+#define MAX_BIT_WIDTH 14
 #endif
 
 BusPwm::BusPwm(const BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed, bc.refreshReq) // hijack Off refresh flag to indicate usage of dithering
+    : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed,
+          bc.refreshReq)  // hijack Off refresh flag to indicate usage of dithering
 {
-  if (!isPWM(bc.type)) return;
-  const unsigned numPins = numPWMPins(bc.type);
+  if (!isPWM(bc.type)) {
+    return;
+  }
+  const unsigned              numPins   = numPWMPins(bc.type);
   [[maybe_unused]] const bool dithering = _needsRefresh;
-  _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
+  _frequency                            = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
-  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
+  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) {
+    if (((CLOCK_FREQUENCY / _frequency) >> _depth) > 0) {
+      break;
+    }
+  }
 
   managed_pin_type pins[numPins];
-  for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
+  for (unsigned i = 0; i < numPins; i++) {
+    pins[i] = {(int8_t)bc.pins[i], true};
+  }
   if (PinManager::allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) {
-    // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
+    // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the
+    // same timer
     _ledcStart = PinManager::allocateLedc(numPins);
-    if (_ledcStart == 255) { //no more free LEDC channels
+    if (_ledcStart == 255) {  // no more free LEDC channels
       PinManager::deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
       DEBUGBUS_PRINTLN("No more free LEDC channels!");
       return;
     }
     // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
-    if (dithering) _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
+    if (dithering) {
+      _depth = 12;  // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
+    }
 
     for (unsigned i = 0; i < numPins; i++) {
-      _pins[i] = bc.pins[i]; // store only after allocateMultiplePins() succeeded
+      _pins[i]         = bc.pins[i];  // store only after allocateMultiplePins() succeeded
       unsigned channel = _ledcStart + i;
-      ledcSetup(channel, _frequency, _depth - (dithering*4)); // with dithering _frequency doesn't really matter as resolution is 8 bit
+      ledcSetup(channel, _frequency,
+                _depth - (dithering * 4));  // with dithering _frequency doesn't really matter as resolution is 8 bit
       ledcAttachPin(_pins[i], channel);
       // LEDC timer reset credit @dedehai
-      uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
-      ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so all timers are almost in sync (for phase shift)
+      uint8_t group = (channel / 8), timer = ((channel / 2) % 4);  // same fromula as in ledcSetup()
+      ledc_timer_rst((ledc_mode_t)group,
+                     (ledc_timer_t)timer);  // reset timer so all timers are almost in sync (for phase shift)
     }
-    _hasRgb = hasRGB(bc.type);
+    _hasRgb   = hasRGB(bc.type);
     _hasWhite = hasWhite(bc.type);
-    _hasCCT = hasCCT(bc.type);
-    _valid = true;
+    _hasCCT   = hasCCT(bc.type);
+    _valid    = true;
   }
-  DEBUGBUS_PRINTF_P("%successfully inited PWM strip with type %u, frequency %u, bit depth %u and pins %u,%u,%u,%u,%u\n", _valid?"S":"Uns", bc.type, _frequency, _depth, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
+  DEBUGBUS_PRINTF_P("%successfully inited PWM strip with type %u, frequency %u, bit depth %u and pins %u,%u,%u,%u,%u\n",
+                    _valid ? "S" : "Uns", bc.type, _frequency, _depth, _pins[0], _pins[1], _pins[2], _pins[3],
+                    _pins[4]);
 }
 
 void BusPwm::setPixelColor(unsigned pix, uint32_t c) {
-  if (pix != 0 || !_valid) return; //only react to first pixel
+  if (pix != 0 || !_valid) {
+    return;  // only react to first pixel
+  }
   if (Bus::_cct >= 1900 && (_type == TYPE_ANALOG_3CH || _type == TYPE_ANALOG_4CH)) {
-    c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
+    c = colorBalanceFromKelvin(Bus::_cct, c);  // color correction from CCT
   }
   uint8_t cctWW, cctCW;
-  if (_type != TYPE_ANALOG_3CH) c = autoWhiteCalc(c, cctWW, cctCW);
+  if (_type != TYPE_ANALOG_3CH) {
+    c = autoWhiteCalc(c, cctWW, cctCW);
+  }
   uint8_t r = R(c), g = G(c), b = B(c), w = W(c);
   // note: no color scaling, brightness is applied in show()
 
   switch (_type) {
-    case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
+    case TYPE_ANALOG_1CH:  // one channel (white), relies on auto white calculation
       _data[0] = w;
       break;
-    case TYPE_ANALOG_2CH: //warm white + cold white
+    case TYPE_ANALOG_2CH:  // warm white + cold white
       if (cctICused) {
         _data[0] = w;
         _data[1] = Bus::_cct < 0 || Bus::_cct > 255 ? 127 : Bus::_cct;
@@ -470,61 +579,76 @@ void BusPwm::setPixelColor(unsigned pix, uint32_t c) {
         _data[1] = cctCW;
       }
       break;
-    case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-      if (cctICused)
+    case TYPE_ANALOG_5CH:  // RGB + warm white + cold white
+      if (cctICused) {
         _data[4] = Bus::_cct < 0 || Bus::_cct > 255 ? 127 : Bus::_cct;
-      else {
-        w = cctWW;
+      } else {
+        w        = cctWW;
         _data[4] = cctCW;
       }
       // fall through to set RGBW channels
-    case TYPE_ANALOG_4CH: //RGBW
+    case TYPE_ANALOG_4CH:  // RGBW
       _data[3] = w;
-    case TYPE_ANALOG_3CH: //standard dumb RGB
-      _data[0] = r; _data[1] = g; _data[2] = b;
+    case TYPE_ANALOG_3CH:  // standard dumb RGB
+      _data[0] = r;
+      _data[1] = g;
+      _data[2] = b;
       break;
   }
 }
 
-//does no index check
+// does no index check
 uint32_t BusPwm::getPixelColor(unsigned pix) const {
-  if (!_valid) return 0;
+  if (!_valid) {
+    return 0;
+  }
   // TODO getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
   switch (_type) {
-    case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
+    case TYPE_ANALOG_1CH:  // one channel (white), relies on auto white calculation
       return RGBW32(0, 0, 0, _data[0]);
-    case TYPE_ANALOG_2CH: //warm white + cold white
-      if (cctICused) return RGBW32(0, 0, 0, _data[0]);
-      else           return RGBW32(0, 0, 0, _data[0] + _data[1]);
-    case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-      if (cctICused) return RGBW32(_data[0], _data[1], _data[2], _data[3]);
-      else           return RGBW32(_data[0], _data[1], _data[2], _data[3] + _data[4]);
-    case TYPE_ANALOG_4CH: //RGBW
+    case TYPE_ANALOG_2CH:  // warm white + cold white
+      if (cctICused) {
+        return RGBW32(0, 0, 0, _data[0]);
+      } else {
+        return RGBW32(0, 0, 0, _data[0] + _data[1]);
+      }
+    case TYPE_ANALOG_5CH:  // RGB + warm white + cold white
+      if (cctICused) {
+        return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+      } else {
+        return RGBW32(_data[0], _data[1], _data[2], _data[3] + _data[4]);
+      }
+    case TYPE_ANALOG_4CH:  // RGBW
       return RGBW32(_data[0], _data[1], _data[2], _data[3]);
-    case TYPE_ANALOG_3CH: //standard dumb RGB
+    case TYPE_ANALOG_3CH:  // standard dumb RGB
       return RGBW32(_data[0], _data[1], _data[2], 0);
   }
   return RGBW32(_data[0], _data[0], _data[0], _data[0]);
 }
 
 void BusPwm::show() {
-  if (!_valid) return;
-  const size_t   numPins = getPins();
+  if (!_valid) {
+    return;
+  }
+  const size_t numPins = getPins();
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/wled/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
-  const bool     dithering = _needsRefresh; // avoid working with bitfield
-  const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
-  const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
+  const bool     dithering = _needsRefresh;  // avoid working with bitfield
+  const unsigned maxBri =
+      (1 << _depth);  // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
+  const unsigned bitShift =
+      dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
 
   // use CIE brightness formula (linear + cubic) to approximate human eye perceived brightness
   // see: https://en.wikipedia.org/wiki/Lightness
   unsigned pwmBri = _bri;
-  if (pwmBri < 21) {                                   // linear response for values [0-20]
-    pwmBri = (pwmBri * maxBri + 2300 / 2) / 2300 ;     // adding '0.5' before division for correct rounding, 2300 gives a good match to CIE curve
-  } else {                                             // cubic response for values [21-255]
-    float temp = float(pwmBri + 41) / float(255 + 41); // 41 is to match offset & slope to linear part
-    temp = temp * temp * temp * (float)maxBri;
-    pwmBri = (unsigned)temp;                           // pwmBri is in range [0-maxBri] C
+  if (pwmBri < 21) {  // linear response for values [0-20]
+    pwmBri = (pwmBri * maxBri + 2300 / 2) /
+             2300;  // adding '0.5' before division for correct rounding, 2300 gives a good match to CIE curve
+  } else {          // cubic response for values [21-255]
+    float temp = float(pwmBri + 41) / float(255 + 41);  // 41 is to match offset & slope to linear part
+    temp       = temp * temp * temp * (float)maxBri;
+    pwmBri     = (unsigned)temp;  // pwmBri is in range [0-maxBri] C
   }
 
   [[maybe_unused]] unsigned hPoint = 0;  // phase shift (0 - maxBri)
@@ -535,53 +659,67 @@ void BusPwm::show() {
   // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
   // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned duty = (_data[i] * pwmBri) / 255;
+    unsigned duty     = (_data[i] * pwmBri) / 255;
     unsigned deadTime = 0;
 
     if (_type == TYPE_ANALOG_2CH && Bus::_cctBlend <= 0) {
       // add dead time between signals (when using dithering, two full 8bit pulses are required)
-      deadTime = (1+dithering) << bitShift;
+      deadTime = (1 + dithering) << bitShift;
       // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
       if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) {
-        duty -= deadTime << 1; // shorten duty of larger signal except if full on
+        duty -= deadTime << 1;  // shorten duty of larger signal except if full on
       }
     }
     if (_reversed) {
-      if (i) hPoint += duty;  // align start at time zero
+      if (i) {
+        hPoint += duty;  // align start at time zero
+      }
       duty = maxBri - duty;
     }
 
     unsigned channel = _ledcStart + i;
-    unsigned gr = channel/8;  // high/low speed group
-    unsigned ch = channel%8;  // group channel
+    unsigned gr      = channel / 8;  // high/low speed group
+    unsigned ch      = channel % 8;  // group channel
     // directly write to LEDC struct as there is no HAL exposed function for dithering
     // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
-    LEDC.channel_group[gr].channel[ch].duty.duty = duty << ((!dithering)*4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
-    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = hPoint >> bitShift;    // hPoint is at _depth resolution (needs shifting if dithering)
+    LEDC.channel_group[gr].channel[ch].duty.duty =
+        duty << ((!dithering) * 4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
+    LEDC.channel_group[gr].channel[ch].hpoint.hpoint =
+        hPoint >> bitShift;  // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
 
-    if (!_reversed) hPoint += duty;
-    hPoint += deadTime;        // offset to cascade the signals
-    if (hPoint >= maxBri) hPoint -= maxBri; // offset is out of bounds, reset
+    if (!_reversed) {
+      hPoint += duty;
+    }
+    hPoint += deadTime;  // offset to cascade the signals
+    if (hPoint >= maxBri) {
+      hPoint -= maxBri;  // offset is out of bounds, reset
+    }
   }
 }
 
-size_t BusPwm::getPins(uint8_t* pinArray) const {
-  if (!_valid) return 0;
+size_t BusPwm::getPins(uint8_t *pinArray) const {
+  if (!_valid) {
+    return 0;
+  }
   unsigned numPins = numPWMPins(_type);
-  if (pinArray) for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+  if (pinArray) {
+    for (unsigned i = 0; i < numPins; i++) {
+      pinArray[i] = _pins[i];
+    }
+  }
   return numPins;
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
 std::vector<LEDType> BusPwm::getLEDTypes() {
   return {
-    {TYPE_ANALOG_1CH, "A",      "PWM White"},
-    {TYPE_ANALOG_2CH, "AA",     "PWM CCT"},
-    {TYPE_ANALOG_3CH, "AAA",    "PWM RGB"},
-    {TYPE_ANALOG_4CH, "AAAA",   "PWM RGBW"},
-    {TYPE_ANALOG_5CH, "AAAAA",  "PWM RGB+CCT"},
-    //{TYPE_ANALOG_6CH, "AAAAAA", "PWM RGB+DCCT"}, // unimplementable ATM
+      {TYPE_ANALOG_1CH,     "A",   "PWM White"},
+      {TYPE_ANALOG_2CH,    "AA",     "PWM CCT"},
+      {TYPE_ANALOG_3CH,   "AAA",     "PWM RGB"},
+      {TYPE_ANALOG_4CH,  "AAAA",    "PWM RGBW"},
+      {TYPE_ANALOG_5CH, "AAAAA", "PWM RGB+CCT"},
+      //{TYPE_ANALOG_6CH, "AAAAAA", "PWM RGB+DCCT"}, // unimplementable ATM
   };
 }
 
@@ -589,66 +727,75 @@ void BusPwm::deallocatePins() {
   size_t numPins = getPins();
   for (unsigned i = 0; i < numPins; i++) {
     PinManager::deallocatePin(_pins[i], PinOwner::BusPwm);
-    if (!PinManager::isPinOk(_pins[i])) continue;
-    if (_ledcStart < WLED_MAX_ANALOG_CHANNELS) ledcDetachPin(_pins[i]);
+    if (!PinManager::isPinOk(_pins[i])) {
+      continue;
+    }
+    if (_ledcStart < WLED_MAX_ANALOG_CHANNELS) {
+      ledcDetachPin(_pins[i]);
+    }
   }
-  #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
   PinManager::deallocateLedc(_ledcStart, numPins);
-  #endif
+#endif
 }
 
-
-BusOnOff::BusOnOff(const BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
-, _data(0)
-{
-  if (!Bus::isOnOff(bc.type)) return;
+BusOnOff::BusOnOff(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed), _data(0) {
+  if (!Bus::isOnOff(bc.type)) {
+    return;
+  }
 
   uint8_t currentPin = bc.pins[0];
   if (!PinManager::allocatePin(currentPin, true, PinOwner::BusOnOff)) {
     return;
   }
-  _pin = currentPin; //store only after allocatePin() succeeds
+  _pin = currentPin;  // store only after allocatePin() succeeds
   pinMode(_pin, OUTPUT);
-  _hasRgb = false;
+  _hasRgb   = false;
   _hasWhite = false;
-  _hasCCT = false;
-  _valid = true;
-  DEBUGBUS_PRINTF_P("%successfully inited On/Off strip with pin %u\n", _valid?"S":"Uns", _pin);
+  _hasCCT   = false;
+  _valid    = true;
+  DEBUGBUS_PRINTF_P("%successfully inited On/Off strip with pin %u\n", _valid ? "S" : "Uns", _pin);
 }
 
 void BusOnOff::setPixelColor(unsigned pix, uint32_t c) {
-  if (pix != 0 || !_valid) return; //only react to first pixel
-  _data = (c > 0) && bool(_bri) ? 0xFF : 0; // if any color channel is on and brightness is not zero, set to on
+  if (pix != 0 || !_valid) {
+    return;  // only react to first pixel
+  }
+  _data = (c > 0) && bool(_bri) ? 0xFF : 0;  // if any color channel is on and brightness is not zero, set to on
 }
 
 uint32_t BusOnOff::getPixelColor(unsigned pix) const {
-  if (!_valid) return 0;
+  if (!_valid) {
+    return 0;
+  }
   return RGBW32(_data, _data, _data, _data);
 }
 
 void BusOnOff::show() {
-  if (!_valid) return;
+  if (!_valid) {
+    return;
+  }
   digitalWrite(_pin, _reversed ? !(bool)_data : (bool)_data);
 }
 
-size_t BusOnOff::getPins(uint8_t* pinArray) const {
-  if (!_valid) return 0;
-  if (pinArray) pinArray[0] = _pin;
+size_t BusOnOff::getPins(uint8_t *pinArray) const {
+  if (!_valid) {
+    return 0;
+  }
+  if (pinArray) {
+    pinArray[0] = _pin;
+  }
   return 1;
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
 std::vector<LEDType> BusOnOff::getLEDTypes() {
   return {
-    {TYPE_ONOFF, "", "On/Off"},
+      {TYPE_ONOFF, "", "On/Off"},
   };
 }
 
-BusNetwork::BusNetwork(const BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, bc.count)
-, _broadcastLock(false)
-{
+BusNetwork::BusNetwork(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, bc.count), _broadcastLock(false) {
   switch (bc.type) {
     case TYPE_NET_ARTNET_RGB:
       _UDPtype = 2;
@@ -659,71 +806,89 @@ BusNetwork::BusNetwork(const BusConfig &bc)
     case TYPE_NET_E131_RGB:
       _UDPtype = 1;
       break;
-    default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
+    default:  // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
       _UDPtype = 0;
       break;
   }
-  _hasRgb = hasRGB(bc.type);
-  _hasWhite = hasWhite(bc.type);
-  _hasCCT = false;
+  _hasRgb      = hasRGB(bc.type);
+  _hasWhite    = hasWhite(bc.type);
+  _hasCCT      = false;
   _UDPchannels = _hasWhite + 3;
-  _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
-  #ifdef ARDUINO_ARCH_ESP32
+  _client      = IPAddress(bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
+#ifdef ARDUINO_ARCH_ESP32
   _hostname = bc.text;
-  resolveHostname(); // resolve hostname to IP address if needed
-  #endif
-  _data = (uint8_t*)d_calloc(_len, _UDPchannels);
+  resolveHostname();  // resolve hostname to IP address if needed
+#endif
+  _data  = (uint8_t *)d_calloc(_len, _UDPchannels);
   _valid = (_data != nullptr);
-  DEBUGBUS_PRINTF_P("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n", _valid?"S":"Uns", bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
+  DEBUGBUS_PRINTF_P("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n", _valid ? "S" : "Uns",
+                    bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
 }
 
 void BusNetwork::setPixelColor(unsigned pix, uint32_t c) {
-  if (!_valid || pix >= _len) return;
-  uint8_t ww, cw; // dummy, unused
-  if (_hasWhite) c = autoWhiteCalc(c, ww, cw);
-  if (Bus::_cct >= 1900) c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
-  unsigned offset = pix * _UDPchannels;
-  _data[offset]   = R(c);
-  _data[offset+1] = G(c);
-  _data[offset+2] = B(c);
-  if (_hasWhite) _data[offset+3] = W(c);
+  if (!_valid || pix >= _len) {
+    return;
+  }
+  uint8_t ww, cw;  // dummy, unused
+  if (_hasWhite) {
+    c = autoWhiteCalc(c, ww, cw);
+  }
+  if (Bus::_cct >= 1900) {
+    c = colorBalanceFromKelvin(Bus::_cct, c);  // color correction from CCT
+  }
+  unsigned offset   = pix * _UDPchannels;
+  _data[offset]     = R(c);
+  _data[offset + 1] = G(c);
+  _data[offset + 2] = B(c);
+  if (_hasWhite) {
+    _data[offset + 3] = W(c);
+  }
 }
 
 uint32_t BusNetwork::getPixelColor(unsigned pix) const {
-  if (!_valid || pix >= _len) return 0;
+  if (!_valid || pix >= _len) {
+    return 0;
+  }
   unsigned offset = pix * _UDPchannels;
-  return RGBW32(_data[offset], _data[offset+1], _data[offset+2], (hasWhite() ? _data[offset+3] : 0));
+  return RGBW32(_data[offset], _data[offset + 1], _data[offset + 2], (hasWhite() ? _data[offset + 3] : 0));
 }
 
 void BusNetwork::show() {
-  if (!_valid || !canShow()) return;
+  if (!_valid || !canShow()) {
+    return;
+  }
   _broadcastLock = true;
   realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, hasWhite());
   _broadcastLock = false;
 }
 
-size_t BusNetwork::getPins(uint8_t* pinArray) const {
-  if (pinArray) for (unsigned i = 0; i < 4; i++) pinArray[i] = _client[i];
+size_t BusNetwork::getPins(uint8_t *pinArray) const {
+  if (pinArray) {
+    for (unsigned i = 0; i < 4; i++) {
+      pinArray[i] = _client[i];
+    }
+  }
   return 4;
 }
 
 #ifdef ARDUINO_ARCH_ESP32
 void BusNetwork::resolveHostname() {
-  static std::shared_ptr<AsyncDNS> DNSlookup; // TODO: make this dynamic? requires to handle the callback properly
+  static std::shared_ptr<AsyncDNS> DNSlookup;  // TODO: make this dynamic? requires to handle the callback properly
   if (Network.isConnected()) {
     IPAddress clnt;
     if (strlen(cmDNS) > 0) {
       clnt = MDNS.queryHost(_hostname);
-      if (clnt != IPAddress()) _client = clnt; // update client IP if not null
-    }
-    else {
-      int timeout = 5000; // 5 seconds timeout
-      DNSlookup = AsyncDNS::query(_hostname.c_str(), DNSlookup); // start async DNS query
+      if (clnt != IPAddress()) {
+        _client = clnt;  // update client IP if not null
+      }
+    } else {
+      int timeout = 5000;                                           // 5 seconds timeout
+      DNSlookup   = AsyncDNS::query(_hostname.c_str(), DNSlookup);  // start async DNS query
       while (DNSlookup->status() == AsyncDNS::result::Busy && timeout-- > 0) {
         delay(1);
       }
       if (DNSlookup->status() == AsyncDNS::result::Success) {
-        _client = DNSlookup->getIP(); // update client IP
+        _client = DNSlookup->getIP();  // update client IP
       }
     }
   }
@@ -733,23 +898,24 @@ void BusNetwork::resolveHostname() {
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
 std::vector<LEDType> BusNetwork::getLEDTypes() {
   return {
-    {TYPE_NET_DDP_RGB,     "N",     "DDP RGB (network"},      // should be "NNNN" to determine 4 "pin" fields
-    {TYPE_NET_ARTNET_RGB,  "N",     "Art-Net RGB (network"},
-    {TYPE_NET_DDP_RGBW,    "N",     "DDP RGBW (network"},
-    {TYPE_NET_ARTNET_RGBW, "N",     "Art-Net RGBW (network"},
-    // hypothetical extensions
-    //{TYPE_VIRTUAL_I2C_W,   "V",     "I2C White (virtual")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_CCT, "V",     "I2C CCT (virtual")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_RGB, "VVV",   "I2C RGB (virtual")}, // allows setting I2C address in _pin[0] and 2 additional values in _pin[1] & _pin[2]
-    //{TYPE_USERMOD,         "VVVVV", "Usermod (virtual")}, // 5 data fields (see https://github.com/wled/WLED/pull/4123)
+      {    TYPE_NET_DDP_RGB, "N",      "DDP RGB (network"}, // should be "NNNN" to determine 4 "pin" fields
+      { TYPE_NET_ARTNET_RGB, "N",  "Art-Net RGB (network"},
+      {   TYPE_NET_DDP_RGBW, "N",     "DDP RGBW (network"},
+      {TYPE_NET_ARTNET_RGBW, "N", "Art-Net RGBW (network"},
+      // hypothetical extensions
+      //{TYPE_VIRTUAL_I2C_W,   "V",     "I2C White (virtual")}, // allows setting I2C address in _pin[0]
+      //{TYPE_VIRTUAL_I2C_CCT, "V",     "I2C CCT (virtual")}, // allows setting I2C address in _pin[0]
+      //{TYPE_VIRTUAL_I2C_RGB, "VVV",   "I2C RGB (virtual")}, // allows setting I2C address in _pin[0] and 2 additional
+      // values in _pin[1] & _pin[2] {TYPE_USERMOD,         "VVVVV", "Usermod (virtual")}, // 5 data fields (see
+      // https://github.com/wled/WLED/pull/4123)
   };
 }
 
 void BusNetwork::cleanup() {
   DEBUGBUS_PRINTLN("Virtual Cleanup.");
   d_free(_data);
-  _data = nullptr;
-  _type = I_NONE;
+  _data  = nullptr;
+  _type  = I_NONE;
   _valid = false;
 }
 
@@ -763,30 +929,31 @@ void BusNetwork::cleanup() {
 
 BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
   size_t lastHeap = ESP.getFreeHeap();
-  _valid = false;
-  _hasRgb = true;
-  _hasWhite = false;
-  virtualDisp = nullptr; // todo: this should be solved properly, can cause memory leak (if omitted here, nothing seems to work)
+  _valid          = false;
+  _hasRgb         = true;
+  _hasWhite       = false;
+  virtualDisp =
+      nullptr;  // todo: this should be solved properly, can cause memory leak (if omitted here, nothing seems to work)
   // aliases for easier reading
   uint8_t panelWidth  = bc.pins[0];
   uint8_t panelHeight = bc.pins[1];
   uint8_t chainLength = bc.pins[2];
-  _rows = bc.pins[3];
-  _cols = bc.pins[4];
+  _rows               = bc.pins[3];
+  _cols               = bc.pins[4];
 
-  mxconfig.double_buff = false; // Use our own memory-optimised buffer rather than the driver's own double-buffer
+  mxconfig.double_buff = false;  // Use our own memory-optimised buffer rather than the driver's own double-buffer
 
   // mxconfig.driver = HUB75_I2S_CFG::ICN2038S;  // experimental - use specific shift register driver
-  // mxconfig.driver = HUB75_I2S_CFG::FM6124;    // try this driver in case you panel stays dark, or when colors look too pastel
+  // mxconfig.driver = HUB75_I2S_CFG::FM6124;    // try this driver in case you panel stays dark, or when colors look
+  // too pastel
 
   // mxconfig.latch_blanking = 3;
-  // mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;  // experimental - 5MHZ should be enugh, but colours looks slightly better at 10MHz
-  // mxconfig.min_refresh_rate = 90;
-  // mxconfig.min_refresh_rate = 120;
+  // mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;  // experimental - 5MHZ should be enugh, but colours looks slightly
+  // better at 10MHz mxconfig.min_refresh_rate = 90; mxconfig.min_refresh_rate = 120;
 
   mxconfig.clkphase = bc.reversed;
   // allow chain length up to 4, limit to prevent bad data from preventing boot due to low memory
-  mxconfig.chain_length = max((uint8_t) 1, min(chainLength, (uint8_t) 4));
+  mxconfig.chain_length = max((uint8_t)1, min(chainLength, (uint8_t)4));
 
   if (mxconfig.mx_height >= 64 && (mxconfig.chain_length > 1)) {
     DEBUGBUS_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory");
@@ -794,58 +961,66 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
   }
 
   if (bc.type == TYPE_HUB75MATRIX_HS) {
-      mxconfig.mx_width = min((uint8_t) 64, panelWidth); // TODO: UI limit is 128, this limits to 64
-      mxconfig.mx_height = min((uint8_t) 64, panelHeight);
+    mxconfig.mx_width  = min((uint8_t)64, panelWidth);  // TODO: UI limit is 128, this limits to 64
+    mxconfig.mx_height = min((uint8_t)64, panelHeight);
   } else if (bc.type == TYPE_HUB75MATRIX_QS) {
-      _isVirtual = true;
-      mxconfig.mx_width = min((uint8_t) 64, panelWidth) * 2;
-      mxconfig.mx_height = min((uint8_t) 64, panelHeight) / 2;
+    _isVirtual         = true;
+    mxconfig.mx_width  = min((uint8_t)64, panelWidth) * 2;
+    mxconfig.mx_height = min((uint8_t)64, panelHeight) / 2;
   } else {
     DEBUGBUS_PRINTLN("Unknown type");
     return;
   }
 
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)// classic esp32, or esp32-s2: reduce bitdepth for large panels
+#if defined(CONFIG_IDF_TARGET_ESP32) || \
+    defined(CONFIG_IDF_TARGET_ESP32S2)  // classic esp32, or esp32-s2: reduce bitdepth for large panels
   if (mxconfig.mx_height >= 64) {
-    if (mxconfig.chain_length * mxconfig.mx_width > 192) mxconfig.setPixelColorDepthBits(3);
-    else if (mxconfig.chain_length * mxconfig.mx_width > 64)  mxconfig.setPixelColorDepthBits(4);
-    else mxconfig.setPixelColorDepthBits(8);
-  } else mxconfig.setPixelColorDepthBits(8);
+    if (mxconfig.chain_length * mxconfig.mx_width > 192) {
+      mxconfig.setPixelColorDepthBits(3);
+    } else if (mxconfig.chain_length * mxconfig.mx_width > 64) {
+      mxconfig.setPixelColorDepthBits(4);
+    } else {
+      mxconfig.setPixelColorDepthBits(8);
+    }
+  } else {
+    mxconfig.setPixelColorDepthBits(8);
+  }
 #endif
 
+  //  HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN,
+  //  LAT_PIN, OE_PIN, CLK_PIN};
 
-
-//  HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
-
-#if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
+#if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3)  // MatrixPortal ESP32-S3
 
   // https://www.adafruit.com/product/5778
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
-  mxconfig.gpio = { 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 };
+  mxconfig.gpio = {42, 41, 40, 38, 39, 37, 45, 36, 48, 35, 21, 47, 14, 2};
 
-#elif defined(CONFIG_IDF_TARGET_ESP32S3) && defined(BOARD_HAS_PSRAM)// ESP32-S3 with PSRAM
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) && defined(BOARD_HAS_PSRAM)  // ESP32-S3 with PSRAM
 
 #if defined(MOONHUB_S3_PINOUT)
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA - T7 S3 with PSRAM, MOONHUB pinout");
 
-  // HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
-  mxconfig.gpio = { 1, 5, 6, 7, 13, 9, 16, 48, 47, 21, 38, 8, 4, 18 };
+  // HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN,
+  // LAT_PIN, OE_PIN, CLK_PIN};
+  mxconfig.gpio = {1, 5, 6, 7, 13, 9, 16, 48, 47, 21, 38, 8, 4, 18};
 
 #else
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA - S3 with PSRAM");
-  // HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
+  // HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN,
+  // LAT_PIN, OE_PIN, CLK_PIN};
   mxconfig.gpio = {1, 2, 42, 41, 40, 39, 45, 48, 47, 21, 38, 8, 3, 18};
 #endif
-#elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
+#elif defined(ESP32_FORUM_PINOUT)  // Common format for boards designed for SmartMatrix
 
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
-/*
-    ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
-    https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
-    Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
-*/
+  /*
+      ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
+      https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
+      Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
+  */
 
- mxconfig.gpio = { 2, 15, 4, 16, 27, 17, 5, 18, 19, 21, 12, 26, 25, 22 };
+  mxconfig.gpio = {2, 15, 4, 16, 27, 17, 5, 18, 19, 21, 12, 26, 25, 22};
 
 #else
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
@@ -858,7 +1033,7 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
    https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
 
   */
- mxconfig.gpio = { 25, 26, 27, 14, 12, 13, 23, 19, 5, 17, 18, 4, 15, 16 };
+  mxconfig.gpio = {25, 26, 27, 14, 12, 13, 23, 19, 5, 17, 18, 4, 15, 16};
 
 #endif
 
@@ -874,31 +1049,36 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
   } else if (bc.colorOrder == COL_ORDER_BGR) {
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA = color order BGR");
     int8_t tmpPin;
-    tmpPin = mxconfig.gpio.r1;
+    tmpPin           = mxconfig.gpio.r1;
     mxconfig.gpio.r1 = mxconfig.gpio.b1;
     mxconfig.gpio.b1 = tmpPin;
-    tmpPin = mxconfig.gpio.r2;
+    tmpPin           = mxconfig.gpio.r2;
     mxconfig.gpio.r2 = mxconfig.gpio.b2;
     mxconfig.gpio.b2 = tmpPin;
-  }
-  else {
+  } else {
     DEBUGBUS_PRINTF("MatrixPanel_I2S_DMA = unsupported color order %u\n", bc.colorOrder);
   }
 
-  DEBUGBUS_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
-  DEBUGBUS_PRINTF("R1_PIN=%u, G1_PIN=%u, B1_PIN=%u, R2_PIN=%u, G2_PIN=%u, B2_PIN=%u, A_PIN=%u, B_PIN=%u, C_PIN=%u, D_PIN=%u, E_PIN=%u, LAT_PIN=%u, OE_PIN=%u, CLK_PIN=%u\n",
-                mxconfig.gpio.r1, mxconfig.gpio.g1, mxconfig.gpio.b1, mxconfig.gpio.r2, mxconfig.gpio.g2, mxconfig.gpio.b2,
-                mxconfig.gpio.a, mxconfig.gpio.b, mxconfig.gpio.c, mxconfig.gpio.d, mxconfig.gpio.e, mxconfig.gpio.lat, mxconfig.gpio.oe, mxconfig.gpio.clk);
+  DEBUGBUS_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height,
+                  mxconfig.chain_length);
+  DEBUGBUS_PRINTF(
+      "R1_PIN=%u, G1_PIN=%u, B1_PIN=%u, R2_PIN=%u, G2_PIN=%u, B2_PIN=%u, A_PIN=%u, B_PIN=%u, C_PIN=%u, D_PIN=%u, "
+      "E_PIN=%u, LAT_PIN=%u, OE_PIN=%u, CLK_PIN=%u\n",
+      mxconfig.gpio.r1, mxconfig.gpio.g1, mxconfig.gpio.b1, mxconfig.gpio.r2, mxconfig.gpio.g2, mxconfig.gpio.b2,
+      mxconfig.gpio.a, mxconfig.gpio.b, mxconfig.gpio.c, mxconfig.gpio.d, mxconfig.gpio.e, mxconfig.gpio.lat,
+      mxconfig.gpio.oe, mxconfig.gpio.clk);
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
   if (display == nullptr) {
-      DEBUGBUS_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! driver allocation failed ***********");
-      DEBUGBUS_PRINT("heap usage: "); DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
-      return;
+    DEBUGBUS_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! driver allocation failed ***********");
+    DEBUGBUS_PRINT("heap usage: ");
+    DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
+    return;
   }
 
-  this->_len = (display->width() * display->height()); // note: this returns correct number of pixels but incorrect dimensions if using virtual display (updated below)
+  this->_len = (display->width() * display->height());  // note: this returns correct number of pixels but incorrect
+                                                        // dimensions if using virtual display (updated below)
 
   DEBUGBUS_PRINTF("Length: %u\n", _len);
   if (this->_len >= MAX_LEDS) {
@@ -908,59 +1088,69 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
 
   DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA created");
 
-  // as noted in HUB75_I2S_DMA library, some panels can show ghosting if set higher than 239, so let users override at compile time
-  #ifndef WLED_HUB75_MAX_BRIGHTNESS
-  #define WLED_HUB75_MAX_BRIGHTNESS 255
-  #endif
+// as noted in HUB75_I2S_DMA library, some panels can show ghosting if set higher than 239, so let users override at
+// compile time
+#ifndef WLED_HUB75_MAX_BRIGHTNESS
+#define WLED_HUB75_MAX_BRIGHTNESS 255
+#endif
   // let's adjust default brightness (128), brightness scaling is handled by WLED
-  //display->setBrightness8(WLED_HUB75_MAX_BRIGHTNESS); // range is 0-255, 0 - 0%, 255 - 100%
+  // display->setBrightness8(WLED_HUB75_MAX_BRIGHTNESS); // range is 0-255, 0 - 0%, 255 - 100%
 
-  delay(24); // experimental
-  DEBUGBUS_PRINT("heap usage: "); DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
+  delay(24);  // experimental
+  DEBUGBUS_PRINT("heap usage: ");
+  DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
   // Allocate memory and start DMA display
-  if (!display->begin() ) {
-      DEBUGBUS_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
-      DEBUGBUS_PRINT("heap usage: "); DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
-      return;
-  }
-  else {
+  if (!display->begin()) {
+    DEBUGBUS_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
+    DEBUGBUS_PRINT("heap usage: ");
+    DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
+    return;
+  } else {
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA begin ok");
-    DEBUGBUS_PRINT("heap usage: "); DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
-    delay(18);   // experiment - give the driver a moment (~ one full frame @ 60hz) to settle
+    DEBUGBUS_PRINT("heap usage: ");
+    DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
+    delay(18);  // experiment - give the driver a moment (~ one full frame @ 60hz) to settle
     _valid = true;
-    display->clearScreen();   // initially clear the screen buffer
+    display->clearScreen();  // initially clear the screen buffer
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA clear ok");
 
-    if (_ledBuffer) d_free(_ledBuffer);                 // should not happen
-    if (_ledsDirty) d_free(_ledsDirty);                 // should not happen
+    if (_ledBuffer) {
+      d_free(_ledBuffer);  // should not happen
+    }
+    if (_ledsDirty) {
+      d_free(_ledsDirty);  // should not happen
+    }
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA allocate memory");
-    _ledsDirty = (byte*) d_malloc(getBitArrayBytes(_len));  // create LEDs dirty bits
+    _ledsDirty = (byte *)d_malloc(getBitArrayBytes(_len));  // create LEDs dirty bits
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA allocate memory ok");
 
     if (_ledsDirty == nullptr) {
       display->stopDMAoutput();
-      delete display; display = nullptr;
-      _valid = false;
+      delete display;
+      display = nullptr;
+      _valid  = false;
       DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA not started - not enough memory for dirty bits!");
-      DEBUGBUS_PRINT("heap usage: "); DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
+      DEBUGBUS_PRINT("heap usage: ");
+      DEBUGBUS_PRINTLN(lastHeap - ESP.getFreeHeap());
       return;  //  fail is we cannot get memory for the buffer
     }
-    setBitArray(_ledsDirty, _len, false);             // reset dirty bits
+    setBitArray(_ledsDirty, _len, false);  // reset dirty bits
 
     if (mxconfig.double_buff == false) {
-      // create LEDs buffer (initialized to BLACK), prefer DRAM if enough heap is available (faster in case global _pixels buffer is in PSRAM as not both will fit the cache)
-      _ledBuffer = static_cast<CRGB*>(allocate_buffer(_len * sizeof(CRGB), BFRALLOC_PREFER_DRAM | BFRALLOC_CLEAR));
+      // create LEDs buffer (initialized to BLACK), prefer DRAM if enough heap is available (faster in case global
+      // _pixels buffer is in PSRAM as not both will fit the cache)
+      _ledBuffer = static_cast<CRGB *>(allocate_buffer(_len * sizeof(CRGB), BFRALLOC_PREFER_DRAM | BFRALLOC_CLEAR));
     }
   }
 
-  PANEL_CHAIN_TYPE chainType = CHAIN_NONE; // default for quarter-scan panels that do not use chaining
+  PANEL_CHAIN_TYPE chainType = CHAIN_NONE;  // default for quarter-scan panels that do not use chaining
   // chained panels with cols and rows define need the virtual display driver, so do quarter-scan panels
   if (chainLength > 1 && (_rows > 1 || _cols > 1) || bc.type == TYPE_HUB75MATRIX_QS) {
     _isVirtual = true;
-    chainType = CHAIN_BOTTOM_LEFT_UP; // TODO: is there any need to support other chaining types?
-    DEBUGBUS_PRINTF_P("Using virtual matrix: %ux%u panels of %ux%u pixels\n", _cols, _rows, mxconfig.mx_width, mxconfig.mx_height);
-  }
-  else {
+    chainType  = CHAIN_BOTTOM_LEFT_UP;  // TODO: is there any need to support other chaining types?
+    DEBUGBUS_PRINTF_P("Using virtual matrix: %ux%u panels of %ux%u pixels\n", _cols, _rows, mxconfig.mx_width,
+                      mxconfig.mx_height);
+  } else {
     _isVirtual = false;
   }
 
@@ -968,7 +1158,7 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
     virtualDisp = new VirtualMatrixPanel((*display), _rows, _cols, mxconfig.mx_width, mxconfig.mx_height, chainType);
     virtualDisp->setRotation(0);
     if (bc.type == TYPE_HUB75MATRIX_QS) {
-      switch(panelHeight) {
+      switch (panelHeight) {
         case 16:
           virtualDisp->setPhysicalPanelScanRate(FOUR_SCAN_16PX_HIGH);
           break;
@@ -991,19 +1181,25 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
   }
 
   DEBUGBUS_PRINT("MatrixPanel_I2S_DMA ");
-  DEBUGBUS_PRINTF_P("%sstarted, width=%u, %u pixels.\n", _valid? "":"not ", _panelWidth, _len);
+  DEBUGBUS_PRINTF_P("%sstarted, width=%u, %u pixels.\n", _valid ? "" : "not ", _panelWidth, _len);
 
-  if (_ledBuffer != nullptr) DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA LEDS buffer enabled.");
-  if (_ledsDirty != nullptr) DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA LEDS dirty bit optimization enabled.");
+  if (_ledBuffer != nullptr) {
+    DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA LEDS buffer enabled.");
+  }
+  if (_ledsDirty != nullptr) {
+    DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA LEDS dirty bit optimization enabled.");
+  }
   if ((_ledBuffer != nullptr) || (_ledsDirty != nullptr)) {
     DEBUGBUS_PRINT("MatrixPanel_I2S_DMA LEDS buffer uses ");
-    DEBUGBUS_PRINT((_ledBuffer? _len*sizeof(CRGB) :0) + (_ledsDirty? getBitArrayBytes(_len) :0));
+    DEBUGBUS_PRINT((_ledBuffer ? _len * sizeof(CRGB) : 0) + (_ledsDirty ? getBitArrayBytes(_len) : 0));
     DEBUGBUS_PRINTLN(" bytes.");
   }
 }
 
 void IRAM_ATTR BusHub75Matrix::setPixelColor(unsigned pix, uint32_t c) {
-  if (!_valid) return; // note: no need to check pix >= _len as that is checked in containsPixel()
+  if (!_valid) {
+    return;  // note: no need to check pix >= _len as that is checked in containsPixel()
+  }
   // if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
 
   if (_ledBuffer) {
@@ -1012,17 +1208,20 @@ void IRAM_ATTR BusHub75Matrix::setPixelColor(unsigned pix, uint32_t c) {
       _ledBuffer[pix] = fastled_col;
       setBitInArray(_ledsDirty, pix, true);  // flag pixel as "dirty"
     }
-  }
-  else {
-    if ((c == IS_BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) return; // ignore black if pixel is already black
-    setBitInArray(_ledsDirty, pix, c != IS_BLACK);                              // dirty = true means "color is not BLACK"
+  } else {
+    if ((c == IS_BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) {
+      return;  // ignore black if pixel is already black
+    }
+    setBitInArray(_ledsDirty, pix, c != IS_BLACK);  // dirty = true means "color is not BLACK"
 
     uint8_t r = R(c);
     uint8_t g = G(c);
     uint8_t b = B(c);
 
     if (virtualDisp != nullptr) {
-      int x = pix % _panelWidth; // TODO: check if using & and shift would be faster here, it limits to power-of-2 widths though
+      int x =
+          pix %
+          _panelWidth;  // TODO: check if using & and shift would be faster here, it limits to power-of-2 widths though
       int y = pix / _panelWidth;
       virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
     } else {
@@ -1034,11 +1233,15 @@ void IRAM_ATTR BusHub75Matrix::setPixelColor(unsigned pix, uint32_t c) {
 }
 
 uint32_t BusHub75Matrix::getPixelColor(unsigned pix) const {
-  if (!_valid) return IS_BLACK; // note: no need to check pix >= _len as that is checked in containsPixel()
-  if (_ledBuffer)
+  if (!_valid) {
+    return IS_BLACK;  // note: no need to check pix >= _len as that is checked in containsPixel()
+  }
+  if (_ledBuffer) {
     return uint32_t(_ledBuffer[pix]);
-  else
-    return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY: IS_BLACK;   // just a hack - we only know if the pixel is black or not
+  } else {
+    return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY
+                                            : IS_BLACK;  // just a hack - we only know if the pixel is black or not
+  }
 }
 
 void BusHub75Matrix::setBrightness(uint8_t b) {
@@ -1047,42 +1250,63 @@ void BusHub75Matrix::setBrightness(uint8_t b) {
 }
 
 void BusHub75Matrix::show(void) {
-  if (!_valid) return;
+  if (!_valid) {
+    return;
+  }
   if (_ledBuffer) {
     // write out buffered LEDs
     unsigned height = _isVirtual ? virtualDisp->height() : display->height();
-    unsigned width = _panelWidth;
+    unsigned width  = _panelWidth;
 
-    //while(!previousBufferFree) delay(1);   // experimental - Wait before we allow any writing to the buffer. Stop flicker.
-    size_t pix = 0; // running pixel index
-    for (int y=0; y<height; y++) for (int x=0; x<width; x++) {
-      if (getBitFromArray(_ledsDirty, pix) == true) {        // only repaint the "dirty"  pixels
-        CRGB c = _ledBuffer[pix];
-        //c.nscale8_video(_bri); // apply brightness
-        if (_isVirtual) virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
-        else                display->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
+    // while(!previousBufferFree) delay(1);   // experimental - Wait before we allow any writing to the buffer. Stop
+    // flicker.
+    size_t pix = 0;  // running pixel index
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if (getBitFromArray(_ledsDirty, pix) == true) {  // only repaint the "dirty"  pixels
+          CRGB c = _ledBuffer[pix];
+          // c.nscale8_video(_bri); // apply brightness
+          if (_isVirtual) {
+            virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
+          } else {
+            display->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
+          }
+        }
+        pix++;
       }
-      pix++;
     }
     setBitArray(_ledsDirty, _len, false);  // buffer shown - reset all dirty bits
   }
 }
 
 void BusHub75Matrix::cleanup() {
-  if (display && _valid) display->stopDMAoutput();  // terminate DMA driver (display goes black)
+  if (display && _valid) {
+    display->stopDMAoutput();  // terminate DMA driver (display goes black)
+  }
   _valid = false;
-  delay(30); // give some time to finish DMA
+  delay(30);  // give some time to finish DMA
   _panelWidth = 0;
   deallocatePins();
   DEBUGBUS_PRINTLN("HUB75 output ended.");
-  #ifndef CONFIG_IDF_TARGET_ESP32S3 // on ESP32-S3 deleting display/virtualDisp does not work and leads to crash (DMA issues), request reboot from user instead
-  if (virtualDisp != nullptr) delete virtualDisp; // note: in MM there is a warning to not do this but if using "NO_GFX" this is safe
-  if (display != nullptr) delete display;
-  display = nullptr;
-  virtualDisp = nullptr; // note: when not using "NO_GFX" this causes a memory leak
-  #endif
-  if (_ledBuffer != nullptr) d_free(_ledBuffer); _ledBuffer = nullptr;
-  if (_ledsDirty != nullptr) d_free(_ledsDirty); _ledsDirty = nullptr;
+#ifndef CONFIG_IDF_TARGET_ESP32S3  // on ESP32-S3 deleting display/virtualDisp does not work and leads to crash (DMA
+                                   // issues), request reboot from user instead
+  if (virtualDisp != nullptr) {
+    delete virtualDisp;  // note: in MM there is a warning to not do this but if using "NO_GFX" this is safe
+  }
+  if (display != nullptr) {
+    delete display;
+  }
+  display     = nullptr;
+  virtualDisp = nullptr;  // note: when not using "NO_GFX" this causes a memory leak
+#endif
+  if (_ledBuffer != nullptr) {
+    d_free(_ledBuffer);
+  }
+  _ledBuffer = nullptr;
+  if (_ledsDirty != nullptr) {
+    d_free(_ledsDirty);
+  }
+  _ledsDirty = nullptr;
 }
 
 void BusHub75Matrix::deallocatePins() {
@@ -1098,7 +1322,7 @@ std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
   };
 }
 
-size_t BusHub75Matrix::getPins(uint8_t* pinArray) const {
+size_t BusHub75Matrix::getPins(uint8_t *pinArray) const {
   if (pinArray) {
     pinArray[0] = mxconfig.mx_width;
     pinArray[1] = mxconfig.mx_height;
@@ -1113,31 +1337,35 @@ size_t BusHub75Matrix::getPins(uint8_t* pinArray) const {
 // ***************************************************************************
 
 BusPlaceholder::BusPlaceholder(const BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, bc.refreshReq)
-, _colorOrder(bc.colorOrder)
-, _skipAmount(bc.skipAmount)
-, _driverType(bc.driverType)
-, _frequency(bc.frequency)
-, _milliAmpsPerLed(bc.milliAmpsPerLed)
-, _milliAmpsMax(bc.milliAmpsMax)
-, _text(bc.text)
-{
+    : Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, bc.refreshReq),
+      _colorOrder(bc.colorOrder),
+      _skipAmount(bc.skipAmount),
+      _driverType(bc.driverType),
+      _frequency(bc.frequency),
+      _milliAmpsPerLed(bc.milliAmpsPerLed),
+      _milliAmpsMax(bc.milliAmpsMax),
+      _text(bc.text) {
   memcpy(_pins, bc.pins, sizeof(_pins));
 }
 
-size_t BusPlaceholder::getPins(uint8_t* pinArray) const {
+size_t BusPlaceholder::getPins(uint8_t *pinArray) const {
   size_t nPins = Bus::getNumberOfPins(_type);
   if (pinArray) {
-    for (size_t i = 0; i < nPins; i++) pinArray[i] = _pins[i];
+    for (size_t i = 0; i < nPins; i++) {
+      pinArray[i] = _pins[i];
+    }
   }
   return nPins;
 }
 
-//utility to get the approx. memory usage of a given BusConfig inclduding segmentbuffer and global buffer (4 bytes per pixel)
+// utility to get the approx. memory usage of a given BusConfig inclduding segmentbuffer and global buffer (4 bytes per
+// pixel)
 size_t BusConfig::memUsage() const {
-  size_t mem = (count + skipAmount) * 8; // 8 bytes per pixel for segment + global buffer
+  size_t mem = (count + skipAmount) * 8;  // 8 bytes per pixel for segment + global buffer
   if (Bus::isVirtual(type)) {
-    mem += sizeof(BusNetwork) + (count * Bus::getNumberOfChannels(type)); // note: getNumberOfChannels() includes CCT channel if applicable but virtual buses do not use CCT channel buffer
+    mem += sizeof(BusNetwork) +
+           (count * Bus::getNumberOfChannels(type));  // note: getNumberOfChannels() includes CCT channel if applicable
+                                                      // but virtual buses do not use CCT channel buffer
   } else if (Bus::isDigital(type)) {
     // if any of digital buses uses I2S, there is additional common I2S DMA buffer not accounted for here
     mem += sizeof(BusDigital) + PolyBus::memUsage(count + skipAmount, iType);
@@ -1155,13 +1383,21 @@ int BusManager::add(const BusConfig &bc, bool placeholder) {
   unsigned analog  = 0;
   unsigned twoPin  = 0;
   for (const auto &bus : busses) {
-    if (bus->isPWM()) analog += bus->getPins(); // number of analog channels used
-    if (bus->isDigital() && !bus->is2Pin()) digital++;
-    if (bus->is2Pin()) twoPin++;
+    if (bus->isPWM()) {
+      analog += bus->getPins();  // number of analog channels used
+    }
+    if (bus->isDigital() && !bus->is2Pin()) {
+      digital++;
+    }
+    if (bus->is2Pin()) {
+      twoPin++;
+    }
   }
   digital += (Bus::isDigital(bc.type) && !Bus::is2Pin(bc.type));
-  analog  += (Bus::isPWM(bc.type) ? Bus::numPWMPins(bc.type) : 0);
-  if (digital > WLED_MAX_DIGITAL_CHANNELS || analog > WLED_MAX_ANALOG_CHANNELS) placeholder = true; // TODO: add errorFlag here
+  analog += (Bus::isPWM(bc.type) ? Bus::numPWMPins(bc.type) : 0);
+  if (digital > WLED_MAX_DIGITAL_CHANNELS || analog > WLED_MAX_ANALOG_CHANNELS) {
+    placeholder = true;  // TODO: add errorFlag here
+  }
   if (placeholder) {
     busses.push_back(make_unique<BusPlaceholder>(bc));
   } else if (Bus::isVirtual(bc.type)) {
@@ -1181,11 +1417,12 @@ int BusManager::add(const BusConfig &bc, bool placeholder) {
 }
 
 // credit @willmmiles
-static String LEDTypesToJson(const std::vector<LEDType>& types) {
+static String LEDTypesToJson(const std::vector<LEDType> &types) {
   String json;
   for (const auto &type : types) {
     // capabilities follows similar pattern as JSON API
-    int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4 | Bus::mustRefresh(type.id)<<5;
+    int  capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id) << 1 | Bus::hasCCT(type.id) << 2 |
+                        Bus::is16bit(type.id) << 4 | Bus::mustRefresh(type.id) << 5;
     char str[256];
     sprintf(str, "{i:%d,c:%d,t:\"%s\",n:\"%s\"},", type.id, capabilities, type.type, type.name);
     json += str;
@@ -1200,23 +1437,25 @@ String BusManager::getLEDTypesJSONString() {
   json += LEDTypesToJson(BusOnOff::getLEDTypes());
   json += LEDTypesToJson(BusPwm::getLEDTypes());
   json += LEDTypesToJson(BusNetwork::getLEDTypes());
-  //json += LEDTypesToJson(BusVirtual::getLEDTypes());
-  #ifdef WLED_ENABLE_HUB75MATRIX
+// json += LEDTypesToJson(BusVirtual::getLEDTypes());
+#ifdef WLED_ENABLE_HUB75MATRIX
   json += LEDTypesToJson(BusHub75Matrix::getLEDTypes());
-  #endif
+#endif
 
-  json.setCharAt(json.length()-1, ']'); // replace last comma with bracket
+  json.setCharAt(json.length() - 1, ']');  // replace last comma with bracket
   return json;
 }
 
-uint8_t BusManager::getI(uint8_t busType, const uint8_t* pins, uint8_t driverPreference) {
+uint8_t BusManager::getI(uint8_t busType, const uint8_t *pins, uint8_t driverPreference) {
   return PolyBus::getI(busType, pins, driverPreference);
 }
-//do not call this method from system context (network callback)
+// do not call this method from system context (network callback)
 void BusManager::removeAll() {
   DEBUGBUS_PRINTLN("Removing all.");
-  //prevents crashes due to deleting busses while in use.
-  while (!canAllShow()) yield();
+  // prevents crashes due to deleting busses while in use.
+  while (!canAllShow()) {
+    yield();
+  }
   busses.clear();
   // Reset channel tracking for fresh allocation
   PolyBus::resetChannelTracking();
@@ -1229,20 +1468,30 @@ void BusManager::removeAll() {
 // since I2S outputs are known only during config of buses, lets just assume RMT is used for digital buses
 // unused RMT channels should have no effect
 void BusManager::esp32RMTInvertIdle() {
-  bool idle_out;
+  bool     idle_out;
   unsigned rmt = 0;
-  unsigned u = 0;
+  unsigned u   = 0;
   for (auto &bus : busses) {
-    if (bus->getLength()==0 || !bus->isDigital() || bus->is2Pin()) continue;
-    if (static_cast<BusDigital*>(bus.get())->isI2S()) continue;
-    if (u >= WLED_MAX_RMT_CHANNELS) return;
-    //assumes that bus number to rmt channel mapping stays 1:1
-    rmt_channel_t ch = static_cast<rmt_channel_t>(rmt);
+    if (bus->getLength() == 0 || !bus->isDigital() || bus->is2Pin()) {
+      continue;
+    }
+    if (static_cast<BusDigital *>(bus.get())->isI2S()) {
+      continue;
+    }
+    if (u >= WLED_MAX_RMT_CHANNELS) {
+      return;
+    }
+    // assumes that bus number to rmt channel mapping stays 1:1
+    rmt_channel_t    ch = static_cast<rmt_channel_t>(rmt);
     rmt_idle_level_t lvl;
     rmt_get_idle_level(ch, &idle_out, &lvl);
-    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
-    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
-    else continue;
+    if (lvl == RMT_IDLE_LEVEL_HIGH) {
+      lvl = RMT_IDLE_LEVEL_LOW;
+    } else if (lvl == RMT_IDLE_LEVEL_LOW) {
+      lvl = RMT_IDLE_LEVEL_HIGH;
+    } else {
+      continue;
+    }
     rmt_set_idle_level(ch, idle_out, lvl);
     u++;
   }
@@ -1251,31 +1500,36 @@ void BusManager::esp32RMTInvertIdle() {
 
 void BusManager::on() {
   static uint32_t nextResolve = 0;  // initial resolve is done on bus creation
-  bool resolveNow = (millis() - nextResolve >= 600000); // wait at least 10 minutes between hostname resolutions (blocking call)
-  for (auto &bus : busses) if (bus->isVirtual()) {
-    // virtual/network bus should check for IP change if hostname is specified
-    // otherwise there are no endpoints to force DNS resolution
-    BusNetwork &b = static_cast<BusNetwork&>(*bus);
-    if (resolveNow)
-      b.resolveHostname();
+  bool            resolveNow =
+      (millis() - nextResolve >= 600000);  // wait at least 10 minutes between hostname resolutions (blocking call)
+  for (auto &bus : busses) {
+    if (bus->isVirtual()) {
+      // virtual/network bus should check for IP change if hostname is specified
+      // otherwise there are no endpoints to force DNS resolution
+      BusNetwork &b = static_cast<BusNetwork &>(*bus);
+      if (resolveNow) {
+        b.resolveHostname();
+      }
+    }
   }
-  if (resolveNow)
+  if (resolveNow) {
     nextResolve = millis();
+  }
 
-    #ifdef ESP32_DATA_IDLE_HIGH
+#ifdef ESP32_DATA_IDLE_HIGH
   esp32RMTInvertIdle();
-  #endif
+#endif
 }
 
 void BusManager::off() {
-  #ifdef ESP32_DATA_IDLE_HIGH
+#ifdef ESP32_DATA_IDLE_HIGH
   esp32RMTInvertIdle();
-  #endif
-  _gMilliAmpsUsed = 0; // reset, assume no LED idle current if relay is off
+#endif
+  _gMilliAmpsUsed = 0;  // reset, assume no LED idle current if relay is off
 }
 
 void BusManager::show() {
-  applyABL(); // apply brightness limit, updates _gMilliAmpsUsed
+  applyABL();  // apply brightness limit, updates _gMilliAmpsUsed
   for (auto &bus : busses) {
     bus->show();
   }
@@ -1283,40 +1537,54 @@ void BusManager::show() {
 
 void IRAM_ATTR BusManager::setPixelColor(unsigned pix, uint32_t c) {
   for (auto &bus : busses) {
-    if (!bus->containsPixel(pix)) continue;
+    if (!bus->containsPixel(pix)) {
+      continue;
+    }
     bus->setPixelColor(pix - bus->getStart(), c);
   }
 }
 
 void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
-  if (cct > 255) cct = 255;
+  if (cct > 255) {
+    cct = 255;
+  }
   if (cct >= 0) {
-    //if white balance correction allowed, save as kelvin value instead of 0-255
-    if (allowWBCorrection) cct = 1900 + (cct << 5);
-  } else cct = -1; // will use kelvin approximation from RGB
+    // if white balance correction allowed, save as kelvin value instead of 0-255
+    if (allowWBCorrection) {
+      cct = 1900 + (cct << 5);
+    }
+  } else {
+    cct = -1;  // will use kelvin approximation from RGB
+  }
   Bus::setCCT(cct);
 }
 
 uint32_t BusManager::getPixelColor(unsigned pix) {
   for (auto &bus : busses) {
-    if (!bus->containsPixel(pix)) continue;
+    if (!bus->containsPixel(pix)) {
+      continue;
+    }
     return bus->getPixelColor(pix - bus->getStart());
   }
   return 0;
 }
 
 bool BusManager::canAllShow() {
-  for (const auto &bus : busses) if (!bus->canShow()) return false;
+  for (const auto &bus : busses) {
+    if (!bus->canShow()) {
+      return false;
+    }
+  }
   return true;
 }
 
 void BusManager::initializeABL() {
-  _useABL = false; // reset
+  _useABL = false;  // reset
   if (_gMilliAmpsMax > 0) {
     // check global brightness limit
     for (auto &bus : busses) {
       if (bus->isDigital() && bus->getLEDCurrent() > 0) {
-        _useABL = true; // at least one bus has valid LED current
+        _useABL = true;  // at least one bus has valid LED current
         return;
       }
     }
@@ -1324,21 +1592,28 @@ void BusManager::initializeABL() {
     // check per bus brightness limit
     unsigned numABLbuses = 0;
     for (auto &bus : busses) {
-      if (bus->isDigital() && bus->getLEDCurrent() > 0 && bus->getMaxCurrent() > 0)
-        numABLbuses++; // count ABL enabled buses
+      if (bus->isDigital() && bus->getLEDCurrent() > 0 && bus->getMaxCurrent() > 0) {
+        numABLbuses++;  // count ABL enabled buses
+      }
     }
     if (numABLbuses > 0) {
-      _useABL = true; // at least one bus has ABL set
-      uint32_t ESPshare = MA_FOR_ESP / numABLbuses; // share of ESP current per ABL bus
+      _useABL           = true;                      // at least one bus has ABL set
+      uint32_t ESPshare = MA_FOR_ESP / numABLbuses;  // share of ESP current per ABL bus
       for (auto &bus : busses) {
         if (bus->isDigital() && bus->isOk()) {
-          BusDigital &busd = static_cast<BusDigital&>(*bus);
-          uint32_t busLength = busd.getLength();
-          uint32_t busDemand = busLength * busd.getLEDCurrent();
-          uint32_t busMax    = busd.getMaxCurrent();
-          if (busMax > ESPshare)  busMax -= ESPshare;
-          if (busMax < busLength) busMax  = busLength; // give each LED 1mA, ABL will dim down to minimum
-          if (busDemand == 0) busMax = 0; // no LED current set, disable ABL for this bus
+          BusDigital &busd      = static_cast<BusDigital &>(*bus);
+          uint32_t    busLength = busd.getLength();
+          uint32_t    busDemand = busLength * busd.getLEDCurrent();
+          uint32_t    busMax    = busd.getMaxCurrent();
+          if (busMax > ESPshare) {
+            busMax -= ESPshare;
+          }
+          if (busMax < busLength) {
+            busMax = busLength;  // give each LED 1mA, ABL will dim down to minimum
+          }
+          if (busDemand == 0) {
+            busMax = 0;  // no LED current set, disable ABL for this bus
+          }
           busd.setCurrentLimit(busMax);
         }
       }
@@ -1348,65 +1623,73 @@ void BusManager::initializeABL() {
 
 void BusManager::applyABL() {
   if (_useABL) {
-    unsigned milliAmpsSum = 0; // use temporary variable to always return a valid _gMilliAmpsUsed to UI
-    unsigned totalLEDs = 0;
+    unsigned milliAmpsSum = 0;  // use temporary variable to always return a valid _gMilliAmpsUsed to UI
+    unsigned totalLEDs    = 0;
     for (auto &bus : busses) {
       if (bus->isDigital() && bus->isOk()) {
-        BusDigital &busd = static_cast<BusDigital&>(*bus);
-        busd.estimateCurrent(); // sets _milliAmpsTotal, current is estimated for all buses even if they have the limit set to 0
-        if (_gMilliAmpsMax == 0)
-          busd.applyBriLimit(0); // apply per bus ABL limit, updates _milliAmpsTotal if limit reached
+        BusDigital &busd = static_cast<BusDigital &>(*bus);
+        busd.estimateCurrent();  // sets _milliAmpsTotal, current is estimated for all buses even if they have the limit
+                                 // set to 0
+        if (_gMilliAmpsMax == 0) {
+          busd.applyBriLimit(0);  // apply per bus ABL limit, updates _milliAmpsTotal if limit reached
+        }
         milliAmpsSum += busd.getUsedCurrent();
-        totalLEDs += busd.getLength(); // sum total number of LEDs for global Limit
+        totalLEDs += busd.getLength();  // sum total number of LEDs for global Limit
       }
     }
     // check global current limit and apply global ABL limit, total current is summed above
     if (_gMilliAmpsMax > 0) {
-      uint8_t  newBri = 255;
-      uint32_t globalMax = _gMilliAmpsMax > MA_FOR_ESP ? _gMilliAmpsMax - MA_FOR_ESP : 1; // subtract ESP current consumption, fully limit if too low
-      if (globalMax > totalLEDs) { // check if budget is larger than standby current
+      uint8_t  newBri    = 255;
+      uint32_t globalMax = _gMilliAmpsMax > MA_FOR_ESP ? _gMilliAmpsMax - MA_FOR_ESP
+                                                       : 1;  // subtract ESP current consumption, fully limit if too low
+      if (globalMax > totalLEDs) {                           // check if budget is larger than standby current
         if (milliAmpsSum > globalMax) {
-          newBri = globalMax * 255 / milliAmpsSum + 1; // scale brightness down to stay in current limit, +1 to avoid 0 brightness
-          milliAmpsSum = globalMax; // update total used current
+          newBri       = globalMax * 255 / milliAmpsSum +
+                         1;          // scale brightness down to stay in current limit, +1 to avoid 0 brightness
+          milliAmpsSum = globalMax;  // update total used current
         }
       } else {
-        newBri = 1; // limit too low, set brightness to minimum
-        milliAmpsSum = totalLEDs; // estimate total used current as minimum
+        newBri       = 1;          // limit too low, set brightness to minimum
+        milliAmpsSum = totalLEDs;  // estimate total used current as minimum
       }
 
       // apply brightness limit to each bus, if its 255 it will only reset _colorSum
       for (auto &bus : busses) {
         if (bus->isDigital() && bus->isOk()) {
-          BusDigital &busd = static_cast<BusDigital&>(*bus);
-          if (busd.getLEDCurrent() > 0)  // skip buses with LED current set to 0
+          BusDigital &busd = static_cast<BusDigital &>(*bus);
+          if (busd.getLEDCurrent() > 0) {  // skip buses with LED current set to 0
             busd.applyBriLimit(newBri);
+          }
         }
       }
     }
     _gMilliAmpsUsed = milliAmpsSum;
+  } else {
+    _gMilliAmpsUsed = 0;  // reset, we have no current estimation without ABL
   }
-  else
-    _gMilliAmpsUsed = 0; // reset, we have no current estimation without ABL
 }
 
-ColorOrderMap& BusManager::getColorOrderMap() { return _colorOrderMap; }
+ColorOrderMap &BusManager::getColorOrderMap() {
+  return _colorOrderMap;
+}
 
 // PolyBus channel tracking for dynamic allocation
-bool PolyBus::_useParallelI2S = false;
-uint8_t PolyBus::_rmtChannelsAssigned = 0; // number of RMT channels assigned durig getI() check
-uint8_t PolyBus::_rmtChannel = 0;     // number of RMT channels actually used during bus creation in create()
-uint8_t PolyBus::_i2sChannelsAssigned = 0; // number of I2S channels assigned durig getI() check
-uint8_t PolyBus::_parallelBusItype = 0;    // type I_NONE
-uint8_t PolyBus::_2PchannelsAssigned = 0;
+bool    PolyBus::_useParallelI2S      = false;
+uint8_t PolyBus::_rmtChannelsAssigned = 0;  // number of RMT channels assigned durig getI() check
+uint8_t PolyBus::_rmtChannel          = 0;  // number of RMT channels actually used during bus creation in create()
+uint8_t PolyBus::_i2sChannelsAssigned = 0;  // number of I2S channels assigned durig getI() check
+uint8_t PolyBus::_parallelBusItype    = 0;  // type I_NONE
+uint8_t PolyBus::_2PchannelsAssigned  = 0;
 
 // Bus static member definition
-int16_t Bus::_cct = -1;     // -1 means use approximateKelvinFromRGB(), 0-255 is standard, >1900 use colorBalanceFromKelvin()
-int8_t  Bus::_cctBlend = 0; // -128 to +127
-uint8_t Bus::_gAWM = 255;
+int16_t Bus::_cct =
+    -1;  // -1 means use approximateKelvinFromRGB(), 0-255 is standard, >1900 use colorBalanceFromKelvin()
+int8_t  Bus::_cctBlend = 0;  // -128 to +127
+uint8_t Bus::_gAWM     = 255;
 
 uint16_t BusDigital::_milliAmpsTotal = 0;
 
 std::vector<std::unique_ptr<Bus>> BusManager::busses;
-uint16_t BusManager::_gMilliAmpsUsed = 0;
-uint16_t BusManager::_gMilliAmpsMax = ABL_MILLIAMPS_DEFAULT;
-bool BusManager::_useABL = false;
+uint16_t                          BusManager::_gMilliAmpsUsed = 0;
+uint16_t                          BusManager::_gMilliAmpsMax  = ABL_MILLIAMPS_DEFAULT;
+bool                              BusManager::_useABL         = false;

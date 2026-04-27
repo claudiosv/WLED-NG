@@ -31,22 +31,22 @@
 #define USERMOD_SN_PHOTORESISTOR_OFFSET_VALUE 5
 #endif
 
-class Usermod_SN_Photoresistor : public Usermod
-{
-private:
-  float referenceVoltage = USERMOD_SN_PHOTORESISTOR_REFERENCE_VOLTAGE;
-  float resistorValue = USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE;
-  float adcPrecision = USERMOD_SN_PHOTORESISTOR_ADC_PRECISION;
-  int8_t offset = USERMOD_SN_PHOTORESISTOR_OFFSET_VALUE;
+class Usermod_SN_Photoresistor : public Usermod {
+ private:
+  float  referenceVoltage = USERMOD_SN_PHOTORESISTOR_REFERENCE_VOLTAGE;
+  float  resistorValue    = USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE;
+  float  adcPrecision     = USERMOD_SN_PHOTORESISTOR_ADC_PRECISION;
+  int8_t offset           = USERMOD_SN_PHOTORESISTOR_OFFSET_VALUE;
 
   unsigned long readingInterval = USERMOD_SN_PHOTORESISTOR_MEASUREMENT_INTERVAL;
   // set last reading as "40 sec before boot", so first reading is taken after 20 sec
-  unsigned long lastMeasurement = UINT32_MAX - (USERMOD_SN_PHOTORESISTOR_MEASUREMENT_INTERVAL - USERMOD_SN_PHOTORESISTOR_FIRST_MEASUREMENT_AT);
+  unsigned long lastMeasurement =
+      UINT32_MAX - (USERMOD_SN_PHOTORESISTOR_MEASUREMENT_INTERVAL - USERMOD_SN_PHOTORESISTOR_FIRST_MEASUREMENT_AT);
   // flag to indicate we have finished the first getTemperature call
   // allows this library to report to the user how long until the first
   // measurement
-  bool getLuminanceComplete = false;
-  uint16_t lastLDRValue = 65535;
+  bool     getLuminanceComplete = false;
+  uint16_t lastLDRValue         = 65535;
 
   // flag set at startup
   bool disabled = false;
@@ -62,29 +62,27 @@ private:
 
   uint16_t getLuminance();
 
-public:
+ public:
   void setup();
   void loop();
 
-  uint16_t getLastLDRValue()
-  {
+  uint16_t getLastLDRValue() {
     return lastLDRValue;
   }
 
   void addToJsonInfo(JsonObject &root);
 
-  uint16_t getId()
-  {
+  uint16_t getId() {
     return USERMOD_ID_SN_PHOTORESISTOR;
   }
 
   /**
-     * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
-     */
+   * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
+   */
   void addToConfig(JsonObject &root);
 
   /**
-  * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
-  */
+   * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+   */
   bool readFromConfig(JsonObject &root);
 };

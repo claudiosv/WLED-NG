@@ -1,7 +1,8 @@
 #pragma once
-#include <cstdint>
 #include <esp_dmx.h>
+
 #include <atomic>
+#include <cstdint>
 #include <mutex>
 
 /*
@@ -9,9 +10,8 @@
  * ESP32 Library from:
  * https://github.com/someweisguy/esp_dmx
  */
-class DMXInput
-{
-public:
+class DMXInput {
+ public:
   void init(int8_t rxPin, int8_t txPin, int8_t enPin, uint8_t inputPortNum);
   void update();
 
@@ -20,9 +20,11 @@ public:
   void enable();
 
   /// True if dmx is currently connected
-  bool isConnected() const { return connected; }
+  bool isConnected() const {
+    return connected;
+  }
 
-private:
+ private:
   /// @return true if rdm identify is active
   bool isIdentifyOn() const;
 
@@ -42,35 +44,32 @@ private:
   void updateInternal();
 
   // is invoked whenver the dmx start address is changed via rdm
-  friend void rdmAddressChangedCb(dmx_port_t dmxPort, const rdm_header_t *header,
-                                  void *context);
+  friend void rdmAddressChangedCb(dmx_port_t dmxPort, const rdm_header_t *header, void *context);
 
   // is invoked whenever the personality is changed via rdm
-  friend void rdmPersonalityChangedCb(dmx_port_t dmxPort, const rdm_header_t *header,
-                                      void *context);
+  friend void rdmPersonalityChangedCb(dmx_port_t dmxPort, const rdm_header_t *header, void *context);
 
   /// The internal dmx task.
   /// This is the main loop of the dmx receiver. It never returns.
-  friend void dmxReceiverTask(void * context);
+  friend void dmxReceiverTask(void *context);
 
-  uint8_t inputPortNum = 255; 
-  int8_t rxPin = -1;
-  int8_t txPin = -1;
-  int8_t enPin = -1;
+  uint8_t inputPortNum = 255;
+  int8_t  rxPin        = -1;
+  int8_t  txPin        = -1;
+  int8_t  enPin        = -1;
 
   /// is written to by the dmx receive task.
-  byte dmxdata[DMX_PACKET_SIZE]; 
+  byte dmxdata[DMX_PACKET_SIZE];
   /// True once the dmx input has been initialized successfully
-  bool initialized = false; // true once init finished successfully
+  bool initialized = false;  // true once init finished successfully
   /// True if dmx is currently connected
   std::atomic<bool> connected{false};
   std::atomic<bool> identify{false};
   /// Timestamp of the last time a dmx frame was received
   unsigned long lastUpdate = 0;
 
-  /// Taskhandle of the dmx task that is running in the background 
+  /// Taskhandle of the dmx task that is running in the background
   TaskHandle_t task;
   /// Guards access to dmxData
   std::mutex dmxDataLock;
-
 };

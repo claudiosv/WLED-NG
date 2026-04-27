@@ -14,7 +14,7 @@
  *    effect is triggered for rolls for die 0).
  */
 
-static constexpr size_t MAX_NUM_DICE = 2;
+static constexpr size_t  MAX_NUM_DICE       = 2;
 static constexpr uint8_t INVALID_ROLL_VALUE = 0xFF;
 
 /**
@@ -25,8 +25,8 @@ struct DiceUpdate {
   // Since vectors allocate data, it's more efficient to keep reusing an instance
   // instead of declaring them on the stack.
   std::vector<pixels::PixelsDieID> dice_list;
-  pixels::RollUpdates roll_updates;
-  pixels::BatteryUpdates battery_updates;
+  pixels::RollUpdates              roll_updates;
+  pixels::BatteryUpdates           battery_updates;
   // The PixelsDieID for each dice index. 0 if the die isn't connected.
   // The ordering here matches configured_die_names.
   std::array<pixels::PixelsDieID, MAX_NUM_DICE> connected_die_ids{0, 0};
@@ -65,12 +65,11 @@ static pixels::RollEvent GetLastRoll() {
  */
 template <typename C, typename T>
 static bool Contains(const C& container, T value) {
-  return std::find(container.begin(), container.end(), value) !=
-         container.end();
+  return std::find(container.begin(), container.end(), value) != container.end();
 }
 
 // These aren't known until runtime since they're being added dynamically.
-static uint8_t FX_MODE_SIMPLE_D20 = 0xFF;
-static uint8_t FX_MODE_PULSE_D20 = 0xFF;
-static uint8_t FX_MODE_CHECK_D20 = 0xFF;
-std::array<uint8_t, 3> DIE_LED_MODES = {0xFF, 0xFF, 0xFF};
+static uint8_t         FX_MODE_SIMPLE_D20 = 0xFF;
+static uint8_t         FX_MODE_PULSE_D20  = 0xFF;
+static uint8_t         FX_MODE_CHECK_D20  = 0xFF;
+std::array<uint8_t, 3> DIE_LED_MODES      = {0xFF, 0xFF, 0xFF};

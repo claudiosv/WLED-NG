@@ -1,9 +1,8 @@
 // force the compiler to show a warning to confirm that this file is included
 #warning **** Included USERMOD_MAX17048 V2.0 ****
 
-#include "wled.h"
 #include "Adafruit_MAX1704X.h"
-
+#include "wled.h"
 
 // the max interval to check battery level, 10 seconds
 #ifndef USERMOD_MAX17048_MAX_MONITOR_INTERVAL
@@ -23,261 +22,253 @@
 /*
  * Usermod to display Battery Life using Adafruit's MAX17048 LiPoly/ LiIon Fuel Gauge and Battery Monitor.
  */
-class  Usermod_MAX17048 : public Usermod {
+class Usermod_MAX17048 : public Usermod {
+ private:
+  bool enabled = true;
 
-  private:
+  unsigned long maxReadingInterval = USERMOD_MAX17048_MAX_MONITOR_INTERVAL;
+  unsigned long minReadingInterval = USERMOD_MAX17048_MIN_MONITOR_INTERVAL;
+  unsigned long lastCheck = UINT32_MAX - (USERMOD_MAX17048_MAX_MONITOR_INTERVAL - USERMOD_MAX17048_FIRST_MONITOR_AT);
+  unsigned long lastSend  = UINT32_MAX - (USERMOD_MAX17048_MAX_MONITOR_INTERVAL - USERMOD_MAX17048_FIRST_MONITOR_AT);
 
-    bool enabled = true;
+  unsigned VoltageDecimals = 3;  // Number of decimal places in published voltage values
+  unsigned PercentDecimals = 1;  // Number of decimal places in published percent values
 
-    unsigned long maxReadingInterval = USERMOD_MAX17048_MAX_MONITOR_INTERVAL;
-    unsigned long minReadingInterval = USERMOD_MAX17048_MIN_MONITOR_INTERVAL;
-    unsigned long lastCheck = UINT32_MAX - (USERMOD_MAX17048_MAX_MONITOR_INTERVAL - USERMOD_MAX17048_FIRST_MONITOR_AT);
-    unsigned long lastSend = UINT32_MAX - (USERMOD_MAX17048_MAX_MONITOR_INTERVAL - USERMOD_MAX17048_FIRST_MONITOR_AT);
+  // string that are used multiple time (this will save some flash memory)
+  static const char _name[];
+  static const char _enabled[];
+  static const char _maxReadInterval[];
+  static const char _minReadInterval[];
+  static const char _HomeAssistantDiscovery[];
 
+  bool monitorFound      = false;
+  bool firstReadComplete = false;
+  bool initDone          = false;
 
-    unsigned VoltageDecimals = 3;  // Number of decimal places in published voltage values
-    unsigned PercentDecimals = 1;  // Number of decimal places in published percent values
+  Adafruit_MAX17048 maxLipo;
+  float             lastBattVoltage = -10;
+  float             lastBattPercent = -1;
 
-    // string that are used multiple time (this will save some flash memory)
-    static const char _name[];
-    static const char _enabled[];
-    static const char _maxReadInterval[];
-    static const char _minReadInterval[];
-    static const char _HomeAssistantDiscovery[];
+  // MQTT and Home Assistant Variables
+  bool HomeAssistantDiscovery = false;  // Publish Home Assistant Device Information
+  bool mqttInitialized        = false;
 
-    bool monitorFound = false;
-    bool firstReadComplete = false;
-    bool initDone = false;
+  void _mqttInitialize() {
+    char mqttBatteryVoltageTopic[128];
+    char mqttBatteryPercentTopic[128];
 
-    Adafruit_MAX17048 maxLipo;
-    float lastBattVoltage = -10;
-    float lastBattPercent = -1;
+    snprintf(mqttBatteryVoltageTopic, 127, "%s/batteryVoltage", mqttDeviceTopic);
+    snprintf(mqttBatteryPercentTopic, 127, "%s/batteryPercent", mqttDeviceTopic);
 
-    // MQTT and Home Assistant Variables
-    bool HomeAssistantDiscovery = false;    // Publish Home Assistant Device Information
-    bool mqttInitialized = false;
+    if (HomeAssistantDiscovery) {
+      _createMqttSensor("BatteryVoltage", mqttBatteryVoltageTopic, "voltage", "V");
+      _createMqttSensor("BatteryPercent", mqttBatteryPercentTopic, "battery", "%");
+    }
+  }
 
-    void _mqttInitialize()
-    {
-        char mqttBatteryVoltageTopic[128];
-        char mqttBatteryPercentTopic[128];
+  void _createMqttSensor(const String& name, const String& topic, const String& deviceClass,
+                         const String& unitOfMeasurement) {
+    String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
 
-        snprintf(mqttBatteryVoltageTopic, 127, "%s/batteryVoltage", mqttDeviceTopic);
-        snprintf(mqttBatteryPercentTopic, 127, "%s/batteryPercent", mqttDeviceTopic);
+    StaticJsonDocument<600> doc;
 
-        if (HomeAssistantDiscovery) {
-        _createMqttSensor("BatteryVoltage", mqttBatteryVoltageTopic, "voltage", "V");
-        _createMqttSensor("BatteryPercent", mqttBatteryPercentTopic, "battery", "%");
-        }
+    doc["name"]        = String(serverDescription) + " " + name;
+    doc["state_topic"] = topic;
+    doc["unique_id"]   = String(mqttClientID) + name;
+    if (unitOfMeasurement != "") {
+      doc["unit_of_measurement"] = unitOfMeasurement;
+    }
+    if (deviceClass != "") {
+      doc["device_class"] = deviceClass;
+    }
+    doc["expire_after"] = 1800;
+
+    JsonObject device      = doc.createNestedObject("device");  // attach the sensor to the same device
+    device["name"]         = serverDescription;
+    device["identifiers"]  = "wled-sensor-" + String(mqttClientID);
+    device["manufacturer"] = "WLED";
+    device["model"]        = "FOSS";
+    device["sw_version"]   = versionString;
+
+    String temp;
+    serializeJson(doc, temp);
+    DEBUG_PRINTLN(t);
+    DEBUG_PRINTLN(temp);
+
+    mqtt->publish(t.c_str(), 0, true, temp.c_str());
+  }
+
+  void publishMqtt(const char* topic, const char* state) {
+#ifndef WLED_DISABLE_MQTT
+    // Check if MQTT Connected, otherwise it will crash the 8266
+    if (WLED_MQTT_CONNECTED) {
+      char subuf[128];
+      snprintf(subuf, 127, "%s/%s", mqttDeviceTopic, topic);
+      mqtt->publish(subuf, 0, false, state);
+    }
+#endif
+  }
+
+ public:
+  inline void enable(bool enable) {
+    enabled = enable;
+  }
+
+  inline bool isEnabled() {
+    return enabled;
+  }
+
+  void setup() {
+    // do your set-up here
+    if (i2c_scl < 0 || i2c_sda < 0) {
+      enabled = false;
+      return;
+    }
+    monitorFound = maxLipo.begin();
+    initDone     = true;
+  }
+
+  void loop() {
+    // if usermod is disabled or called during strip updating just exit
+    // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
+    if (!enabled || strip.isUpdating()) {
+      return;
     }
 
-    void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
-    {
-        String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+    unsigned long now = millis();
 
-        StaticJsonDocument<600> doc;
-
-        doc["name"] = String(serverDescription) + " " + name;
-        doc["state_topic"] = topic;
-        doc["unique_id"] = String(mqttClientID) + name;
-        if (unitOfMeasurement != "")
-        doc["unit_of_measurement"] = unitOfMeasurement;
-        if (deviceClass != "")
-        doc["device_class"] = deviceClass;
-        doc["expire_after"] = 1800;
-
-        JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-        device["name"] = serverDescription;
-        device["identifiers"] = "wled-sensor-" + String(mqttClientID);
-        device["manufacturer"] = "WLED";
-        device["model"] = "FOSS";
-        device["sw_version"] = versionString;
-
-        String temp;
-        serializeJson(doc, temp);
-        DEBUG_PRINTLN(t);
-        DEBUG_PRINTLN(temp);
-
-        mqtt->publish(t.c_str(), 0, true, temp.c_str());
+    if (now - lastCheck < minReadingInterval) {
+      return;
     }
 
-    void publishMqtt(const char *topic, const char* state) {
-    #ifndef WLED_DISABLE_MQTT
-      //Check if MQTT Connected, otherwise it will crash the 8266
-      if (WLED_MQTT_CONNECTED){
-        char subuf[128];
-        snprintf(subuf, 127, "%s/%s", mqttDeviceTopic, topic);
-        mqtt->publish(subuf, 0, false, state);
+    bool shouldUpdate = now - lastSend > maxReadingInterval;
+
+    float battVoltage = maxLipo.cellVoltage();
+    float battPercent = maxLipo.cellPercent();
+    lastCheck         = millis();
+    firstReadComplete = true;
+
+    if (shouldUpdate) {
+      lastBattVoltage = roundf(battVoltage * powf(10, VoltageDecimals)) / powf(10, VoltageDecimals);
+      lastBattPercent = roundf(battPercent * powf(10, PercentDecimals)) / powf(10, PercentDecimals);
+      lastSend        = millis();
+
+      publishMqtt("batteryVoltage", String(lastBattVoltage, VoltageDecimals).c_str());
+      publishMqtt("batteryPercent", String(lastBattPercent, PercentDecimals).c_str());
+      DEBUG_PRINTLN("Battery Voltage: " + String(lastBattVoltage, VoltageDecimals) + "V");
+      DEBUG_PRINTLN("Battery Percent: " + String(lastBattPercent, PercentDecimals) + "%");
+    }
+  }
+
+  void onMqttConnect(bool sessionPresent) {
+    if (WLED_MQTT_CONNECTED && !mqttInitialized) {
+      _mqttInitialize();
+      mqttInitialized = true;
+    }
+  }
+
+  inline float getBatteryVoltageV() {
+    return (float)lastBattVoltage;
+  }
+
+  inline float getBatteryPercent() {
+    return (float)lastBattPercent;
+  }
+
+  void addToJsonInfo(JsonObject& root) {
+    // if "u" object does not exist yet wee need to create it
+    JsonObject user = root["u"];
+    if (user.isNull()) {
+      user = root.createNestedObject("u");
+    }
+
+    JsonArray battery_json = user.createNestedArray("Battery Monitor");
+    if (!enabled) {
+      battery_json.add("Disabled");
+    } else if (!monitorFound) {
+      battery_json.add("MAX17048 Not Found");
+    } else if (!firstReadComplete) {
+      // if we haven't read the sensor yet, let the user know
+      // that we are still waiting for the first measurement
+      battery_json.add((USERMOD_MAX17048_FIRST_MONITOR_AT - millis()) / 1000);
+      battery_json.add(" sec until read");
+    } else {
+      battery_json.add("Enabled");
+      JsonArray voltage_json = user.createNestedArray("Battery Voltage");
+      voltage_json.add(lastBattVoltage);
+      voltage_json.add("V");
+      JsonArray percent_json = user.createNestedArray("Battery Percent");
+      percent_json.add(lastBattPercent);
+      percent_json.add("%");
+    }
+  }
+
+  void addToJsonState(JsonObject& root) {
+    JsonObject usermod = root[_name];
+    if (usermod.isNull()) {
+      usermod = root.createNestedObject(_name);
+    }
+    usermod[_enabled] = enabled;
+  }
+
+  void readFromJsonState(JsonObject& root) {
+    JsonObject usermod = root[_name];
+    if (!usermod.isNull()) {
+      if (usermod[_enabled].is<bool>()) {
+        enabled = usermod[_enabled].as<bool>();
       }
-    #endif
     }
+  }
 
-  public:
+  void addToConfig(JsonObject& root) {
+    JsonObject top               = root.createNestedObject(_name);
+    top[_enabled]                = enabled;
+    top[_maxReadInterval]        = maxReadingInterval;
+    top[_minReadInterval]        = minReadingInterval;
+    top[_HomeAssistantDiscovery] = HomeAssistantDiscovery;
+    DEBUG_PRINT(_name);
+    DEBUG_PRINTLN(" config saved.");
+  }
 
-    inline void enable(bool enable) { enabled = enable; }
+  bool readFromConfig(JsonObject& root) {
+    JsonObject top = root[_name];
 
-    inline bool isEnabled() { return enabled; }
-
-    void setup() {
-      // do your set-up here
-      if (i2c_scl<0 || i2c_sda<0) { enabled = false; return; }
-      monitorFound = maxLipo.begin();
-      initDone = true;
-    }
-
-    void loop() {
-      // if usermod is disabled or called during strip updating just exit
-      // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-      if (!enabled || strip.isUpdating()) return;
-
-        unsigned long now = millis();
-
-        if (now - lastCheck < minReadingInterval) { return; }
-
-        bool shouldUpdate = now - lastSend > maxReadingInterval;
-
-        float battVoltage = maxLipo.cellVoltage();
-        float battPercent = maxLipo.cellPercent();
-        lastCheck = millis();
-        firstReadComplete = true;
-
-        if (shouldUpdate)
-        {
-          lastBattVoltage = roundf(battVoltage * powf(10, VoltageDecimals)) / powf(10, VoltageDecimals);
-          lastBattPercent = roundf(battPercent * powf(10, PercentDecimals)) / powf(10, PercentDecimals);
-          lastSend = millis();
-
-          publishMqtt("batteryVoltage", String(lastBattVoltage, VoltageDecimals).c_str());
-          publishMqtt("batteryPercent", String(lastBattPercent, PercentDecimals).c_str());
-          DEBUG_PRINTLN("Battery Voltage: " + String(lastBattVoltage, VoltageDecimals) + "V");
-          DEBUG_PRINTLN("Battery Percent: " + String(lastBattPercent, PercentDecimals) + "%");
-        }
-    }
-
-    void onMqttConnect(bool sessionPresent)
-    {
-        if (WLED_MQTT_CONNECTED && !mqttInitialized)
-        {
-            _mqttInitialize();
-            mqttInitialized = true;
-        }
-    }
-
-    inline float getBatteryVoltageV() {
-        return (float) lastBattVoltage;
-    }
-
-    inline float getBatteryPercent() {
-        return (float) lastBattPercent;
-    }
-
-    void addToJsonInfo(JsonObject& root)
-    {
-      // if "u" object does not exist yet wee need to create it
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-
-
-      JsonArray battery_json = user.createNestedArray("Battery Monitor");
-      if (!enabled) {
-        battery_json.add("Disabled");
-      }
-      else if(!monitorFound) {
-        battery_json.add("MAX17048 Not Found");
-      }
-      else if (!firstReadComplete) {
-        // if we haven't read the sensor yet, let the user know
-        // that we are still waiting for the first measurement
-        battery_json.add((USERMOD_MAX17048_FIRST_MONITOR_AT - millis()) / 1000);
-        battery_json.add(" sec until read");
-      } else {
-        battery_json.add("Enabled");
-        JsonArray voltage_json = user.createNestedArray("Battery Voltage");
-        voltage_json.add(lastBattVoltage);
-        voltage_json.add("V");
-        JsonArray percent_json = user.createNestedArray("Battery Percent");
-        percent_json.add(lastBattPercent);
-        percent_json.add("%");
-      }
-    }
-
-    void addToJsonState(JsonObject& root)
-    {
-        JsonObject usermod = root[_name];
-        if (usermod.isNull())
-        {
-        usermod = root.createNestedObject(_name);
-        }
-        usermod[_enabled] = enabled;
-    }
-
-    void readFromJsonState(JsonObject& root)
-    {
-        JsonObject usermod = root[_name];
-        if (!usermod.isNull())
-        {
-            if (usermod[_enabled].is<bool>())
-            {
-                enabled = usermod[_enabled].as<bool>();
-            }
-        }
-    }
-
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject(_name);
-      top[_enabled] = enabled;
-      top[_maxReadInterval] = maxReadingInterval;
-      top[_minReadInterval] = minReadingInterval;
-      top[_HomeAssistantDiscovery] = HomeAssistantDiscovery;
+    if (top.isNull()) {
       DEBUG_PRINT(_name);
-      DEBUG_PRINTLN(" config saved.");
+      DEBUG_PRINTLN(": No config found. (Using defaults.)");
+      return false;
     }
 
-    bool readFromConfig(JsonObject& root)
-    {
-      JsonObject top = root[_name];
+    bool configComplete = !top.isNull();
 
-      if (top.isNull()) {
-        DEBUG_PRINT(_name);
-        DEBUG_PRINTLN(": No config found. (Using defaults.)");
-        return false;
-      }
+    configComplete &= getJsonValue(top[_enabled], enabled);
+    configComplete &= getJsonValue(top[_maxReadInterval], maxReadingInterval, USERMOD_MAX17048_MAX_MONITOR_INTERVAL);
+    configComplete &= getJsonValue(top[_minReadInterval], minReadingInterval, USERMOD_MAX17048_MIN_MONITOR_INTERVAL);
+    configComplete &= getJsonValue(top[_HomeAssistantDiscovery], HomeAssistantDiscovery, false);
 
-      bool configComplete = !top.isNull();
-
-      configComplete &= getJsonValue(top[_enabled], enabled);
-      configComplete &= getJsonValue(top[_maxReadInterval], maxReadingInterval, USERMOD_MAX17048_MAX_MONITOR_INTERVAL);
-      configComplete &= getJsonValue(top[_minReadInterval], minReadingInterval, USERMOD_MAX17048_MIN_MONITOR_INTERVAL);
-      configComplete &= getJsonValue(top[_HomeAssistantDiscovery], HomeAssistantDiscovery, false);
-
-      DEBUG_PRINT(_name);
-      if (!initDone) {
-        // first run: reading from cfg.json
-        DEBUG_PRINTLN(" config loaded.");
-      } else {
-        DEBUG_PRINTLN(" config (re)loaded.");
-        // changing parameters from settings page
-      }
-
-      return configComplete;
+    DEBUG_PRINT(_name);
+    if (!initDone) {
+      // first run: reading from cfg.json
+      DEBUG_PRINTLN(" config loaded.");
+    } else {
+      DEBUG_PRINTLN(" config (re)loaded.");
+      // changing parameters from settings page
     }
 
-    uint16_t getId()
-    {
-      return USERMOD_ID_MAX17048;
-    }
+    return configComplete;
+  }
 
+  uint16_t getId() {
+    return USERMOD_ID_MAX17048;
+  }
 };
 
-
 // add more strings here to reduce flash memory usage
-const char Usermod_MAX17048::_name[] = "Adafruit MAX17048 Battery Monitor";
-const char Usermod_MAX17048::_enabled[] = "enabled";
-const char Usermod_MAX17048::_maxReadInterval[] = "max-read-interval-ms";
-const char Usermod_MAX17048::_minReadInterval[] = "min-read-interval-ms";
+const char Usermod_MAX17048::_name[]                   = "Adafruit MAX17048 Battery Monitor";
+const char Usermod_MAX17048::_enabled[]                = "enabled";
+const char Usermod_MAX17048::_maxReadInterval[]        = "max-read-interval-ms";
+const char Usermod_MAX17048::_minReadInterval[]        = "min-read-interval-ms";
 const char Usermod_MAX17048::_HomeAssistantDiscovery[] = "HomeAssistantDiscovery";
-
 
 static Usermod_MAX17048 max17048_v2;
 REGISTER_USERMOD(max17048_v2);

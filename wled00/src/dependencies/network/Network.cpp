@@ -1,7 +1,6 @@
 #include "Network.h"
 
-IPAddress NetworkClass::localIP()
-{
+IPAddress NetworkClass::localIP() {
   IPAddress localIP;
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   localIP = ETH.localIP();
@@ -17,8 +16,7 @@ IPAddress NetworkClass::localIP()
   return INADDR_NONE;
 }
 
-IPAddress NetworkClass::subnetMask()
-{
+IPAddress NetworkClass::subnetMask() {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   if (ETH.localIP()[0] != 0) {
     return ETH.subnetMask();
@@ -30,28 +28,26 @@ IPAddress NetworkClass::subnetMask()
   return IPAddress(255, 255, 255, 0);
 }
 
-IPAddress NetworkClass::gatewayIP()
-{
+IPAddress NetworkClass::gatewayIP() {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   if (ETH.localIP()[0] != 0) {
-      return ETH.gatewayIP();
+    return ETH.gatewayIP();
   }
 #endif
   if (WiFi.localIP()[0] != 0) {
-      return WiFi.gatewayIP();
+    return WiFi.gatewayIP();
   }
   return INADDR_NONE;
 }
 
-void NetworkClass::localMAC(uint8_t* MAC)
-{
+void NetworkClass::localMAC(uint8_t* MAC) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   // ETH.macAddress(MAC); // Does not work because of missing ETHClass:: in ETH.ccp
 
   // Start work around
   String macString = ETH.macAddress();
-  char macChar[18];
-  char * octetEnd = macChar;
+  char   macChar[18];
+  char*  octetEnd = macChar;
 
   strlcpy(macChar, macString.c_str(), 18);
 
@@ -71,13 +67,11 @@ void NetworkClass::localMAC(uint8_t* MAC)
   return;
 }
 
-bool NetworkClass::isConnected()
-{
+bool NetworkClass::isConnected() {
   return (WiFi.localIP()[0] != 0 && WiFi.status() == WL_CONNECTED) || isEthernet();
 }
 
-bool NetworkClass::isEthernet()
-{
+bool NetworkClass::isEthernet() {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   return (ETH.localIP()[0] != 0) && ETH.linkUp();
 #endif
