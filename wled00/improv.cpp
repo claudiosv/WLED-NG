@@ -15,22 +15,24 @@
 #define WLED_DISABLE_IMPROV_WIFISCAN
 #endif
 
-#define IMPROV_VERSION 1
+enum {
+IMPROV_VERSION = 1
+};
 // forward declarations
 static void parseWiFiCommand(char* rpcData);
 
 enum ImprovPacketType {
-  Current_State = 0x01,
-  Error_State   = 0x02,
-  RPC_Command   = 0x03,
-  RPC_Response  = 0x04
+  kCurrentState = 0x01,
+  kErrorState   = 0x02,
+  kRpcCommand   = 0x03,
+  kRpcResponse  = 0x04
 };
 
 enum ImprovPacketByte {
-  Version         = 6,
-  PacketType      = 7,
-  Length          = 8,
-  RPC_CommandType = 9
+  kVersion         = 6,
+  kPacketType      = 7,
+  kLength          = 8,
+  kRpcCommandType = 9
 };
 
 #ifndef WLED_DISABLE_IMPROV_WIFISCAN
@@ -66,15 +68,15 @@ void handleImprovPacket() {
     DIMPROV_PRINTF("%x\r\n", next);
 
     switch (packetByte) {
-      case ImprovPacketByte::Version: {
+      case ImprovPacketByte::kVersion: {
         if (next != IMPROV_VERSION) {
           DIMPROV_PRINTLN("Invalid version");
           return;
         }
         break;
       }
-      case ImprovPacketByte::PacketType: {
-        if (next != ImprovPacketType::RPC_Command) {
+      case ImprovPacketByte::kPacketType: {
+        if (next != ImprovPacketType::kRpcCommand) {
           DIMPROV_PRINTF("Non RPC-command improv packet type %i\n", next);
           return;
         }
@@ -83,10 +85,10 @@ void handleImprovPacket() {
         }
         break;
       }
-      case ImprovPacketByte::Length:
+      case ImprovPacketByte::kLength:
         packetLen = 9 + next;
         break;
-      case ImprovPacketByte::RPC_CommandType:
+      case ImprovPacketByte::kRpcCommandType:
         rpcCommandType = next;
         break;
       default: {
@@ -160,7 +162,7 @@ void sendImprovStateResponse(uint8_t state, bool error) {
   }
   char out[11] = {'I', 'M', 'P', 'R', 'O', 'V'};
   out[6]       = IMPROV_VERSION;
-  out[7]       = error ? ImprovPacketType::Error_State : ImprovPacketType::Current_State;
+  out[7]       = error ? ImprovPacketType::kErrorState : ImprovPacketType::kCurrentState;
   out[8]       = 1;
   out[9]       = state;
 
@@ -181,7 +183,7 @@ void sendImprovRPCResult(ImprovRPCType type, uint8_t n_strings, const char** str
   unsigned packetLen = 12;
   char     out[256]  = {'I', 'M', 'P', 'R', 'O', 'V'};
   out[6]             = IMPROV_VERSION;
-  out[7]             = ImprovPacketType::RPC_Response;
+  out[7]             = ImprovPacketType::kRpcResponse;
   // out[8] = 2; //Length (set below)
   out[9] = type;
   // out[10] = 0; //Data len (set below)

@@ -44,7 +44,7 @@
 // Unicode Offset: 0x00000000
 // Variable Width: Yes
 
-static const unsigned char console_font_6x8[] = {
+static const unsigned char kConsoleFont6x8[] = {
     0x57, 0x08, 0x06, 0x01, 0x01, 0x20, 0x7E, 0x00, 0x00, 0x00, 0x00,
     0x00,  // Header: 'W', H, W, S, Flags, First, Last, Reserved, UnicodeOffset (32bit)
 

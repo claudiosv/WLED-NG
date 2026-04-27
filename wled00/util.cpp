@@ -1,5 +1,7 @@
 #include <Update.h>
 
+#include <algorithm>
+
 #include "const.h"
 #include "fcn_declare.h"
 #include "src/dependencies/fastled_slim/fastled_slim.h"
@@ -49,17 +51,13 @@ void parseNumber(const char* str, byte& val, byte minv, byte maxv) {
         out = maxv;
       } else {
         out += val;
-        if (out > maxv) {
-          out = maxv;
-        }
-        if (out < minv) {
-          out = minv;
-        }
+        out = std::min<int>(out, maxv);
+        out = std::max<int>(out, minv);
       }
       val = out;
     }
     return;
-  } else if (minv == maxv && minv == 0) {  // limits "unset" i.e. both 0
+  } if (minv == maxv && minv == 0) {  // limits "unset" i.e. both 0
     byte        p1   = atoi(str);
     const char* str2 = strchr(str, '~');  // min/max range (for preset cycle, e.g. "1~5~")
     if (str2) {
@@ -83,7 +81,7 @@ bool getVal(JsonVariant elem, byte& val, byte vmin, byte vmax) {
     }
     val = elem;
     return true;
-  } else if (elem.is<const char*>()) {
+  } if (elem.is<const char*>()) {
     const char* str = elem;
     size_t      len = strnlen(str, 14);
     if (len == 0 || len > 12) {
@@ -104,9 +102,8 @@ bool getVal(JsonVariant elem, byte& val, byte vmin, byte vmax) {
 bool getBoolVal(const JsonVariant& elem, bool dflt) {
   if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
     return !dflt;
-  } else {
-    return elem | dflt;
-  }
+  }     return elem | dflt;
+ 
 }
 
 bool updateVal(const char* req, const char* key, byte& val, byte minv, byte maxv) {
@@ -139,7 +136,7 @@ size_t printSetFormValue(Print& settingsScript, const char* key, const char* val
 }
 
 size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val) {
-  return settingsScript.printf("d.getElementsByClassName(\"%s\"[%d].innerHTML=\"%s\";", key, index, val);
+  return settingsScript.printf(R"(d.getElementsByClassName("%s"[%d].innerHTML="%s";)", key, index, val);
 }
 
 // in-place hostname sanitizer, extracted from prepareHostname()
@@ -243,7 +240,7 @@ bool isAsterisksOnly(const char* str, byte maxLen) {
   ((c) < 0x80 ? 1 : ((c) < 0xE0 ? 2 : ((c) < 0xF0 ? 3 : 4)))  // determine UTF-8 sequence length from first byte
 
 uint32_t utf8_decode(const char* s, uint8_t* len) {
-  uint8_t c = static_cast<uint8_t>(s[0]);
+  auto c = static_cast<uint8_t>(s[0]);
   if (c == '\0') {
     return 0;
   }
@@ -291,7 +288,7 @@ bool requestJSONBufferLock(uint8_t moduleID) {
     return false;
   }
 
-#if defined(ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP32
   // Use a recursive mutex type in case our task is the one holding the JSON buffer.
   // This can happen during large JSON web transactions.  In this case, we continue immediately
   // and then will return out below if the lock is still held.
@@ -331,8 +328,8 @@ uint8_t extractModeName(uint8_t mode, const char* src, char* dest, uint8_t maxLe
     if (mode < strip.getModeCount()) {
       char lineBuffer[256];
       // strcpy(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
-      strncpy(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer) / sizeof(char) - 1);
-      lineBuffer[sizeof(lineBuffer) / sizeof(char) - 1] = '\0';  // terminate string
+      strncpy(lineBuffer, strip.getModeData(mode), (sizeof(lineBuffer) / sizeof(char)) - 1);
+      lineBuffer[(sizeof(lineBuffer) / sizeof(char)) - 1] = '\0';  // terminate string
       size_t len                                        = strlen(lineBuffer);
       size_t j                                          = 0;
       for (; j < maxLen && j < len; j++) {
@@ -343,9 +340,8 @@ uint8_t extractModeName(uint8_t mode, const char* src, char* dest, uint8_t maxLe
       }
       dest[j] = 0;  // terminate string
       return strlen(dest);
-    } else {
-      return 0;
-    }
+    }       return 0;
+   
   }
 
   if (src == JSON_palette_names && mode > 255 - customPalettes.size()) {
@@ -405,7 +401,9 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char* dest, uint8_t maxL
       int stop  = lineBuffer.indexOf(';', start);
       if (start > 0 && stop > 0) {
         String names     = lineBuffer.substring(start, stop);  // include @
-        int    nameBegin = 1, nameEnd, nameDefault;
+        int    nameBegin = 1;
+        int    nameEnd;
+        int    nameDefault;
         if (slider < 10) {
           for (size_t i = 0; i <= slider; i++) {
             const char* tmpstr;
@@ -501,8 +499,8 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char* dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char* segVar) {
   if (mode < strip.getModeCount()) {
     char lineBuffer[256];
-    strncpy(lineBuffer, strip.getModeData(mode), sizeof(lineBuffer) / sizeof(char) - 1);
-    lineBuffer[sizeof(lineBuffer) / sizeof(char) - 1] = '\0';  // terminate string
+    strncpy(lineBuffer, strip.getModeData(mode), (sizeof(lineBuffer) / sizeof(char)) - 1);
+    lineBuffer[(sizeof(lineBuffer) / sizeof(char)) - 1] = '\0';  // terminate string
     if (lineBuffer[0] != 0) {
       char* startPtr = strrchr(lineBuffer, ';');  // last ";" in FX data
       if (!startPtr) {
@@ -611,12 +609,12 @@ uint8_t beatsin8_t(uint16_t beats_per_minute, uint8_t lowest, uint8_t highest, u
 ///////////////////////////////////////////////////////////////////////////////
 // Currently 4 types defined, to be fine tuned and new types added
 // (only 2 used as stored in 1 bit in segment options, consider switching to a single global simulation type)
-typedef enum UM_SoundSimulations {
+using um_soundSimulations_t = enum UM_SoundSimulations {
   UMS_BeatSin = 0,
   UMS_WeWillRockYou,
   UMS_10_13,
   UMS_14_3
-} um_soundSimulations_t;
+};
 
 um_data_t* simulateSound(uint8_t simulationId) {
   static uint8_t samplePeak;
@@ -703,32 +701,32 @@ um_data_t* simulateSound(uint8_t simulationId) {
       break;
     case UMS_10_13:
       for (int i = 0; i < 16; i++) {
-        fftResult[i] = perlin8(beatsin8_t(90 / (i + 1), 0, 200) * 15 + (ms >> 10), ms >> 3);
+        fftResult[i] = perlin8((beatsin8_t(90 / (i + 1), 0, 200) * 15) + (ms >> 10), ms >> 3);
       }
       volumeSmth = fftResult[8];
       break;
     case UMS_14_3:
       for (int i = 0; i < 16; i++) {
-        fftResult[i] = perlin8(beatsin8_t(120 / (i + 1), 10, 30) * 10 + (ms >> 14), ms >> 3);
+        fftResult[i] = perlin8((beatsin8_t(120 / (i + 1), 10, 30) * 10) + (ms >> 14), ms >> 3);
       }
       volumeSmth = fftResult[8];
       break;
   }
 
-  samplePeak    = hw_random8() > 250;
-  FFT_MajorPeak = 21 + (volumeSmth * volumeSmth) / 8.0f;  // walk thru full range of 21hz...8200hz
+  samplePeak    = static_cast<uint8_t>(hw_random8() > 250);
+  FFT_MajorPeak = 21 + ((volumeSmth * volumeSmth) / 8.0F);  // walk thru full range of 21hz...8200hz
   maxVol        = 31;                                     // this gets feedback fro UI
   binNum        = 8;                                      // this gets feedback fro UI
   volumeRaw     = volumeSmth;
-  my_magnitude  = 10000.0f / 8.0f;  // no idea if 10000 is a good value for FFT_Magnitude ???
+  my_magnitude  = 10000.0F / 8.0F;  // no idea if 10000 is a good value for FFT_Magnitude ???
   if (volumeSmth < 1) {
-    my_magnitude = 0.001f;  // noise gate closed - mute
+    my_magnitude = 0.001F;  // noise gate closed - mute
   }
 
   return um_data;
 }
 
-static const char s_ledmap_tmpl[] = "ledmap%d.json";
+static const char kSLedmapTmpl[] = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   StaticJsonDocument<64> filter;
@@ -736,7 +734,7 @@ void enumerateLedmaps() {
   ledMaps     = 1;
   for (size_t i = 1; i < WLED_MAX_LEDMAPS; i++) {
     char fileName[33] = "/";
-    sprintf(fileName + 1, s_ledmap_tmpl, i);
+    sprintf(fileName + 1, kSLedmapTmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     if (ledmapNames[i - 1]) {  // clear old name
@@ -766,7 +764,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i - 1]) {
             char tmp[33];
-            snprintf(tmp, 32, s_ledmap_tmpl, i);
+            snprintf(tmp, 32, kSLedmapTmpl, i);
             len                = strlen(tmp);
             ledmapNames[i - 1] = static_cast<char*>(malloc(len + 1));
             if (ledmapNames[i - 1]) {
@@ -784,7 +782,10 @@ void enumerateLedmaps() {
  * Returns a new, random color wheel index with a minimum distance of 42 from pos.
  */
 uint8_t get_random_wheel_index(uint8_t pos) {
-  uint8_t r = 0, x = 0, y = 0, d = 0;
+  uint8_t r = 0;
+  uint8_t x = 0;
+  uint8_t y = 0;
+  uint8_t d = 0;
   while (d < 42) {
     r = hw_random8();
     x = abs(pos - r);
@@ -796,7 +797,7 @@ uint8_t get_random_wheel_index(uint8_t pos) {
 
 // float version of map()
 float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
 
 uint32_t hashInt(uint32_t s) {
@@ -823,7 +824,7 @@ int32_t hw_random(int32_t lowerlimit, int32_t upperlimit) {
 }
 
 // PSRAM compile time checks to provide info for misconfigured env
-#if defined(BOARD_HAS_PSRAM)
+#ifdef BOARD_HAS_PSRAM
 #if defined(IDF_TARGET_ESP32C3)
 #error "ESP32-C3 with PSRAM is not supported, please remove BOARD_HAS_PSRAM definition"
 #else
@@ -942,10 +943,11 @@ void* allocate_buffer(size_t size, uint32_t type) {
     // prefer 32bit region, then PSRAM, fallback to any heap. Note: if adding "INTERNAL"-flag this wont work
     buffer = heap_caps_malloc_prefer(size, 3, MALLOC_CAP_32BIT, MALLOC_CAP_SPIRAM, MALLOC_CAP_8BIT);
     buffer = validateFreeHeap(buffer);
-  } else
+  } else {
 #endif
-#if !defined(BOARD_HAS_PSRAM)
+#ifndef BOARD_HAS_PSRAM
     buffer = d_malloc(size);
+}
 #else
   if (type & BFRALLOC_PREFER_DRAM) {
     if (getContiguousFreeHeap() < 3 * (MIN_HEAP_SIZE / 2) + size && size > PSRAM_THRESHOLD) {
@@ -1002,19 +1004,21 @@ void* allocate_buffer(size_t size, uint32_t type) {
 // checks if the ESP reboots multiple times due to a crash or watchdog timeout
 // if a bootloop is detected: restore settings from backup, then reset settings, then switch boot image (and repeat)
 
-#define BOOTLOOP_INTERVAL_MILLIS 120000  // time limit between crashes: 120 seconds (2 minutes)
-#define BOOTLOOP_THRESHOLD       5       // number of consecutive crashes to trigger bootloop detection
-#define BOOTLOOP_ACTION_RESTORE  0       // default action: restore config from /bkp.cfg.json
-#define BOOTLOOP_ACTION_RESET    1       // if restore does not work, reset config (rename /cfg.json to /rst.cfg.json)
-#define BOOTLOOP_ACTION_OTA      2       // swap the boot partition
-#define BOOTLOOP_ACTION_DUMP     3  // nothing seems to help, dump files to serial and reboot (until hardware reset)
+enum {
+BOOTLOOP_INTERVAL_MILLIS = 120000,  // time limit between crashes: 120 seconds (2 minutes)
+BOOTLOOP_THRESHOLD =       5,       // number of consecutive crashes to trigger bootloop detection
+BOOTLOOP_ACTION_RESTORE =  0,       // default action: restore config from /bkp.cfg.json
+BOOTLOOP_ACTION_RESET =    1,       // if restore does not work, reset config (rename /cfg.json to /rst.cfg.json)
+BOOTLOOP_ACTION_OTA =      2,       // swap the boot partition
+BOOTLOOP_ACTION_DUMP =     3  // nothing seems to help, dump files to serial and reboot (until hardware reset)
+};
 
 // Platform-agnostic abstraction
 enum class ResetReason {
-  Power,
-  Software,
-  Crash,
-  Brownout
+  kPower,
+  kSoftware,
+  kCrash,
+  kBrownout
 };
 
 // variables in RTC_NOINIT memory persist between reboots (but not on hardware reset)
@@ -1025,15 +1029,15 @@ RTC_NOINIT_ATTR static uint32_t bl_actiontracker;
 static inline ResetReason rebootReason() {
   esp_reset_reason_t reason = esp_reset_reason();
   if (reason == ESP_RST_BROWNOUT) {
-    return ResetReason::Brownout;
+    return ResetReason::kBrownout;
   }
   if (reason == ESP_RST_SW) {
-    return ResetReason::Software;
+    return ResetReason::kSoftware;
   }
   if (reason == ESP_RST_PANIC || reason == ESP_RST_WDT || reason == ESP_RST_INT_WDT || reason == ESP_RST_TASK_WDT) {
-    return ResetReason::Crash;
+    return ResetReason::kCrash;
   }
-  return ResetReason::Power;
+  return ResetReason::kPower;
 }
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
@@ -1056,16 +1060,16 @@ static bool detectBootLoop() {
   bool     result  = false;
 
   switch (rebootReason()) {
-    case ResetReason::Power:
+    case ResetReason::kPower:
       bl_actiontracker = BOOTLOOP_ACTION_RESTORE;  // init action tracker if not an intentional reboot (e.g. from OTA or
                                                    // bootloop handler)
       // fall through
-    case ResetReason::Software:
+    case ResetReason::kSoftware:
       // no crash detected, reset counter
       bl_crashcounter = 0;
       break;
 
-    case ResetReason::Crash: {
+    case ResetReason::kCrash: {
       DEBUG_PRINTLN("crash detected!");
       uint32_t rebootinterval = rtctime - bl_last_boottime;
       if (rebootinterval < BOOTLOOP_INTERVAL_MILLIS) {
@@ -1081,12 +1085,12 @@ static bool detectBootLoop() {
       } else {
         // Reset counter on long intervals to track only consecutive short-interval crashes
         bl_crashcounter = 0;
-        // TODO: crash reporting goes here
+        // TODO: claudio - crash reporting goes here
       }
       break;
     }
 
-    case ResetReason::Brownout:
+    case ResetReason::kBrownout:
       // crash due to brownout can't be detected unless using flash memory to store bootloop variables
       DEBUG_PRINTLN("brownout detected");
       // restoreConfig(); // TODO: blindly restoring config if brownout detected is a bad idea, need a better way (if at
@@ -1134,7 +1138,9 @@ void handleBootLoop() {
  * Fixed point integer based Perlin noise functions by @dedehai
  * Note: optimized for speed and to mimic fastled inoise functions, not for accuracy or best randomness
  */
-#define PERLIN_SHIFT 1
+enum {
+PERLIN_SHIFT = 1
+};
 
 // calculate gradient for corner from hash value
 static inline __attribute__((always_inline)) int32_t hashToGradient(uint32_t h) {
@@ -1159,7 +1165,7 @@ static inline __attribute__((always_inline)) int32_t gradient2D(uint32_t x0, int
   h ^= h >> 15;
   h *= 0x92C3412B;
   h ^= h >> 13;
-  return (hashToGradient(h) * dx + hashToGradient(h >> PERLIN_SHIFT) * dy) >> (1 + PERLIN_SHIFT);
+  return ((hashToGradient(h) * dx) + (hashToGradient(h >> PERLIN_SHIFT) * dy)) >> (1 + PERLIN_SHIFT);
 }
 
 static inline __attribute__((always_inline)) int32_t gradient3D(uint32_t x0, int32_t dx, uint32_t y0, int32_t dy,
@@ -1169,8 +1175,8 @@ static inline __attribute__((always_inline)) int32_t gradient3D(uint32_t x0, int
   h ^= h >> 15;
   h *= 0x92C3412B;
   h ^= h >> 13;
-  return ((hashToGradient(h) * dx + hashToGradient(h >> (1 + PERLIN_SHIFT)) * dy +
-           hashToGradient(h >> (1 + 2 * PERLIN_SHIFT)) * dz) *
+  return (((hashToGradient(h) * dx) + (hashToGradient(h >> (1 + PERLIN_SHIFT)) * dy) +
+           (hashToGradient(h >> (1 + (2 * PERLIN_SHIFT))) * dz)) *
           85) >>
          (8 + PERLIN_SHIFT);  // scale to 16bit, x*85 >> 8 = x/3
 }
@@ -1178,7 +1184,7 @@ static inline __attribute__((always_inline)) int32_t gradient3D(uint32_t x0, int
 // fast cubic smoothstep: t*(3 - 2t²), optimized for fixed point, scaled to avoid overflows
 static uint32_t smoothstep(const uint32_t t) {
   uint32_t t_squared = (t * t) >> 16;
-  uint32_t factor    = (3 << 16) - ((t << 1));
+  uint32_t factor    = (3 << 16) - (t << 1);
   return (t_squared * factor) >> 18;  // scale to avoid overflows and give best resolution
 }
 
@@ -1338,7 +1344,7 @@ String computeSHA1(const String& input) {
 
 #ifdef ESP32
 #include "esp_adc_cal.h"
-String generateDeviceFingerprint() {
+static String generateDeviceFingerprint() {
   uint32_t        fp[2] = {0, 0};  // create 64 bit fingerprint
   esp_chip_info_t chip_info;
   esp_chip_info(&chip_info);
@@ -1350,9 +1356,9 @@ String generateDeviceFingerprint() {
 #if SOC_ADC_MAX_BITWIDTH == 13  // S2 has 13 bit ADC
   constexpr auto myBIT_WIDTH = ADC_WIDTH_BIT_13;
 #else
-  constexpr auto myBIT_WIDTH = ADC_WIDTH_BIT_12;
+  constexpr auto kMyBitWidth = ADC_WIDTH_BIT_12;
 #endif
-  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_12, myBIT_WIDTH, 1100, &ch);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_12, kMyBitWidth, 1100, &ch);
   fp[0] ^= ch.coeff_a;
   fp[1] ^= ch.coeff_b;
   if (ch.low_curve) {

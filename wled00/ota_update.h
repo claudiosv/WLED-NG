@@ -87,5 +87,5 @@ std::pair<bool, String> getBootloaderOTAResult(AsyncWebServerRequest *request);
  * @param len Length of new data bytes
  * @param isFinal Indicates that this is the last block
  */
-void handleBootloaderOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, size_t len, bool isFinal);
+void handleBootloaderOTAData(AsyncWebServerRequest *request, size_t index, const uint8_t *data, size_t len, bool isFinal);
 #endif

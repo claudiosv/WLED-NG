@@ -6,8 +6,8 @@
 
 #include "dmx_input.h"
 
-void rdmPersonalityChangedCb(dmx_port_t dmxPort, const rdm_header_t *header, void *context) {
-  DMXInput *dmx = static_cast<DMXInput *>(context);
+void rdmPersonalityChangedCb(dmx_port_t  /*dmxPort*/, const rdm_header_t *header, void *context) {
+  auto *dmx = static_cast<DMXInput *>(context);
 
   if (!dmx) {
     DEBUG_PRINTLN("DMX: Error: no context in rdmPersonalityChangedCb");
@@ -22,8 +22,8 @@ void rdmPersonalityChangedCb(dmx_port_t dmxPort, const rdm_header_t *header, voi
   }
 }
 
-void rdmAddressChangedCb(dmx_port_t dmxPort, const rdm_header_t *header, void *context) {
-  DMXInput *dmx = static_cast<DMXInput *>(context);
+void rdmAddressChangedCb(dmx_port_t  /*dmxPort*/, const rdm_header_t *header, void *context) {
+  auto *dmx = static_cast<DMXInput *>(context);
 
   if (!dmx) {
     DEBUG_PRINTLN("DMX: Error: no context in rdmAddressChangedCb");
@@ -80,7 +80,7 @@ static dmx_config_t createConfig() {
 }
 
 void dmxReceiverTask(void *context) {
-  DMXInput *instance = static_cast<DMXInput *>(context);
+  auto *instance = static_cast<DMXInput *>(context);
   if (instance == nullptr) {
     return;
   }
@@ -200,7 +200,7 @@ void DMXInput::update() {
 }
 
 void DMXInput::turnOnAllLeds() {
-  // TODO not sure if this is the correct way?
+  // TODO: claudio - not sure if this is the correct way?
   const uint16_t numPixels = strip.getLengthTotal();
   for (uint16_t i = 0; i < numPixels; ++i) {
     strip.setPixelColor(i, 255, 255, 255, 255);
@@ -209,12 +209,12 @@ void DMXInput::turnOnAllLeds() {
   strip.show();
 }
 
-void DMXInput::disable() {
+void DMXInput::disable() const {
   if (initialized) {
     dmx_driver_disable(inputPortNum);
   }
 }
-void DMXInput::enable() {
+void DMXInput::enable() const {
   if (initialized) {
     dmx_driver_enable(inputPortNum);
   }
@@ -228,7 +228,7 @@ bool DMXInput::isIdentifyOn() const {
   return static_cast<bool>(identify) && gotIdentify;
 }
 
-void DMXInput::checkAndUpdateConfig() {
+void DMXInput::checkAndUpdateConfig() const {
   /**
    * The global configuration variables are modified by the web interface.
    * If they differ from the driver configuration, we have to update the driver

@@ -103,7 +103,7 @@ typedef struct ip_addr ip4_addr_t;
 #define E131_DMP_DATA       125
 
 // E1.31 Packet Structure
-typedef union {
+using e131_packet_t = union {
   struct {  // E1.31 packet
     // Root Layer
     uint16_t preamble_size;
@@ -167,9 +167,9 @@ typedef union {
   } __attribute__((packed));*/
 
   uint8_t raw[1458];
-} e131_packet_t;
+};
 
-typedef union {
+using ArtPollReply = union {
   struct {
     uint8_t  reply_id[8];
     uint16_t reply_opcode;
@@ -209,21 +209,21 @@ typedef union {
   } __attribute__((packed));
 
   uint8_t raw[239];
-} ArtPollReply;
+};
 
 // new packet callback
-typedef void (*e131_packet_callback_function)(e131_packet_t* p, IPAddress clientIP, byte protocol);
+using e131_packet_callback_function = void (*)(e131_packet_t* p, IPAddress clientIP, byte protocol);
 
 class ESPAsyncE131 {
  private:
   // Constants for packet validation
-  static const uint8_t  ACN_ID[];
-  static const uint8_t  ART_ID[];
-  static const uint32_t VECTOR_ROOT  = 4;
-  static const uint32_t VECTOR_FRAME = 2;
-  static const uint8_t  VECTOR_DMP   = 2;
+  static const uint8_t  kAcnId[];
+  static const uint8_t  kArtId[];
+  static const uint32_t kVectorRoot  = 4;
+  static const uint32_t kVectorFrame = 2;
+  static const uint8_t  kVectorDmp   = 2;
 
-  AsyncUDP udp;  // AsyncUDP
+  AsyncUDP udp_;  // AsyncUDP
 
   // Internal Initializers
   bool initUnicast(uint16_t port);
@@ -232,10 +232,10 @@ class ESPAsyncE131 {
   // Packet parser callback
   void parsePacket(AsyncUDPPacket _packet);
 
-  e131_packet_callback_function _callback = nullptr;
+  e131_packet_callback_function callback_ = nullptr;
 
  public:
-  ESPAsyncE131(e131_packet_callback_function callback);
+  explicit ESPAsyncE131(e131_packet_callback_function callback);
 
   // Generic UDP listener, no physical or IP configuration
   bool begin(bool multicast, uint16_t port = E131_DEFAULT_PORT, uint16_t universe = 1, uint8_t n = 1);
@@ -244,28 +244,28 @@ class ESPAsyncE131 {
 // Class to track e131 package priority
 class E131Priority {
  private:
-  uint8_t priority;
-  time_t  setupTime;
-  uint8_t seconds;
+  uint8_t priority_;
+  time_t  setupTime_;
+  uint8_t seconds_;
 
  public:
-  E131Priority(uint8_t timeout = 3) {
-    seconds = timeout;
+  explicit E131Priority(uint8_t timeout = 3) {
+    seconds_ = timeout;
     set(0);
   };
 
   // Set priority (+ remember time)
   void set(uint8_t prio) {
-    setupTime = time(0);
-    priority  = prio;
+    setupTime_ = time(0);
+    priority_  = prio;
   }
 
   // Get priority (+ reset & return 0 if older timeout)
   uint8_t get() {
-    if (time(0) > setupTime + seconds) {
-      priority = 0;
+    if (time(0) > setupTime_ + seconds_) {
+      priority_ = 0;
     }
-    return priority;
+    return priority_;
   }
 };
 

@@ -9,10 +9,10 @@
 static bool sendLiveLedsWs(uint32_t wsClient);
 
 // define some constants for binary protocols, dont use defines but C++ style constexpr
-constexpr uint8_t BINARY_PROTOCOL_GENERIC = 0xFF;      // generic / auto detect NOT IMPLEMENTED
-constexpr uint8_t BINARY_PROTOCOL_E131    = P_E131;    // = 0, untested!
-constexpr uint8_t BINARY_PROTOCOL_ARTNET  = P_ARTNET;  // = 1, untested!
-constexpr uint8_t BINARY_PROTOCOL_DDP     = P_DDP;     // = 2
+constexpr uint8_t kBinaryProtocolGeneric = 0xFF;      // generic / auto detect NOT IMPLEMENTED
+constexpr uint8_t kBinaryProtocolE131    = P_E131;    // = 0, untested!
+constexpr uint8_t kBinaryProtocolArtnet  = P_ARTNET;  // = 1, untested!
+constexpr uint8_t kBinaryProtocolDdp     = P_DDP;     // = 2
 
 static uint16_t      wsLiveClientId = 0;
 static unsigned long wsLastLiveTime = 0;
@@ -20,7 +20,7 @@ static unsigned long wsLastLiveTime = 0;
 
 #define WS_LIVE_INTERVAL 40
 
-void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data,
+void wsEvent(AsyncWebSocket*  /*server*/, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data,
              size_t len) {
   if (type == WS_EVT_CONNECT) {
     // client connected
@@ -34,7 +34,7 @@ void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     DEBUG_PRINTLN("WS client disconnected.");
   } else if (type == WS_EVT_DATA) {
     // data packet
-    AwsFrameInfo* info = static_cast<AwsFrameInfo*>(arg);
+    auto* info = static_cast<AwsFrameInfo*>(arg);
     if (info->final && info->index == 0 && info->len == len) {
       // the whole message is in a single frame and we got all of its data (max. 1428 bytes)
       if (info->opcode == WS_TEXT) {
@@ -84,31 +84,31 @@ void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
       } else if (info->opcode == WS_BINARY) {
         // first byte determines protocol. Note: since e131_packet_t is "packed", the compiler handles alignment issues
         // DEBUG_PRINTF_P("WS binary message: len %u, byte0: %u\n", len, data[0]);
-        constexpr int offset = 1;  // offset to skip protocol byte
-        if (!data || len < offset + 1) {
+        constexpr int kOffset = 1;  // offset to skip protocol byte
+        if (!data || len < kOffset + 1) {
           return;  // catch invalid / single-byte payload
         }
         switch (data[0]) {
-          case BINARY_PROTOCOL_E131:
-            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_E131);
+          case kBinaryProtocolE131:
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[kOffset]), client->remoteIP(), P_E131);
             break;
-          case BINARY_PROTOCOL_ARTNET:
-            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_ARTNET);
+          case kBinaryProtocolArtnet:
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[kOffset]), client->remoteIP(), P_ARTNET);
             break;
-          case BINARY_PROTOCOL_DDP:
-            if (len < 10 + offset) {
+          case kBinaryProtocolDdp:
+            if (len < 10 + kOffset) {
               return;  // DDP header is 10 bytes (+1 protocol byte)
             }
-            size_t  ddpDataLen = (data[8 + offset] << 8) | data[9 + offset];  // data length in bytes from DDP header
-            uint8_t flags      = data[0 + offset];
+            size_t  ddpDataLen = (data[8 + kOffset] << 8) | data[9 + kOffset];  // data length in bytes from DDP header
+            uint8_t flags      = data[0 + kOffset];
             if ((flags & DDP_FLAGS_TIME)) {
               ddpDataLen += 4;  // timecode flag adds 4 bytes to data length
             }
-            if (len < (10 + offset + ddpDataLen)) {
+            if (len < (10 + kOffset + ddpDataLen)) {
               return;  // not enough data, prevent out of bounds read
             }
             // could be a valid DDP packet, forward to handler
-            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_DDP);
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[kOffset]), client->remoteIP(), P_DDP);
         }
       }
     } else {
@@ -221,13 +221,13 @@ static bool sendLiveLedsWs(uint32_t wsClient) {
     pos = 4;
   }
 #endif
-  size_t bufSize = pos + (used / n) * 3;
+  size_t bufSize = pos + ((used / n) * 3);
 
   AsyncWebSocketBuffer wsBuf(bufSize);
   if (!wsBuf) {
     return false;  // out of memory
   }
-  uint8_t* buffer = reinterpret_cast<uint8_t*>(wsBuf.data());
+  auto* buffer = reinterpret_cast<uint8_t*>(wsBuf.data());
   if (!buffer) {
     return false;  // out of memory
   }

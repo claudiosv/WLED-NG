@@ -16,7 +16,7 @@ static const char* sTopicFormat = "%.*s/%s";
 // parse payload for brightness, ON/OFF or toggle
 // briLast is used to remember last brightness value in case of ON/OFF or toggle
 // bri is set to 0 if payload is "0" or "OFF" or "false"
-static void parseMQTTBriPayload(char* payload) {
+static void parseMQTTBriPayload(const char* payload) {
   if (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {
     bri = briLast;
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
@@ -65,7 +65,7 @@ static void onMqttConnect(bool sessionPresent) {
   publishMqtt();
 }
 
-static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len,
+static void onMqttMessage(char* topic, const char* payload, AsyncMqttClientMessageProperties  /*properties*/, size_t len,
                           size_t index, size_t total) {
   static char* payloadStr;
 
@@ -143,32 +143,32 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
 
 // Print adapter for flat buffers
 namespace {
-  class bufferPrint : public Print {
-    char*  _buf;
-    size_t _size, _offset;
+  class BufferPrint : public Print {
+    char*  buf_;
+    size_t size_, _offset{0};
 
    public:
-    bufferPrint(char* buf, size_t size) : _buf(buf), _size(size), _offset(0) {};
+    BufferPrint(char* buf, size_t size) : buf_(buf), size_(size) {};
 
-    size_t write(const uint8_t* buffer, size_t size) {
+    size_t write(const uint8_t* buffer, size_t size) override {
       size = std::min(size, _size - _offset);
-      memcpy(_buf + _offset, buffer, size);
+      memcpy(buf_ + _offset, buffer, size);
       _offset += size;
       return size;
     }
 
-    size_t write(uint8_t c) {
+    size_t write(uint8_t c) override {
       return this->write(&c, 1);
     }
 
     char* data() const {
-      return _buf;
+      return buf_;
     }
     size_t size() const {
       return _offset;
     }
     size_t capacity() const {
-      return _size;
+      return size_;
     }
   };
 };  // anonymous namespace
@@ -196,7 +196,7 @@ void publishMqtt() {
 
   // TODO: use a DynamicBufferList.  Requires a list-read-capable MQTT client API.
   DynamicBuffer buf(1024);
-  bufferPrint   pbuf(buf.data(), buf.size());
+  BufferPrint   pbuf(buf.data(), buf.size());
   XML_response(pbuf);
   snprintf(subuf, sizeof(subuf) - 1, sTopicFormat, MQTT_MAX_TOPIC_LEN, mqttDeviceTopic, "v");
   mqtt->publish(subuf, 0, retainMqttMsg, buf.data(), pbuf.size());  // optionally retain message (#2263)
@@ -244,9 +244,10 @@ bool initMqtt() {
       } else {
         mqtt->setServer(mqttServer, mqttPort);
       }
-    } else
+    } else {
 #endif
       mqtt->setServer(mqttServer, mqttPort);
+}
   }
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0]) {

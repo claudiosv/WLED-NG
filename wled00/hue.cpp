@@ -47,12 +47,12 @@ void reconnectHue() {
   hueClient->connect(hueIP, 80);
 }
 
-void onHueError(void* arg, AsyncClient* client, int8_t error) {
+void onHueError(void*  /*arg*/, AsyncClient*  /*client*/, int8_t  /*error*/) {
   DEBUG_PRINTLN("Hue err");
   hueError = HUE_ERROR_TIMEOUT;
 }
 
-void onHueConnect(void* arg, AsyncClient* client) {
+void onHueConnect(void*  /*arg*/, AsyncClient*  /*client*/) {
   DEBUG_PRINTLN("Hue connect");
   sendHuePoll();
 }
@@ -80,7 +80,7 @@ void sendHuePoll() {
   hueLastRequestSent = millis();
 }
 
-void onHueData(void* arg, AsyncClient* client, void* data, size_t len) {
+void onHueData(void*  /*arg*/, AsyncClient*  /*client*/, void* data, size_t len) {
   if (!len) {
     return;
   }
@@ -145,9 +145,13 @@ void onHueData(void* arg, AsyncClient* client, void* data, size_t len) {
     return;
   }
 
-  float    hueX = 0, hueY = 0;
-  uint16_t hueHue = 0, hueCt = 0;
-  byte     hueBri = 0, hueSat = 0, hueColormode = 0;
+  float    hueX = 0;
+  float    hueY = 0;
+  uint16_t hueHue = 0;
+  uint16_t hueCt = 0;
+  byte     hueBri = 0;
+  byte     hueSat = 0;
+  byte     hueColormode = 0;
 
   if (root["on"]) {
     if (root.containsKey("bri"))  // Dimmable device
@@ -157,7 +161,7 @@ void onHueData(void* arg, AsyncClient* client, void* data, size_t len) {
       const char* cm = root["colormode"];
       if (cm != nullptr)  // Color device
       {
-        if (strstr(cm, ("ct")) != nullptr)  // ct mode
+        if (strstr(cm, "ct") != nullptr)  // ct mode
         {
           hueCt        = root["ct"];
           hueColormode = 3;

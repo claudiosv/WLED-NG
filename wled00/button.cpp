@@ -4,14 +4,16 @@
  * Physical IO
  */
 
-#define WLED_DEBOUNCE_THRESHOLD 50   // only consider button input of at least 50ms as valid (debouncing)
-#define WLED_LONG_PRESS         600  // long press if button is released after held for at least 600ms
-#define WLED_DOUBLE_PRESS       350  // double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION \
-  400  // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
-#define WLED_LONG_AP            5000   // how long button 0 needs to be held to activate WLED-AP
-#define WLED_LONG_FACTORY_RESET 10000  // how long button 0 needs to be held to trigger a factory reset
-#define WLED_LONG_BRI_STEPS     16     // how much to increase/decrease the brightness with each long press repetition
+enum {
+WLED_DEBOUNCE_THRESHOLD = 50,   // only consider button input of at least 50ms as valid (debouncing)
+WLED_LONG_PRESS =         600,  // long press if button is released after held for at least 600ms
+WLED_DOUBLE_PRESS =       350,  // double press if another press within 350ms after a short press
+WLED_LONG_REPEATED_ACTION = \
+  400,  // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+WLED_LONG_AP =            5000,   // how long button 0 needs to be held to activate WLED-AP
+WLED_LONG_FACTORY_RESET = 10000,  // how long button 0 needs to be held to trigger a factory reset
+WLED_LONG_BRI_STEPS =     16     // how much to increase/decrease the brightness with each long press repetition
+};
 
 static const char _mqtt_topic_button[] = "%s/button/%d";  // optimize flash usage
 static bool       buttonBriDirection   = false;           // true: increase brightness, false: decrease brightness
@@ -151,7 +153,7 @@ bool isButtonPressed(uint8_t b) {
   return false;
 }
 
-void handleSwitch(uint8_t b) {
+static void handleSwitch(uint8_t b) {
   // isButtonPressed() handles inverted/noninverted logic
   if (buttons[b].pressedBefore != isButtonPressed(b)) {
     DEBUG_PRINTF_P("Switch: State changed %u\n", b);
@@ -205,14 +207,18 @@ void handleSwitch(uint8_t b) {
   }
 }
 
-#define ANALOG_BTN_READ_CYCLE 250    // min time between two analog reading cycles
-#define STRIP_WAIT_TIME       6      // max wait time in case of strip.isUpdating()
+enum {
+ANALOG_BTN_READ_CYCLE = 250,    // min time between two analog reading cycles
+STRIP_WAIT_TIME =       6      // max wait time in case of strip.isUpdating()
+};
 #define POT_SMOOTHING         0.25f  // smoothing factor for raw potentiometer readings
-#define POT_SENSITIVITY       4      // changes below this amount are noise (POT scratching, or ADC noise)
+enum {
+POT_SENSITIVITY =       4      // changes below this amount are noise (POT scratching, or ADC noise)
+};
 
-void handleAnalog(uint8_t b) {
+static void handleAnalog(uint8_t b) {
   static uint8_t oldRead[WLED_MAX_BUTTONS]         = {0};
-  static float   filteredReading[WLED_MAX_BUTTONS] = {0.0f};
+  static float   filteredReading[WLED_MAX_BUTTONS] = {0.0F};
   unsigned       rawReading;  // raw value from analogRead, scaled to 12bit
 
   DEBUG_PRINTF_P("Analog: Reading button %u\n", b);
@@ -224,7 +230,7 @@ void handleAnalog(uint8_t b) {
   yield();                                  // keep WiFi task running
 
   filteredReading[b] +=
-      POT_SMOOTHING * ((static_cast<float>(rawReading) / 16.0f) - filteredReading[b]);  // filter raw input, and scale to [0..255]
+      POT_SMOOTHING * ((static_cast<float>(rawReading) / 16.0F) - filteredReading[b]);  // filter raw input, and scale to [0..255]
   unsigned aRead = max(min(static_cast<int>(filteredReading[b]), 255), 0);              // squash into 8bit
   if (aRead <= POT_SENSITIVITY) {
     aRead = 0;  // make sure that 0 and 255 are used
@@ -301,7 +307,7 @@ void handleAnalog(uint8_t b) {
     }
   } else {
     DEBUG_PRINTLN("Analog: No action");
-    // TODO:
+    // TODO: claudio - some details
     //  we can either trigger a preset depending on the level (between short and long entries)
     //  or use it for RGBW direct control
   }
@@ -447,7 +453,7 @@ void handleOnOff(bool forceOff) {
       BusManager::on();
       if (rlyPin >= 0) {
         // note: pinMode is set in first call to handleOnOff(true) in beginStrip()
-        digitalWrite(rlyPin, rlyMde);  // set to on state
+        digitalWrite(rlyPin, static_cast<uint8_t>(rlyMde));  // set to on state
         delay(RELAY_DELAY);            // let power stabilize before sending LED data (#346 #812 #3581 #3955)
       }
       offMode = false;
@@ -457,7 +463,7 @@ void handleOnOff(bool forceOff) {
     if (!offMode) {
       BusManager::off();
       if (rlyPin >= 0) {
-        digitalWrite(rlyPin, !rlyMde);  // set output before disabling high-z state to avoid output glitches
+        digitalWrite(rlyPin, static_cast<uint8_t>(!rlyMde));  // set output before disabling high-z state to avoid output glitches
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
       }
       offMode = true;

@@ -1,19 +1,23 @@
+#include <algorithm>
+
 #include "wled.h"
 
-#define JSON_PATH_STATE      1
-#define JSON_PATH_INFO       2
-#define JSON_PATH_STATE_INFO 3
-#define JSON_PATH_NODES      4
-#define JSON_PATH_PALETTES   5
-#define JSON_PATH_FXDATA     6
-#define JSON_PATH_NETWORKS   7
-#define JSON_PATH_EFFECTS    8
+enum {
+JSON_PATH_STATE =      1,
+JSON_PATH_INFO =       2,
+JSON_PATH_STATE_INFO = 3,
+JSON_PATH_NODES =      4,
+JSON_PATH_PALETTES =   5,
+JSON_PATH_FXDATA =     6,
+JSON_PATH_NETWORKS =   7,
+JSON_PATH_EFFECTS =    8
+};
 
 /*
  * JSON API (De)serialization
  */
 namespace {
-  typedef struct {
+  using SegmentCopy = struct {
     uint32_t colors[NUM_COLORS];
     uint16_t start;
     uint16_t stop;
@@ -34,7 +38,7 @@ namespace {
     bool     check1;
     bool     check2;
     bool     check3;
-  } SegmentCopy;
+  };
 
   uint8_t differs(const Segment& b, const SegmentCopy& a) {
     uint8_t d = 0;
@@ -178,7 +182,7 @@ static bool deserializeSegment(JsonObject elem, byte it, byte presetId = 0) {
       if (start >= strip.getLengthTotal()) {
         break;
       }
-      // TODO: add support for 2D
+      // TODO: claudio - add support for 2D
       elem["start"] = start;
       elem["stop"]  = start + len;
       elem["rev"]   = !elem["rev"];           // alternate reverse on even/odd segments
@@ -257,7 +261,7 @@ static bool deserializeSegment(JsonObject elem, byte it, byte presetId = 0) {
     if (segbri > 0) {
       seg.setOpacity(segbri);  // use transition
     }
-    seg.setOption(SEG_OPTION_ON, segbri);  // use transition
+    seg.setOption(SEG_OPTION_ON, segbri != 0u);  // use transition
   }
 
   seg.setOption(SEG_OPTION_ON, getBoolVal(elem["on"], seg.on));  // use transition
@@ -411,7 +415,8 @@ static bool deserializeSegment(JsonObject elem, byte it, byte presetId = 0) {
       seg.clear();
     }
 
-    unsigned iStart = 0, iStop = 0;
+    unsigned iStart = 0;
+    unsigned iStop = 0;
     unsigned iSet = 0;  // 0 nothing set, 1 start set, 2 range set
 
     for (size_t i = 0; i < iarr.size(); i++) {
@@ -470,14 +475,14 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId) {
   netDebugEnabled = root["debug"] | netDebugEnabled;
 #endif
 
-  bool onBefore = bri;
+  bool onBefore = bri != 0u;
   getVal(root["bri"], bri);
   if (bri != briOld) {
     stateChanged = true;
   }
 
   bool on = root["on"] | (bri > 0);
-  if (!on != !bri) {
+  if (!on != bri == 0u) {
     toggleOnOff();
   }
 
@@ -556,11 +561,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId) {
   }
 
   realtimeOverride = root["lor"] | realtimeOverride;
-  if (realtimeOverride > 2) {
-    realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
-  }
+  realtimeOverride = std::min<byte>(realtimeOverride, 2);
   if (realtimeMode && useMainSegmentOnly) {
-    strip.getMainSegment().freeze = !realtimeOverride;
+    strip.getMainSegment().freeze = (realtimeOverride == 0u);
     realtimeOverride              = REALTIME_OVERRIDE_NONE;  // ignore request for override if using main segment only
   }
 
@@ -656,9 +659,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       applyPreset(presetCycCurr, callMode);  // async load from file system (only preset ID was specified)
       return stateResponse;
-    } else {
-      presetCycCurr = currentPreset;  // restore presetCycCurr
-    }
+    }       presetCycCurr = currentPreset;  // restore presetCycCurr
+   
   }
 
   JsonObject playlist = root["playlist"];
@@ -829,9 +831,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
         JsonObject seg0 = seg.createNestedObject();
         seg0["stop"]    = 0;
         continue;
-      } else {
-        break;
-      }
+      }         break;
+     
     }
     const Segment& sg = strip.getSegment(s);
     if (forPreset && selectedSegmentsOnly && !sg.isSelected()) {
@@ -1078,7 +1079,7 @@ static void setPaletteColors(JsonArray json, CRGBPalette16 palette) {
 }
 
 static void setPaletteColors(JsonArray json, byte* tcp) {
-  TRGBGradientPaletteEntryUnion* ent = reinterpret_cast<TRGBGradientPaletteEntryUnion*>(tcp);
+  auto* ent = reinterpret_cast<TRGBGradientPaletteEntryUnion*>(tcp);
   TRGBGradientPaletteEntryUnion  u;
 
   // Count entries
@@ -1104,20 +1105,20 @@ static void setPaletteColors(JsonArray json, byte* tcp) {
   }
 }
 
-void serializePalettes(JsonObject root, int page) {
+static void serializePalettes(JsonObject root, int page) {
   byte          tcp[72];
-  constexpr int itemPerPage = 8;
+  constexpr int kItemPerPage = 8;
 
   const int customPalettesCount = customPalettes.size();
   const int palettesCount       = FIXED_PALETTE_COUNT;  // palettesCount is number of palettes, not palette index
 
-  const int maxPage = (palettesCount + customPalettesCount) / itemPerPage;
+  const int maxPage = (palettesCount + customPalettesCount) / kItemPerPage;
   if (page > maxPage) {
     page = maxPage;
   }
 
-  const int start = itemPerPage * page;
-  int       end   = min(start + itemPerPage, palettesCount + customPalettesCount);
+  const int start = kItemPerPage * page;
+  int       end   = min(start + kItemPerPage, palettesCount + customPalettesCount);
 
   root["m"]           = maxPage;  // inform caller how many pages there are
   JsonObject palettes = root.createNestedObject("p");
@@ -1175,7 +1176,7 @@ void serializePalettes(JsonObject root, int page) {
   }
 }
 
-void serializeNetworks(JsonObject root) {
+static void serializeNetworks(JsonObject root) {
   JsonArray networks = root.createNestedArray("networks");
   int16_t   status   = WiFi.scanComplete();
 
@@ -1203,7 +1204,7 @@ void serializeNetworks(JsonObject root) {
   }
 }
 
-void serializeNodes(JsonObject root) {
+static void serializeNodes(JsonObject root) {
   JsonArray nodes = root.createNestedArray("nodes");
 
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it) {
@@ -1220,9 +1221,9 @@ void serializeNodes(JsonObject root) {
 
 void serializePins(JsonObject root) {
   JsonArray     pins      = root.createNestedArray("pins");
-  constexpr int ENUM_PINS = WLED_NUM_PINS;
+  constexpr int kEnumPins = WLED_NUM_PINS;
 
-  for (int gpio = 0; gpio < ENUM_PINS; gpio++) {
+  for (int gpio = 0; gpio < kEnumPins; gpio++) {
     bool canInput    = PinManager::isPinOk(gpio, false);
     bool canOutput   = PinManager::isPinOk(gpio, true);
     bool isAllocated = PinManager::isPinAllocated(gpio);
@@ -1252,7 +1253,7 @@ void serializePins(JsonObject root) {
     }
 
 // Bootloader/strapping pins
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#ifdef CONFIG_IDF_TARGET_ESP32S3
     if (gpio == 0) {
       caps |= PIN_CAP_BOOT;  // pull low to enter bootloader mode
     }
@@ -1353,8 +1354,8 @@ void serializePins(JsonObject root) {
 void serializeModeNames(JsonArray arr) {
   char lineBuffer[256];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    strncpy(lineBuffer, strip.getModeData(i), sizeof(lineBuffer) / sizeof(char) - 1);
-    lineBuffer[sizeof(lineBuffer) / sizeof(char) - 1] = '\0';  // terminate string
+    strncpy(lineBuffer, strip.getModeData(i), (sizeof(lineBuffer) / sizeof(char)) - 1);
+    lineBuffer[(sizeof(lineBuffer) / sizeof(char)) - 1] = '\0';  // terminate string
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer, '@');
       if (dataPtr) {
@@ -1420,7 +1421,7 @@ static size_t writeJSONStringElement(uint8_t* dest, size_t maxLen, const char* s
 // packet buffer, minimizing the required state (ie. just the next index to send).  This
 // allows us to send an arbitrarily large response without using any significant amount of
 // memory (so no worries about buffer limits).
-void respondModeData(AsyncWebServerRequest* request) {
+static void respondModeData(AsyncWebServerRequest* request) {
   size_t fx_index = 0;
   request->sendChunked(CONTENT_TYPE_JSON, [fx_index](uint8_t* data, size_t len, size_t) mutable {
     size_t bytes_written = 0;
@@ -1456,16 +1457,16 @@ void respondModeData(AsyncWebServerRequest* request) {
 
 // Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
 class LockedJsonResponse : public AsyncJsonResponse {
-  bool _holding_lock;
+  bool _holding_lock{true};
 
  public:
   // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the
   // instance Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer
   // or existing buffer, with existing buffer it clears its content during construction if the lock was not acquired
   // (using JSONBufferGuard class) previous implementation still cleared existing buffer
-  inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
+  LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray) {};
 
-  virtual size_t _fillBuffer(uint8_t* buf, size_t maxLen) {
+  size_t _fillBuffer(uint8_t* buf, size_t maxLen) override {
     size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
     // Release lock as soon as we're done filling content
     if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
@@ -1476,7 +1477,7 @@ class LockedJsonResponse : public AsyncJsonResponse {
   }
 
   // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
-  virtual ~LockedJsonResponse() {
+  ~LockedJsonResponse() override {
     if (_holding_lock) {
       releaseJSONBufferLock();
     }
@@ -1485,41 +1486,41 @@ class LockedJsonResponse : public AsyncJsonResponse {
 
 void serveJson(AsyncWebServerRequest* request) {
   enum class json_target {
-    all,
-    state,
-    info,
-    state_info,
-    nodes,
-    effects,
-    palettes,
-    networks,
-    config,
-    pins
+    kAll,
+    kState,
+    kInfo,
+    kStateInfo,
+    kNodes,
+    kEffects,
+    kPalettes,
+    kNetworks,
+    kConfig,
+    kPins
   };
-  json_target subJson = json_target::all;
+  json_target subJson = json_target::kAll;
 
   const String& url = request->url();
   if (url.indexOf("state") > 0) {
-    subJson = json_target::state;
+    subJson = json_target::kState;
   } else if (url.indexOf("info") > 0) {
-    subJson = json_target::info;
+    subJson = json_target::kInfo;
   } else if (url.indexOf("si") > 0) {
-    subJson = json_target::state_info;
+    subJson = json_target::kStateInfo;
   } else if (url.indexOf("nodes") > 0) {
-    subJson = json_target::nodes;
+    subJson = json_target::kNodes;
   } else if (url.indexOf("eff") > 0) {
-    subJson = json_target::effects;
+    subJson = json_target::kEffects;
   } else if (url.indexOf("palx") > 0) {
-    subJson = json_target::palettes;
+    subJson = json_target::kPalettes;
   } else if (url.indexOf("fxda") > 0) {
     respondModeData(request);
     return;
   } else if (url.indexOf("net") > 0) {
-    subJson = json_target::networks;
+    subJson = json_target::kNetworks;
   } else if (url.indexOf("cfg") > 0) {
-    subJson = json_target::config;
+    subJson = json_target::kConfig;
   } else if (url.indexOf("pins") > 0) {
-    subJson = json_target::pins;
+    subJson = json_target::kPins;
   }
 #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live") > 0) {
@@ -1541,43 +1542,43 @@ void serveJson(AsyncWebServerRequest* request) {
   }
   // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
   // make sure you delete "response" if no "request->send(response);" is made
-  LockedJsonResponse* response = new LockedJsonResponse(
-      pDoc, subJson == json_target::effects);  // will clear and convert JsonDocument into JsonArray if necessary
+  auto* response = new LockedJsonResponse(
+      pDoc, subJson == json_target::kEffects);  // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
   switch (subJson) {
-    case json_target::state:
+    case json_target::kState:
       serializeState(lDoc);
       break;
-    case json_target::info:
+    case json_target::kInfo:
       serializeInfo(lDoc);
       break;
-    case json_target::nodes:
+    case json_target::kNodes:
       serializeNodes(lDoc);
       break;
-    case json_target::palettes:
+    case json_target::kPalettes:
       serializePalettes(lDoc, request->hasParam("page") ? request->getParam("page")->value().toInt() : 0);
       break;
-    case json_target::effects:
+    case json_target::kEffects:
       serializeModeNames(lDoc);
       break;
-    case json_target::networks:
+    case json_target::kNetworks:
       serializeNetworks(lDoc);
       break;
-    case json_target::config:
+    case json_target::kConfig:
       serializeConfig(lDoc);
       break;
-    case json_target::pins:
+    case json_target::kPins:
       serializePins(lDoc);
       break;
-    case json_target::state_info:
-    case json_target::all:
+    case json_target::kStateInfo:
+    case json_target::kAll:
       JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
       JsonObject info = lDoc.createNestedObject("info");
       serializeInfo(info);
-      if (subJson == json_target::all) {
+      if (subJson == json_target::kAll) {
         JsonArray effects = lDoc.createNestedArray("effects");
         serializeModeNames(effects);  // remove WLED-SR extensions from effect names
         lDoc["palettes"] = serialized((const __FlashStringHelper*)JSON_palette_names);

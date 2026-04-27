@@ -3,6 +3,7 @@
 #include <pgmspace.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <cstring>  // for mem operations
 
 // Code originally from FastLED version 3.6.0. Optimized for WLED use by @dedehai
@@ -43,22 +44,21 @@ struct CHSV;
 class CRGBPalette16;
 
 typedef uint32_t TProgmemRGBPalette16[16];
-typedef uint8_t  TDynamicRGBGradientPalette_byte;  // Byte of an RGB gradient entry, stored in dynamic (heap) memory
-typedef const TDynamicRGBGradientPalette_byte*
-    TDynamicRGBGradientPalette_bytes;  // Pointer to bytes of an RGB gradient, stored in dynamic (heap) memory
-typedef TDynamicRGBGradientPalette_bytes TDynamicRGBGradientPalettePtr;  // Alias of ::TDynamicRGBGradientPalette_bytes
-typedef const uint8_t                    TProgmemRGBGradientPalette_byte;
-typedef const TProgmemRGBGradientPalette_byte* TProgmemRGBGradientPalette_bytes;
-typedef TProgmemRGBGradientPalette_bytes       TProgmemRGBGradientPalettePtr;
+using TDynamicRGBGradientPalette_byte = uint8_t;  // Byte of an RGB gradient entry, stored in dynamic (heap) memory
+using TDynamicRGBGradientPalette_bytes = TDynamicRGBGradientPalette_byte*;  // Pointer to bytes of an RGB gradient, stored in dynamic (heap) memory
+using TDynamicRGBGradientPalettePtr = TDynamicRGBGradientPalette_bytes;  // Alias of ::TDynamicRGBGradientPalette_bytes
+using TProgmemRGBGradientPalette_byte = uint8_t;
+using TProgmemRGBGradientPalette_bytes = TProgmemRGBGradientPalette_byte*;
+using TProgmemRGBGradientPalettePtr = TProgmemRGBGradientPalette_bytes;
 
 // color interpolation options for palette
-typedef enum {
+using TBlendType = enum {
   NOBLEND     = 0,  // No interpolation between palette entries
   LINEARBLEND = 1,  // Linear interpolation between palette entries, with wrap-around from end to the beginning again
   LINEARBLEND_NOWRAP = 2  // Linear interpolation between palette entries, but no wrap-around
-} TBlendType;
+};
 
-typedef union {
+using TRGBGradientPaletteEntryUnion = union {
   struct {
     uint8_t index;  // index of the color entry in the gradient
     uint8_t r;
@@ -67,7 +67,7 @@ typedef union {
   };
   uint32_t dword;     // values packed as 32-bit
   uint8_t  bytes[4];  // values as an array
-} TRGBGradientPaletteEntryUnion;
+};
 
 // function prototypes
 void hsv2rgb_rainbow(uint16_t h, uint8_t s, uint8_t v, uint8_t* rgbdata, bool isRGBW);
@@ -109,30 +109,30 @@ struct CHSV {
     uint8_t raw[3];  // order is: hue [0], saturation [1], value [2]
   };
 
-  inline uint8_t& operator[](uint8_t x) __attribute__((always_inline)) {
+  uint8_t& operator[](uint8_t x) __attribute__((always_inline)) {
     return raw[x];
   }
 
-  inline const uint8_t& operator[](uint8_t x) const __attribute__((always_inline)) {
+  const uint8_t& operator[](uint8_t x) const __attribute__((always_inline)) {
     return raw[x];
   }
 
   // default constructor
   // @warning default values are UNINITIALIZED!
-  inline CHSV() __attribute__((always_inline)) = default;
+  CHSV() __attribute__((always_inline)) = default;
 
   // allow construction from hue, saturation, and value
-  inline CHSV(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) : h(ih), s(is), v(iv) {
+  CHSV(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) : h(ih), s(is), v(iv) {
   }
 
   // allow copy construction
-  inline CHSV(const CHSV& rhs) __attribute__((always_inline)) = default;
+  CHSV(const CHSV& rhs) __attribute__((always_inline)) = default;
 
   // allow copy construction
-  inline CHSV& operator=(const CHSV& rhs) __attribute__((always_inline)) = default;
+  CHSV& operator=(const CHSV& rhs) __attribute__((always_inline)) = default;
 
   // assign new HSV values
-  inline CHSV& setHSV(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) {
+  CHSV& setHSV(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) {
     h = ih;
     s = is;
     v = iv;
@@ -160,57 +160,57 @@ struct CRGB {
     uint8_t raw[3];  // order is: 0 = red, 1 = green, 2 = blue
   };
 
-  inline uint8_t& operator[](uint8_t x) __attribute__((always_inline)) {
+  uint8_t& operator[](uint8_t x) __attribute__((always_inline)) {
     return raw[x];
   }
 
   // array access operator to index into the CRGB object
-  inline const uint8_t& operator[](uint8_t x) const __attribute__((always_inline)) {
+  const uint8_t& operator[](uint8_t x) const __attribute__((always_inline)) {
     return raw[x];
   }
 
   // default constructor (uninitialized)
-  inline CRGB() __attribute__((always_inline)) = default;
+  CRGB() __attribute__((always_inline)) = default;
 
   // allow construction from red, green, and blue
-  inline CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {
+  CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {
   }
 
   // allow construction from 32-bit (really 24-bit) bit 0xRRGGBB color code
-  inline CRGB(uint32_t colorcode) __attribute__((always_inline))
+  explicit CRGB(uint32_t colorcode) __attribute__((always_inline))
       : r(static_cast<uint8_t>(colorcode >> 16)), g(static_cast<uint8_t>(colorcode >> 8)), b(static_cast<uint8_t>(colorcode)) {
   }
 
   // allow copy construction
-  inline CRGB(const CRGB& rhs) __attribute__((always_inline)) = default;
+  CRGB(const CRGB& rhs) __attribute__((always_inline)) = default;
 
   // allow construction from a CHSV color
-  inline CRGB(const CHSV& rhs) __attribute__((always_inline)) {
+  explicit CRGB(const CHSV& rhs) __attribute__((always_inline)) {
     hsv2rgb_rainbow(rhs.h << 8, rhs.s, rhs.v, raw, false);
   }
 
   // allow assignment from hue, saturation, and value
-  inline CRGB& setHSV(uint8_t hue, uint8_t sat, uint8_t val) __attribute__((always_inline)) {
+  CRGB& setHSV(uint8_t hue, uint8_t sat, uint8_t val) __attribute__((always_inline)) {
     hsv2rgb_rainbow(hue << 8, sat, val, raw, false);
     return *this;
   }
 
   // allow assignment from just a hue, sat and val are set to max
-  inline CRGB& setHue(uint8_t hue) __attribute__((always_inline)) {
+  CRGB& setHue(uint8_t hue) __attribute__((always_inline)) {
     hsv2rgb_rainbow(hue << 8, 255, 255, raw, false);
     return *this;
   }
 
   // allow assignment from HSV color
-  inline CRGB& operator=(const CHSV& rhs) __attribute__((always_inline)) {
+  CRGB& operator=(const CHSV& rhs) __attribute__((always_inline)) {
     hsv2rgb_rainbow(rhs.h << 8, rhs.s, rhs.v, raw, false);
     return *this;
   }
   // allow assignment from one RGB struct to another
-  inline CRGB& operator=(const CRGB& rhs) __attribute__((always_inline)) = default;
+  CRGB& operator=(const CRGB& rhs) __attribute__((always_inline)) = default;
 
   // allow assignment from 32-bit (really 24-bit) 0xRRGGBB color code
-  inline CRGB& operator=(const uint32_t colorcode) __attribute__((always_inline)) {
+  CRGB& operator=(const uint32_t colorcode) __attribute__((always_inline)) {
     r = static_cast<uint8_t>(colorcode >> 16);
     g = static_cast<uint8_t>(colorcode >> 8);
     b = static_cast<uint8_t>(colorcode);
@@ -218,7 +218,7 @@ struct CRGB {
   }
 
   // allow assignment from red, green, and blue
-  inline CRGB& setRGB(uint8_t nr, uint8_t ng, uint8_t nb) __attribute__((always_inline)) {
+  CRGB& setRGB(uint8_t nr, uint8_t ng, uint8_t nb) __attribute__((always_inline)) {
     r = nr;
     g = ng;
     b = nb;
@@ -226,7 +226,7 @@ struct CRGB {
   }
 
   // allow assignment from 32-bit (really 24-bit) 0xRRGGBB color code
-  inline CRGB& setColorCode(uint32_t colorcode) __attribute__((always_inline)) {
+  CRGB& setColorCode(uint32_t colorcode) __attribute__((always_inline)) {
     r = static_cast<uint8_t>(colorcode >> 16);
     g = static_cast<uint8_t>(colorcode >> 8);
     b = static_cast<uint8_t>(colorcode);
@@ -234,7 +234,7 @@ struct CRGB {
   }
 
   // add one CRGB to another, saturating at 0xFF for each channel
-  inline CRGB& operator+=(const CRGB& rhs) {
+  CRGB& operator+=(const CRGB& rhs) {
     r = qadd8(r, rhs.r);
     g = qadd8(g, rhs.g);
     b = qadd8(b, rhs.b);
@@ -242,7 +242,7 @@ struct CRGB {
   }
 
   // add a constant to each channel, saturating at 0xFF
-  inline CRGB& addToRGB(uint8_t d) {
+  CRGB& addToRGB(uint8_t d) {
     r = qadd8(r, d);
     g = qadd8(g, d);
     b = qadd8(b, d);
@@ -250,7 +250,7 @@ struct CRGB {
   }
 
   // subtract one CRGB from another, saturating at 0x00 for each channel
-  inline CRGB& operator-=(const CRGB& rhs) {
+  CRGB& operator-=(const CRGB& rhs) {
     r = qsub8(r, rhs.r);
     g = qsub8(g, rhs.g);
     b = qsub8(b, rhs.b);
@@ -258,7 +258,7 @@ struct CRGB {
   }
 
   // subtract a constant from each channel, saturating at 0x00
-  inline CRGB& subtractFromRGB(uint8_t d) {
+  CRGB& subtractFromRGB(uint8_t d) {
     r = qsub8(r, d);
     g = qsub8(g, d);
     b = qsub8(b, d);
@@ -266,33 +266,33 @@ struct CRGB {
   }
 
   // subtract a constant of '1' from each channel, saturating at 0x00
-  inline CRGB& operator--() __attribute__((always_inline)) {
+  CRGB& operator--() __attribute__((always_inline)) {
     subtractFromRGB(1);
     return *this;
   }
 
   // operator--
-  inline CRGB operator--(int) __attribute__((always_inline)) {
+  CRGB operator--(int) __attribute__((always_inline)) {
     CRGB retval(*this);
     --(*this);
     return retval;
   }
 
   // add a constant of '1' to each channel, saturating at 0xFF
-  inline CRGB& operator++() __attribute__((always_inline)) {
+  CRGB& operator++() __attribute__((always_inline)) {
     addToRGB(1);
     return *this;
   }
 
   // operator++
-  inline CRGB operator++(int) __attribute__((always_inline)) {
+  CRGB operator++(int) __attribute__((always_inline)) {
     CRGB retval(*this);
     ++(*this);
     return retval;
   }
 
   // divide each of the channels by a constant
-  inline CRGB& operator/=(uint8_t d) {
+  CRGB& operator/=(uint8_t d) {
     r /= d;
     g /= d;
     b /= d;
@@ -300,7 +300,7 @@ struct CRGB {
   }
 
   // right shift each of the channels by a constant
-  inline CRGB& operator>>=(uint8_t d) {
+  CRGB& operator>>=(uint8_t d) {
     r >>= d;
     g >>= d;
     b >>= d;
@@ -308,7 +308,7 @@ struct CRGB {
   }
 
   // multiply each of the channels by a constant, saturating each channel at 0xFF.
-  inline CRGB& operator*=(uint8_t d) {
+  CRGB& operator*=(uint8_t d) {
     r = qmul8(r, d);
     g = qmul8(g, d);
     b = qmul8(b, d);
@@ -316,7 +316,7 @@ struct CRGB {
   }
 
   // scale down a RGB to N/256ths of its current brightness (will not scale all the way to black)
-  inline CRGB& nscale8_video(uint8_t scaledown) {
+  CRGB& nscale8_video(uint8_t scaledown) {
     uint8_t nonzeroscale = (scaledown != 0) ? 1 : 0;
     r                    = (r == 0) ? 0 : ((static_cast<int>(r) * static_cast<int>(scaledown)) >> 8) + nonzeroscale;
     g                    = (g == 0) ? 0 : ((static_cast<int>(g) * static_cast<int>(scaledown)) >> 8) + nonzeroscale;
@@ -325,7 +325,7 @@ struct CRGB {
   }
 
   // scale down a RGB to N/256ths of its current brightness (can scale to black)
-  inline CRGB& nscale8(uint8_t scaledown) {
+  CRGB& nscale8(uint8_t scaledown) {
     uint32_t scale_fixed = scaledown + 1;
     r                    = ((static_cast<uint32_t>(r)) * scale_fixed) >> 8;
     g                    = ((static_cast<uint32_t>(g)) * scale_fixed) >> 8;
@@ -333,7 +333,7 @@ struct CRGB {
     return *this;
   }
 
-  inline CRGB& nscale8(const CRGB& scaledown) {
+  CRGB& nscale8(const CRGB& scaledown) {
     r = ::scale8(r, scaledown.r);
     g = ::scale8(g, scaledown.g);
     b = ::scale8(b, scaledown.b);
@@ -341,7 +341,7 @@ struct CRGB {
   }
 
   // return a CRGB object that is a scaled down version of this object
-  inline CRGB scale8(uint8_t scaledown) const {
+  CRGB scale8(uint8_t scaledown) const {
     CRGB     out         = *this;
     uint32_t scale_fixed = scaledown + 1;
     out.r                = ((static_cast<uint32_t>(out.r)) * scale_fixed) >> 8;
@@ -351,7 +351,7 @@ struct CRGB {
   }
 
   // return a CRGB object that is a scaled down version of this object
-  inline CRGB scale8(const CRGB& scaledown) const {
+  CRGB scale8(const CRGB& scaledown) const {
     CRGB out;
     out.r = ::scale8(r, scaledown.r);
     out.g = ::scale8(g, scaledown.g);
@@ -360,7 +360,7 @@ struct CRGB {
   }
 
   // fadeToBlackBy is a synonym for nscale8(), as a fade instead of a scale
-  inline CRGB& fadeToBlackBy(uint8_t fadefactor) {
+  CRGB& fadeToBlackBy(uint8_t fadefactor) {
     uint32_t scale_fixed = 256 - fadefactor;
     r                    = ((static_cast<uint32_t>(r)) * scale_fixed) >> 8;
     g                    = ((static_cast<uint32_t>(g)) * scale_fixed) >> 8;
@@ -369,71 +369,47 @@ struct CRGB {
   }
 
   // "or" operator brings each channel up to the higher of the two values
-  inline CRGB& operator|=(const CRGB& rhs) {
-    if (rhs.r > r) {
-      r = rhs.r;
-    }
-    if (rhs.g > g) {
-      g = rhs.g;
-    }
-    if (rhs.b > b) {
-      b = rhs.b;
-    }
+  CRGB& operator|=(const CRGB& rhs) {
+    r = std::max(rhs.r, r);
+    g = std::max(rhs.g, g);
+    b = std::max(rhs.b, b);
     return *this;
   }
 
-  inline CRGB& operator|=(uint8_t d) {
-    if (d > r) {
-      r = d;
-    }
-    if (d > g) {
-      g = d;
-    }
-    if (d > b) {
-      b = d;
-    }
+  CRGB& operator|=(uint8_t d) {
+    r = std::max(d, r);
+    g = std::max(d, g);
+    b = std::max(d, b);
     return *this;
   }
 
   // "and" operator brings each channel down to the lower of the two values
-  inline CRGB& operator&=(const CRGB& rhs) {
-    if (rhs.r < r) {
-      r = rhs.r;
-    }
-    if (rhs.g < g) {
-      g = rhs.g;
-    }
-    if (rhs.b < b) {
-      b = rhs.b;
-    }
+  CRGB& operator&=(const CRGB& rhs) {
+    r = std::min(rhs.r, r);
+    g = std::min(rhs.g, g);
+    b = std::min(rhs.b, b);
     return *this;
   }
 
-  inline CRGB& operator&=(uint8_t d) {
-    if (d < r) {
-      r = d;
-    }
-    if (d < g) {
-      g = d;
-    }
-    if (d < b) {
-      b = d;
-    }
+  CRGB& operator&=(uint8_t d) {
+    r = std::min(d, r);
+    g = std::min(d, g);
+    b = std::min(d, b);
     return *this;
   }
 
   // this allows testing a CRGB for zero-ness
-  inline explicit operator bool() const __attribute__((always_inline)) {
-    return r || g || b;
+  explicit operator bool() const __attribute__((always_inline)) {
+    return (r != 0u) || (g != 0u) || (b != 0u);
   }
 
   // converts a CRGB to a 32-bit color with white = 0
-  inline explicit operator uint32_t() const {
+  explicit operator uint32_t() const {
     return (uint32_t{r} << 16) | (uint32_t{g} << 8) | uint32_t{b};
   }
 
   // invert each channel
-  inline CRGB operator-() const {
+  CRGB operator-() const {
     CRGB retval;
     retval.r = 255 - r;
     retval.g = 255 - g;
@@ -442,11 +418,11 @@ struct CRGB {
   }
 
   // get the average of the R, G, and B values
-  inline uint8_t getAverageLight() const {
+  uint8_t getAverageLight() const {
     return ((r + g + b) * 21846) >> 16;  // x*21846>>16 is equal to "divide by 3"
   }
 
-  typedef enum {
+  using HTMLColorCode = enum {
     AliceBlue            = 0xF0F8FF,
     Amethyst             = 0x9966CC,
     AntiqueWhite         = 0xFAEBD7,
@@ -597,7 +573,7 @@ struct CRGB {
     YellowGreen          = 0x9ACD32,
     FairyLight           = 0xFFE42D,  // LED RGB color that roughly approximates the color of incandescent fairy lights
     FairyLightNCC        = 0xFF9D2A   // if using no color correction, use this
-  } HTMLColorCode;
+  };
 };
 
 __attribute__((always_inline)) inline CRGB operator+(const CRGB& p1, const CRGB& p2) {
@@ -652,7 +628,7 @@ class CRGBPalette16 {
   }
 
   // Create palette from array of CRGB colors
-  CRGBPalette16(const CRGB rhs[16]) {
+  explicit CRGBPalette16(const CRGB rhs[16]) {
     memmove(reinterpret_cast<void*>(&(entries[0])), &(rhs[0]), sizeof(entries));
   }
 
@@ -669,7 +645,7 @@ class CRGBPalette16 {
   }
 
   // Create palette from palette stored in
-  CRGBPalette16(const TProgmemRGBPalette16& rhs) {
+  explicit CRGBPalette16(const TProgmemRGBPalette16& rhs) {
     for (int i = 0; i < 16; ++i) {
       entries[i] = pgm_read_dword(rhs + i);
     }
@@ -685,8 +661,8 @@ class CRGBPalette16 {
 
   // Equality operator
   bool operator==(const CRGBPalette16& rhs) const {
-    const uint8_t* p = reinterpret_cast<const uint8_t*>(&(this->entries[0]));
-    const uint8_t* q = reinterpret_cast<const uint8_t*>(&(rhs.entries[0]));
+    const auto* p = reinterpret_cast<const uint8_t*>(&(this->entries[0]));
+    const auto* q = reinterpret_cast<const uint8_t*>(&(rhs.entries[0]));
     if (p == q) {
       return true;
     }
@@ -706,32 +682,32 @@ class CRGBPalette16 {
   }
 
   // Array subscript operator
-  inline CRGB& operator[](uint8_t x) __attribute__((always_inline)) {
+  CRGB& operator[](uint8_t x) __attribute__((always_inline)) {
     return entries[x];
   }
 
   // Array subscript operator (const)
-  inline const CRGB& operator[](uint8_t x) const __attribute__((always_inline)) {
+  const CRGB& operator[](uint8_t x) const __attribute__((always_inline)) {
     return entries[x];
   }
 
   // Array subscript operator
-  inline CRGB& operator[](int x) __attribute__((always_inline)) {
+  CRGB& operator[](int x) __attribute__((always_inline)) {
     return entries[static_cast<uint8_t>(x)];
   }
 
   // Array subscript operator (const)
-  inline const CRGB& operator[](int x) const __attribute__((always_inline)) {
+  const CRGB& operator[](int x) const __attribute__((always_inline)) {
     return entries[static_cast<uint8_t>(x)];
   }
 
   // Get the underlying pointer to the CRGB entries making up the palette
-  operator CRGB*() {
+  explicit operator CRGB*() {
     return &(entries[0]);
   }
 
   // Create palette from a single CRGB color
-  CRGBPalette16(const CRGB& c1) {
+  explicit CRGBPalette16(const CRGB& c1) {
     fill_solid_RGB(&(entries[0]), 16, c1);
   }
 
@@ -757,12 +733,12 @@ class CRGBPalette16 {
   // is also represented in the CRGBPalette, this may not preserve original
   // color spacing, but will try to not omit small color bands.
 
-  CRGBPalette16(TProgmemRGBGradientPalette_bytes progpal) {
+  explicit CRGBPalette16(TProgmemRGBGradientPalette_bytes progpal) {
     *this = progpal;
   }
 
   CRGBPalette16& operator=(TProgmemRGBGradientPalette_bytes progpal) {
-    TRGBGradientPaletteEntryUnion* progent = (TRGBGradientPaletteEntryUnion*)(progpal);
+    auto* progent = (TRGBGradientPaletteEntryUnion*)progpal;
     TRGBGradientPaletteEntryUnion  u;
 
     // Count entries
@@ -790,9 +766,7 @@ class CRGBPalette16 {
       if (count < 16) {
         if ((istart8 <= lastSlotUsed) && (lastSlotUsed < 15)) {
           istart8 = lastSlotUsed + 1;
-          if (iend8 < istart8) {
-            iend8 = istart8;
-          }
+          iend8 = std::max(iend8, istart8);
         }
         lastSlotUsed = iend8;
       }
@@ -805,7 +779,7 @@ class CRGBPalette16 {
 
   // Creates a palette from a gradient palette in dynamic (heap) memory.
   CRGBPalette16& loadDynamicGradientPalette(TDynamicRGBGradientPalette_bytes gpal) {
-    TRGBGradientPaletteEntryUnion* ent = (TRGBGradientPaletteEntryUnion*)(gpal);
+    auto* ent = (TRGBGradientPaletteEntryUnion*)gpal;
     TRGBGradientPaletteEntryUnion  u;
 
     // Count entries
@@ -833,9 +807,7 @@ class CRGBPalette16 {
       if (count < 16) {
         if ((istart8 <= lastSlotUsed) && (lastSlotUsed < 15)) {
           istart8 = lastSlotUsed + 1;
-          if (iend8 < istart8) {
-            iend8 = istart8;
-          }
+          iend8 = std::max(iend8, istart8);
         }
         lastSlotUsed = iend8;
       }

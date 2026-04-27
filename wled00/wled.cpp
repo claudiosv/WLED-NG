@@ -8,19 +8,19 @@
 #include <ArduinoOTA.h>
 #endif
 
-#if defined(ESP8266)
+#ifdef ESP8266
 #error DMX input is only supported on ESP32
 #endif
 
 // #if !(defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3) ||
 // defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32P4) || defined(ARDUINO_ARCH_ESP32C5) ||
 // defined(ARDUINO_ARCH_ESP32C6) || defined(ARDUINO_ARCH_ESP32H2))
-#if !defined(ARDUINO_ARCH_ESP32)
+#ifndef ARDUINO_ARCH_ESP32
 #error \
     "ARDUINO_ARCH_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
-#if !defined(ESP_PLATFORM)
+#ifndef ESP_PLATFORM
 #warning "ESP Platform undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
@@ -31,7 +31,7 @@
     "CONFIG_IDF_TARGET_ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
-#if !defined(ESP32)
+#ifndef ESP32
 #error "ESP32 undefined: This code is only intended to run on ESP32-based boards. Please check platformio.ini"
 #endif
 
@@ -75,8 +75,7 @@ extern "C" void usePWMFixedNMI();
  * Main WLED class implementation. Mostly initialization and connection logic
  */
 
-WLED::WLED() {
-}
+WLED::WLED() = default;
 
 // turns all LEDs off and restarts ESP
 void WLED::reset() {
@@ -308,7 +307,7 @@ void WLED::loop() {
 
   yield();
   handleWs();
-#if defined(STATUSLED)
+#ifdef STATUSLED
   handleStatusLED();
 #endif
 
@@ -473,7 +472,7 @@ void WLED::setup() {
   DEBUG_PRINTLN();
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINTF_P("esp32 %s\n", ESP.getSdkVersion());
-#if defined(ESP_ARDUINO_VERSION)
+#ifdef ESP_ARDUINO_VERSION
   DEBUG_PRINTF_P("arduino-esp32 v%d.%d.%d\n", int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR),
                  int(ESP_ARDUINO_VERSION_PATCH));  // available since v2.0.0
 #else
@@ -517,7 +516,7 @@ void WLED::setup() {
 #endif
   DEBUG_PRINTF_P("heap %u\n", getFreeHeapSize());
 
-#if defined(BOARD_HAS_PSRAM)
+#ifdef BOARD_HAS_PSRAM
   // if JSON buffer allocation fails requestJsonBufferLock() will always return false preventing crashes
   if (psramFound() && ESP.getPsramSize()) {
     pDoc = new PSRAMDynamicJsonDocument(2 * JSON_BUFFER_SIZE);
@@ -528,7 +527,7 @@ void WLED::setup() {
   }
 #endif
 
-#if defined(ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINTF_P("TX power: %d/%d\n", WiFi.getTxPower(), txPower);
 #endif
 
@@ -764,13 +763,13 @@ void WLED::initAP(bool resetAP) {
     DEBUG_PRINTLN("Init AP interfaces");
     server.begin();
     if (udpPort > 0 && udpPort != ntpLocalPort) {
-      udpConnected = notifierUdp.begin(udpPort);
+      udpConnected = (notifierUdp.begin(udpPort) != 0u);
     }
     if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort) {
-      udpRgbConnected = rgbUdp.begin(udpRgbPort);
+      udpRgbConnected = (rgbUdp.begin(udpRgbPort) != 0u);
     }
     if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
-      udp2Connected = notifier2Udp.begin(udpPort2);
+      udp2Connected = (notifier2Udp.begin(udpPort2) != 0u);
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
     ddp.begin(false, DDP_DEFAULT_PORT);
@@ -811,7 +810,7 @@ void WLED::initConnection() {
   WiFi.setHostname(hostname);
 #endif
 
-  // TODO: use IPAddress(0,0,0,0) ?
+  // TODO: claudio - use IPAddress(0,0,0,0) ?
   if (multiWiFi[selectedWiFi].staticIP != static_cast<uint32_t>(0) &&
       multiWiFi[selectedWiFi].staticGW != static_cast<uint32_t>(0)) {
     WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN,
@@ -942,16 +941,16 @@ void WLED::initInterfaces() {
   server.begin();
 
   if (udpPort > 0 && udpPort != ntpLocalPort) {
-    udpConnected = notifierUdp.begin(udpPort);
+    udpConnected = (notifierUdp.begin(udpPort) != 0u);
     if (udpConnected && udpRgbPort != udpPort) {
-      udpRgbConnected = rgbUdp.begin(udpRgbPort);
+      udpRgbConnected = (rgbUdp.begin(udpRgbPort) != 0u);
     }
     if (udpConnected && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
-      udp2Connected = notifier2Udp.begin(udpPort2);
+      udp2Connected = (notifier2Udp.begin(udpPort2) != 0u);
     }
   }
   if (ntpEnabled) {
-    ntpConnected = ntpUdp.begin(ntpLocalPort);
+    ntpConnected = (ntpUdp.begin(ntpLocalPort) != 0u);
   }
 
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
@@ -1026,7 +1025,7 @@ void WLED::handleConnection() {
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && wifiConfigured) {
+    if (now - lastReconnectAttempt > (stac ? 300000 : 18000) && wifiConfigured) {
       if (improvActive == 2) {
         improvActive = 3;
       }
@@ -1037,7 +1036,7 @@ void WLED::handleConnection() {
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
-      if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
+      if (apBehavior != AP_BEHAVIOR_TEMPORARY || now <= WLED_AP_TIMEOUT) {
         DEBUG_PRINTF_P("Not connected AP (@ %lus.\n", nowS);
         initAP();  // start AP only within first 5min
       }
@@ -1090,7 +1089,7 @@ void WLED::handleConnection() {
 // else blink at 1Hz when Network.isConnected() is false (no WiFi, ?? no Ethernet ??)
 // else blink at 2Hz when MQTT is enabled but not connected
 // else turn the status LED off
-#if defined(STATUSLED)
+#ifdef STATUSLED
 void WLED::handleStatusLED() {
   uint32_t c = 0;
 

@@ -168,7 +168,7 @@
 #endif
 #endif
 #ifndef ARDUINOJSON_ENABLE_ALIGNMENT
-#if defined(__AVR)
+#ifdef __AVR
 #define ARDUINOJSON_ENABLE_ALIGNMENT 0
 #else
 #define ARDUINOJSON_ENABLE_ALIGNMENT 1

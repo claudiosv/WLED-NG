@@ -19,11 +19,11 @@ bool fileSeekCallback(unsigned long position) {
   return file.seek(position);
 }
 
-unsigned long filePositionCallback(void) {
+unsigned long filePositionCallback() {
   return file.position();
 }
 
-int fileReadCallback(void) {
+int fileReadCallback() {
   return file.read();
 }
 
@@ -37,18 +37,15 @@ int fileReadBlockCallback(void *buffer, int numberOfBytes) {
   return file.read(static_cast<uint8_t *>(buffer), numberOfBytes);
 }
 
-int fileSizeCallback(void) {
+int fileSizeCallback() {
   return file.size();
 }
 
-bool openGif(const char *filename) {  // side-effect: updates "file"
+static bool openGif(const char *filename) {  // side-effect: updates "file"
   file = WLED_FS.open(filename, "r");
   DEBUG_PRINTF_P("opening GIF file %s\n", filename);
 
-  if (!file) {
-    return false;
-  }
-  return true;
+  return file;
 }
 
 static Segment *activeSeg;
@@ -56,12 +53,12 @@ static uint16_t gifWidth, gifHeight;
 static int      lastCoordinate;        // last coordinate (x+y) that was set, used to reduce redundant pixel writes
 static uint16_t perPixelX, perPixelY;  // scaling factors when upscaling
 
-void screenClearCallback(void) {
+static void screenClearCallback() {
   activeSeg->fill(0);
 }
 
 // this callback runs when the decoder has finished painting all pixels
-void updateScreenCallback(void) {
+static void updateScreenCallback() {
   // perfect time for adding blur
   if (activeSeg->intensity > 1) {
     uint8_t blurAmount = activeSeg->intensity;
@@ -78,14 +75,14 @@ void updateScreenCallback(void) {
 
 // callbacks to draw a pixel at (x,y) without scaling: used if GIF size matches (virtual)segment size (faster) works for
 // 1D and 2D segments
-void drawPixelCallbackNoScale(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
-  activeSeg->setPixelColor(y * gifWidth + x, red, green, blue);
+static void drawPixelCallbackNoScale(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
+  activeSeg->setPixelColor((y * gifWidth) + x, red, green, blue);
 }
 
-void drawPixelCallback1D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
+static void drawPixelCallback1D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
   // 1D strip: load pixel-by-pixel left to right, top to bottom (0/0 = top-left in gifs)
   int totalImgPix = static_cast<int>(gifWidth) * gifHeight;
-  int start = (static_cast<int>(y) * gifWidth + static_cast<int>(x)) * activeSeg->vLength() / totalImgPix;  // simple nearest-neighbor scaling
+  int start = ((static_cast<int>(y) * gifWidth) + static_cast<int>(x)) * activeSeg->vLength() / totalImgPix;  // simple nearest-neighbor scaling
   if (start == lastCoordinate) {
     return;  // skip setting same coordinate again
   }
@@ -95,7 +92,7 @@ void drawPixelCallback1D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8
   }
 }
 
-void drawPixelCallback2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
+static void drawPixelCallback2D(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t blue) {
   // simple nearest-neighbor scaling
   int outY = static_cast<int>(y) * activeSeg->vHeight() / gifHeight;
   int outX = static_cast<int>(x) * activeSeg->vWidth() / gifWidth;
@@ -236,10 +233,10 @@ byte renderImageToSegment(Segment &seg) {
   // if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
 
   // speed 0 = half speed, 128 = normal, 255 = full FX FPS
-  // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
-  uint32_t wait = currentFrameDelay * 2 - seg.speed * currentFrameDelay / 128;
+  // TODO: claudio - 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
+  uint32_t wait = (currentFrameDelay * 2) - (seg.speed * currentFrameDelay / 128);
 
-  // TODO consider handling this on FX level with a different frametime, but that would cause slow gifs to speed up
+  // TODO: claudio - consider handling this on FX level with a different frametime, but that would cause slow gifs to speed up
   // during transitions
   if (millis() - lastFrameDisplayTime < wait) {
     return IMAGE_ERROR_WAITING;

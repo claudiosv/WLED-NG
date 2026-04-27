@@ -60,7 +60,7 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
   return true;
 }
 
-typedef struct WiFiConfig {
+using wifi_config = struct WiFiConfig {
   char      clientSSID[33];
   char      clientPass[65];
   uint8_t   bssid[6];
@@ -93,7 +93,7 @@ typedef struct WiFiConfig {
 #endif
     memset(bssid, 0, sizeof(bssid));
   }
-} wifi_config;
+};
 
 // dmx_output.cpp
 void initDMXOutput();
@@ -104,7 +104,7 @@ void initDMXInput();
 void handleDMXInput();
 
 // e131.cpp
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
+void handleE131Packet(e131_packet_t* p, const IPAddress& clientIP, byte protocol);
 void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8_t mde, uint8_t previousUniverses);
 // void handleArtnetPollReply(IPAddress ipAddress);                                          // local function, only
 // used in e131.cpp void prepareArtnetPollReply(ArtPollReply* reply);                                         // local
@@ -126,11 +126,11 @@ inline bool writeObjectToFile(const String& file, const char* key, const JsonDoc
   return writeObjectToFile(file.c_str(), key, content);
 };
 inline bool readObjectFromFileUsingId(const String& file, uint16_t id, JsonDocument* dest,
-                                      const JsonDocument* filter = nullptr) {
+                                      const JsonDocument*  /*filter*/ = nullptr) {
   return readObjectFromFileUsingId(file.c_str(), id, dest);
 };
 inline bool readObjectFromFile(const String& file, const char* key, JsonDocument* dest,
-                               const JsonDocument* filter = nullptr) {
+                               const JsonDocument*  /*filter*/ = nullptr) {
   return readObjectFromFile(file.c_str(), key, dest);
 };
 bool copyFile(const char* src_path, const char* dst_path);
@@ -152,20 +152,20 @@ void onHueData(void* arg, AsyncClient* client, void* data, size_t len);
 class Segment;
 #ifdef WLED_ENABLE_GIF
 bool          fileSeekCallback(unsigned long position);
-unsigned long filePositionCallback(void);
-int           fileReadCallback(void);
+unsigned long filePositionCallback();
+int           fileReadCallback();
 int           fileReadBlockCallback(void* buffer, int numberOfBytes);
-int           fileSizeCallback(void);
+int           fileSizeCallback();
 byte          renderImageToSegment(Segment& seg);
 void          endImagePlayback(Segment* seg);
 #endif
 
 // improv.cpp
 enum ImprovRPCType {
-  Command_Wifi  = 0x01,
-  Request_State = 0x02,
-  Request_Info  = 0x03,
-  Request_Scan  = 0x04
+  kCommandWifi  = 0x01,
+  kRequestState = 0x02,
+  kRequestInfo  = 0x03,
+  kRequestScan  = 0x04
 };
 
 void handleImprovPacket();
@@ -230,7 +230,7 @@ void handleNetworkTime();
 // void sendNTPPacket();    // local function, only used in ntp.cpp
 // bool checkNTPResponse(); // local function, only used in ntp.cpp
 void updateLocalTime();
-void getTimeString(char* out);
+void getTimeString(const char* out);
 bool checkCountdown();
 void setCountdown();
 byte weekdayMondayFirst();
@@ -239,8 +239,8 @@ void checkTimers();
 void calculateSunriseAndSunset();
 void setTimeFromAPI(uint32_t timein);
 
-const uint8_t TH_SUNRISE = 255;
-const uint8_t TH_SUNSET  = 254;
+const uint8_t kThSunrise = 255;
+const uint8_t kThSunset  = 254;
 
 struct Timer {
   uint8_t     preset;
@@ -251,17 +251,17 @@ struct Timer {
   uint8_t     monthEnd;
   uint8_t     dayStart;
   uint8_t     dayEnd;
-  inline bool isEnabled() const {
-    return (weekdays & 0x01) && (preset != 0);
+  bool isEnabled() const {
+    return ((weekdays & 0x01) != 0) && (preset != 0);
   }
-  inline bool isSunrise() const {
-    return hour == TH_SUNRISE;
+  bool isSunrise() const {
+    return hour == kThSunrise;
   }
-  inline bool isSunset() const {
-    return hour == TH_SUNSET;
+  bool isSunset() const {
+    return hour == kThSunset;
   }
-  inline bool isRegular() const {
-    return hour < TH_SUNSET;
+  bool isRegular() const {
+    return hour < kThSunset;
   }
   Timer() : preset(0), hour(0), minute(0), weekdays(255), monthStart(1), monthEnd(12), dayStart(1), dayEnd(31) {
   }
@@ -342,7 +342,7 @@ void installIPv6RABlocker();
 void WiFiEvent(WiFiEvent_t event);
 
 // um_manager.cpp
-typedef enum UM_Data_Types {
+using um_types_t = enum UM_Data_Types {
   UMT_BYTE = 0,
   UMT_UINT16,
   UMT_INT16,
@@ -357,8 +357,8 @@ typedef enum UM_Data_Types {
   UMT_INT32_ARR,
   UMT_FLOAT_ARR,
   UMT_DOUBLE_ARR
-} um_types_t;
-typedef struct UM_Exchange_Data {
+};
+using um_data_t = struct UM_Exchange_Data {
   // should just use: size_t arr_size, void **arr_ptr, byte *ptr_type
   size_t      u_size;  // size of u_data array
   um_types_t* u_type;  // array of data types
@@ -376,24 +376,24 @@ typedef struct UM_Exchange_Data {
       delete[] u_data;
     }
   }
-} um_data_t;
-const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
+};
+const unsigned int kUmDataSize = sizeof(um_data_t);  // 12 bytes
 
 class Usermod {
  protected:
-  um_data_t* um_data;  // um_data should be allocated using new in (derived) Usermod's setup() or constructor
+  um_data_t* um_data{nullptr};  // um_data should be allocated using new in (derived) Usermod's setup() or constructor
  public:
-  Usermod() : um_data(nullptr) {};
+  Usermod()  {};
   virtual ~Usermod() {
-    if (um_data) {
+    
       delete um_data;
-    }
+    
   }
   virtual void setup() = 0;  // pure virtual, has to be overriden
   virtual void loop()  = 0;  // pure virtual, has to be overriden
   virtual void handleOverlayDraw() {
   }  // called after all effects have been processed, just before strip.show()
-  virtual bool handleButton(uint8_t b) {
+  virtual bool handleButton(uint8_t  /*b*/) {
     return false;
   }  // button overrides are possible here
   virtual bool getUMData(um_data_t** data) {
@@ -414,18 +414,18 @@ class Usermod {
   }  // process JSON messages received from web server
   virtual void addToConfig(JsonObject& obj) {
   }  // add JSON entries that go to cfg.json
-  virtual bool readFromConfig(JsonObject& obj) {
+  virtual bool readFromConfig(JsonObject&  /*obj*/) {
     return true;
   }  // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
   virtual void onMqttConnect(bool sessionPresent) {
   }  // fired when MQTT connection is established (so usermod can subscribe)
-  virtual bool onMqttMessage(char* topic, char* payload) {
+  virtual bool onMqttMessage(char*  /*topic*/, char*  /*payload*/) {
     return false;
   }  // fired upon MQTT message received (wled topic)
-  virtual bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) {
+  virtual bool onEspNowMessage(uint8_t*  /*sender*/, uint8_t*  /*payload*/, uint8_t  /*len*/) {
     return false;
   }  // fired upon ESP-NOW message received
-  virtual bool onUdpPacket(uint8_t* payload, size_t len) {
+  virtual bool onUdpPacket(uint8_t*  /*payload*/, size_t  /*len*/) {
     return false;
   }  // fired upon UDP packet received
   virtual void onUpdateBegin(bool) {
@@ -438,7 +438,7 @@ class Usermod {
 
   // API shims
  private:
-  static Print* oappend_shim;
+  static Print* oappend_shim_;
   // old form of appendConfigData; called by default appendConfigData(Print&) with oappend_shim set up
   // private so it is not accidentally invoked except via Usermod::appendConfigData(Print&)
   virtual void appendConfigData() {
@@ -447,12 +447,12 @@ class Usermod {
  protected:
   // Shim for oappend(), which used to exist in utils.cpp
   template <typename T>
-  static inline void oappend(const T& t) {
-    oappend_shim->print(t);
+  static void oappend(const T& t) {
+    oappend_shim_->print(t);
   };
 };
 
-namespace UsermodManager {
+namespace usermod_manager {
   void loop();
   void handleOverlayDraw();
   bool handleButton(uint8_t b);
@@ -509,7 +509,7 @@ size_t             printSetFormCheckbox(Print& settingsScript, const char* key, 
 size_t             printSetFormValue(Print& settingsScript, const char* key, int val);
 size_t             printSetFormValue(Print& settingsScript, const char* key, const char* val);
 size_t             printSetFormIndex(Print& settingsScript, const char* key, int index);
-size_t             printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val);
+size_t             printSetClassElementHTML(Print& settingsScript, const char* key, int index, const char* val);
 void getWLEDhostname(char* hostname, size_t maxLen,
                      bool preferMDNS = false);  // maxLen = hostname buffer size including \0; if preferMDNSname=true,
                                                 // use mdns name (sanitized)
@@ -593,7 +593,7 @@ void*       d_realloc_malloc(void* ptr, size_t size);
 inline void d_free(void* ptr) {
   heap_caps_free(ptr);
 }
-#if defined(BOARD_HAS_PSRAM)
+#ifdef BOARD_HAS_PSRAM
 // prefer PSRAM in p_xalloc functions, DRAM as fallback
 void*       p_malloc(size_t);
 void*       p_calloc(size_t, size_t);
@@ -614,13 +614,15 @@ inline size_t getFreeHeapSize() {
 inline size_t getContiguousFreeHeap() {
   return heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 }  // returns largest contiguous free block
-#define BFRALLOC_NOBYTEACCESS \
-  (1 << 0)  // ESP32 has 32bit accessible DRAM (usually ~50kB free) that must not be byte-accessed
-#define BFRALLOC_PREFER_DRAM   (1 << 1)  // prefer DRAM over PSRAM
-#define BFRALLOC_ENFORCE_DRAM  (1 << 2)  // use DRAM only, no PSRAM
-#define BFRALLOC_PREFER_PSRAM  (1 << 3)  // prefer PSRAM over DRAM
-#define BFRALLOC_ENFORCE_PSRAM (1 << 4)  // use PSRAM if available, otherwise uses DRAM
-#define BFRALLOC_CLEAR         (1 << 5)  // clear allocated buffer after allocation
+enum {
+BFRALLOC_NOBYTEACCESS = \
+  (1 << 0),  // ESP32 has 32bit accessible DRAM (usually ~50kB free) that must not be byte-accessed
+BFRALLOC_PREFER_DRAM =   (1 << 1),  // prefer DRAM over PSRAM
+BFRALLOC_ENFORCE_DRAM =  (1 << 2),  // use DRAM only, no PSRAM
+BFRALLOC_PREFER_PSRAM =  (1 << 3),  // prefer PSRAM over DRAM
+BFRALLOC_ENFORCE_PSRAM = (1 << 4),  // use PSRAM if available, otherwise uses DRAM
+BFRALLOC_CLEAR =         (1 << 5)  // clear allocated buffer after allocation
+};
 void* allocate_buffer(size_t size, uint32_t type);
 
 void handleBootLoop();    // detect and handle bootloops
@@ -628,36 +630,36 @@ void bootloopCheckOTA();  // swap boot image if bootloop is detected instead of 
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard
 class JSONBufferGuard {
-  bool holding_lock;
+  bool holding_lock_;
 
  public:
-  inline JSONBufferGuard(uint8_t module = JSON_LOCK_UNKNOWN) : holding_lock(requestJSONBufferLock(module)) {};
-  inline ~JSONBufferGuard() {
-    if (holding_lock) {
+  explicit JSONBufferGuard(uint8_t module = JSON_LOCK_UNKNOWN) : holding_lock_(requestJSONBufferLock(module)) {};
+  ~JSONBufferGuard() {
+    if (holding_lock_) {
       releaseJSONBufferLock();
     }
   };
-  inline JSONBufferGuard(const JSONBufferGuard&)            = delete;  // Noncopyable
-  inline JSONBufferGuard& operator=(const JSONBufferGuard&) = delete;
-  inline JSONBufferGuard(JSONBufferGuard&& r) : holding_lock(r.holding_lock) {
-    r.holding_lock = false;
+  JSONBufferGuard(const JSONBufferGuard&)            = delete;  // Noncopyable
+  JSONBufferGuard& operator=(const JSONBufferGuard&) = delete;
+  JSONBufferGuard(JSONBufferGuard&& r) : holding_lock_(r.holding_lock_) {
+    r.holding_lock_ = false;
   };  // but movable
-  inline JSONBufferGuard& operator=(JSONBufferGuard&& r) {
-    holding_lock |= r.holding_lock;
-    r.holding_lock = false;
+  JSONBufferGuard& operator=(JSONBufferGuard&& r) {
+    holding_lock_ |= r.holding_lock_;
+    r.holding_lock_ = false;
     return *this;
   };
-  inline bool owns_lock() const {
-    return holding_lock;
+  bool owns_lock() const {
+    return holding_lock_;
   }
-  explicit inline operator bool() const {
+  explicit operator bool() const {
     return owns_lock();
   };
-  inline void release() {
-    if (holding_lock) {
+  void release() {
+    if (holding_lock_) {
       releaseJSONBufferLock();
     }
-    holding_lock = false;
+    holding_lock_ = false;
   }
 };
 

@@ -8,18 +8,18 @@ static void sendBytes();
  */
 
 enum class AdaState {
-  Header_A,
-  Header_d,
-  Header_a,
-  Header_CountHi,
-  Header_CountLo,
-  Header_CountCheck,
-  Data_Red,
-  Data_Green,
-  Data_Blue,
-  TPM2_Header_Type,
-  TPM2_Header_CountHi,
-  TPM2_Header_CountLo,
+  kHeaderA,
+  kHeaderD,
+  kHeaderA,
+  kHeaderCountHi,
+  kHeaderCountLo,
+  kHeaderCountCheck,
+  kDataRed,
+  kDataGreen,
+  kDataBlue,
+  kTpM2HeaderType,
+  kTpM2HeaderCountHi,
+  kTpM2HeaderCountLo,
 };
 
 static uint16_t currentBaud       = 1152;  // default baudrate 115200 (divided by 100)
@@ -83,7 +83,7 @@ void handleSerial() {
              // non-USB CDC ports, this will always return true
   }
 
-  static auto     state = AdaState::Header_A;
+  static auto     state = AdaState::kHeaderA;
   static uint16_t count = 0;
   static uint16_t pixel = 0;
   static byte     check = 0x00;
@@ -94,11 +94,11 @@ void handleSerial() {
     yield();
     byte next = Serial.peek();
     switch (state) {
-      case AdaState::Header_A:
+      case AdaState::kHeaderA:
         if (next == 'A') {
-          state = AdaState::Header_d;
+          state = AdaState::kHeaderD;
         } else if (next == 0xC9) {
-          state = AdaState::TPM2_Header_Type;
+          state = AdaState::kTpM2HeaderType;
         }  // TPM2 start byte
         else if (next == 'I') {
           handleImprovPacket();
@@ -160,77 +160,77 @@ void handleSerial() {
           releaseJSONBufferLock();
         }
         break;
-      case AdaState::Header_d:
+      case AdaState::kHeaderD:
         if (next == 'd') {
-          state = AdaState::Header_a;
+          state = AdaState::kHeaderA;
         } else {
-          state = AdaState::Header_A;
+          state = AdaState::kHeaderA;
         }
         break;
-      case AdaState::Header_a:
+      case AdaState::kHeaderA:
         if (next == 'a') {
-          state = AdaState::Header_CountHi;
+          state = AdaState::kHeaderCountHi;
         } else {
-          state = AdaState::Header_A;
+          state = AdaState::kHeaderA;
         }
         break;
-      case AdaState::Header_CountHi:
+      case AdaState::kHeaderCountHi:
         pixel = 0;
         count = next * 0x100;
         check = next;
-        state = AdaState::Header_CountLo;
+        state = AdaState::kHeaderCountLo;
         break;
-      case AdaState::Header_CountLo:
+      case AdaState::kHeaderCountLo:
         count += next + 1;
         check = check ^ next ^ 0x55;
-        state = AdaState::Header_CountCheck;
+        state = AdaState::kHeaderCountCheck;
         break;
-      case AdaState::Header_CountCheck:
+      case AdaState::kHeaderCountCheck:
         if (check == next) {
-          state = AdaState::Data_Red;
+          state = AdaState::kDataRed;
         } else {
-          state = AdaState::Header_A;
+          state = AdaState::kHeaderA;
         }
         break;
-      case AdaState::TPM2_Header_Type:
-        state = AdaState::Header_A;  //(unsupported) TPM2 command or invalid type
+      case AdaState::kTpM2HeaderType:
+        state = AdaState::kHeaderA;  //(unsupported) TPM2 command or invalid type
         if (next == 0xDA) {
-          state = AdaState::TPM2_Header_CountHi;  // TPM2 data
+          state = AdaState::kTpM2HeaderCountHi;  // TPM2 data
         } else if (next == 0xAA) {
           Serial.write(0xAC);  // TPM2 ping
         }
         break;
-      case AdaState::TPM2_Header_CountHi:
+      case AdaState::kTpM2HeaderCountHi:
         pixel = 0;
         count = (next * 0x100) / 3;
-        state = AdaState::TPM2_Header_CountLo;
+        state = AdaState::kTpM2HeaderCountLo;
         break;
-      case AdaState::TPM2_Header_CountLo:
+      case AdaState::kTpM2HeaderCountLo:
         count += next / 3;
-        state = AdaState::Data_Red;
+        state = AdaState::kDataRed;
         break;
-      case AdaState::Data_Red:
+      case AdaState::kDataRed:
         red   = next;
-        state = AdaState::Data_Green;
+        state = AdaState::kDataGreen;
         break;
-      case AdaState::Data_Green:
+      case AdaState::kDataGreen:
         green = next;
-        state = AdaState::Data_Blue;
+        state = AdaState::kDataBlue;
         break;
-      case AdaState::Data_Blue:
+      case AdaState::kDataBlue:
         byte blue = next;
         if (!realtimeOverride) {
           setRealtimePixel(pixel++, red, green, blue, 0);
         }
         if (--count > 0) {
-          state = AdaState::Data_Red;
+          state = AdaState::kDataRed;
         } else {
           realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
           if (!realtimeOverride) {
             strip.show();
           }
-          state = AdaState::Header_A;
+          state = AdaState::kHeaderA;
         }
         break;
     }

@@ -16,8 +16,8 @@ class DMXInput {
   void update();
 
   /**disable dmx receiver (do this before disabling the cache)*/
-  void disable();
-  void enable();
+  void disable() const;
+  void enable() const;
 
   /// True if dmx is currently connected
   bool isConnected() const {
@@ -31,10 +31,10 @@ class DMXInput {
   /**
    * Checks if the global dmx config has changed and updates the changes in rdm
    */
-  void checkAndUpdateConfig();
+  void checkAndUpdateConfig() const;
 
   /// overrides everything and turns on all leds
-  void turnOnAllLeds();
+  static void turnOnAllLeds();
 
   /// installs the dmx driver
   /// @return false on fail
@@ -53,23 +53,23 @@ class DMXInput {
   /// This is the main loop of the dmx receiver. It never returns.
   friend void dmxReceiverTask(void *context);
 
-  uint8_t inputPortNum = 255;
-  int8_t  rxPin        = -1;
-  int8_t  txPin        = -1;
-  int8_t  enPin        = -1;
+  uint8_t inputPortNum_ = 255;
+  int8_t  rxPin_        = -1;
+  int8_t  txPin_        = -1;
+  int8_t  enPin_        = -1;
 
   /// is written to by the dmx receive task.
-  byte dmxdata[DMX_PACKET_SIZE];
+  byte dmxdata_[DMX_PACKET_SIZE];
   /// True once the dmx input has been initialized successfully
-  bool initialized = false;  // true once init finished successfully
+  bool initialized_ = false;  // true once init finished successfully
   /// True if dmx is currently connected
-  std::atomic<bool> connected{false};
-  std::atomic<bool> identify{false};
+  std::atomic<bool> connected_{false};
+  std::atomic<bool> identify_{false};
   /// Timestamp of the last time a dmx frame was received
-  unsigned long lastUpdate = 0;
+  unsigned long lastUpdate_ = 0;
 
   /// Taskhandle of the dmx task that is running in the background
-  TaskHandle_t task;
+  TaskHandle_t task_;
   /// Guards access to dmxData
-  std::mutex dmxDataLock;
+  std::mutex dmxDataLock_;
 };

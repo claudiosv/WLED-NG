@@ -3,8 +3,8 @@
 #include "ota_update.h"
 #include "wled.h"
 
-constexpr uint32_t WLED_CUSTOM_DESC_MAGIC   = 0x57535453;  // "WSTS" (WLED System Tag Structure)
-constexpr uint32_t WLED_CUSTOM_DESC_VERSION = 2;           // v1 - original PR; v2 - "safe to update from" version
+constexpr uint32_t kWledCustomDescMagic   = 0x57535453;  // "WSTS" (WLED System Tag Structure)
+constexpr uint32_t kWledCustomDescVersion = 2;           // v1 - original PR; v2 - "safe to update from" version
 
 // Compile-time validation that release name doesn't exceed maximum length
 static_assert(sizeof(WLED_RELEASE_NAME) <= WLED_RELEASE_NAME_MAX_LEN,
@@ -21,14 +21,14 @@ static_assert(sizeof(WLED_RELEASE_NAME) <= WLED_RELEASE_NAME_MAX_LEN,
  * valid structure" check.
  *
  */
-constexpr uint32_t djb2_hash_constexpr(const char* str, uint32_t hash = 5381) {
+static constexpr uint32_t djb2_hash_constexpr(const char* str, uint32_t hash = 5381) {
   return (*str == '\0') ? hash : djb2_hash_constexpr(str + 1, ((hash << 5) + hash) + *str);
 }
 
 /**
  * Runtime DJB2 hash function for validation
  */
-inline uint32_t djb2_hash_runtime(const char* str) {
+static inline uint32_t djb2_hash_runtime(const char* str) {
   uint32_t hash = 5381;
   while (*str) {
     hash = ((hash << 5) + hash) + *str++;
@@ -62,19 +62,19 @@ const wled_metadata_t __attribute__((section(BUILD_METADATA_SECTION))) WLED_BUIL
  * @param extractedDesc Buffer to store extracted custom description structure
  * @return true if structure was found and extracted, false otherwise
  */
-bool findWledMetadata(const uint8_t* binaryData, size_t dataSize, wled_metadata_t* extractedDesc) {
+static bool findWledMetadata(const uint8_t* binaryData, size_t dataSize, wled_metadata_t* extractedDesc) {
   if (!binaryData || !extractedDesc || dataSize < sizeof(wled_metadata_t)) {
     return false;
   }
 
   for (size_t offset = 0; offset <= dataSize - sizeof(wled_metadata_t); offset++) {
-    if ((binaryData[offset]) == static_cast<char>(WLED_CUSTOM_DESC_MAGIC)) {
+    if ((binaryData[offset]) == static_cast<char>(kWledCustomDescMagic)) {
       // First byte matched; check next in an alignment-safe way
       uint32_t data_magic;
       memcpy(&data_magic, binaryData + offset, sizeof(data_magic));
 
       // Check for magic number
-      if (data_magic == WLED_CUSTOM_DESC_MAGIC) {
+      if (data_magic == kWledCustomDescMagic) {
         wled_metadata_t candidate;
         memcpy(&candidate, binaryData + offset, sizeof(candidate));
 
@@ -106,12 +106,12 @@ static String normalizeReleaseName(const String& name) {
   return name;
 }
 
-template <size_t len>
-static inline String bufToString(const char (&buf)[len]) {
-  char   sbuf[len + 1];
-  size_t real_len = strnlen(buf, len);
+template <size_t Len>
+static inline String bufToString(const char (&buf)[Len]) {
+  char   sbuf[Len + 1];
+  size_t real_len = strnlen(buf, Len);
   memcpy(sbuf, buf, real_len);
-  sbuf[len] = '\0';
+  sbuf[Len] = '\0';
   return sbuf;
 }
 
@@ -122,7 +122,7 @@ static inline String bufToString(const char (&buf)[len]) {
  * @param errorMessageLen Maximum length of error message buffer
  * @return true if OTA should proceed, false if it should be blocked
  */
-bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessage, size_t errorMessageLen) {
+static bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessage, size_t errorMessageLen) {
   // Clear error message
   if (errorMessage && errorMessageLen > 0) {
     errorMessage[0] = '\0';
@@ -161,7 +161,7 @@ bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessa
           errorMessage[errorMessageLen - 1] = '\0';  // Ensure null termination
         }
         return false;
-      } else if (firmwareDescription.safe_update_version[v_index] < our_v_parsed) {
+      } if (firmwareDescription.safe_update_version[v_index] < our_v_parsed) {
         break;  // no need to check the other components
       }
 
@@ -172,7 +172,7 @@ bool shouldAllowOTA(const wled_metadata_t& firmwareDescription, char* errorMessa
     }
   }
 
-  // TODO: additional checks go here
+  // TODO: claudio - additional checks go here
 
   return true;
 }

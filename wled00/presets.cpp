@@ -17,14 +17,14 @@ static char*           saveName        = nullptr;
 static bool            includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;
 ;
 
-static const char presets_json[] = "/presets.json";
-static const char tmp_json[]     = "/tmp.json";
+static const char kPresetsJson[] = "/presets.json";
+static const char kTmpJson[]     = "/tmp.json";
 const char*       getPresetsFileName(bool persistent) {
-  return persistent ? presets_json : tmp_json;
+  return persistent ? kPresetsJson : kTmpJson;
 }
 
 bool presetNeedsSaving() {
-  return presetToSave;
+  return presetToSave != 0u;
 }
 
 static void doSaveState() {
@@ -69,7 +69,7 @@ static void doSaveState() {
       DEBUG_PRINTLN();
     #endif
   */
-#if defined(ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP32
   if (!persist) {
     p_free(tmpRAMbuffer);
     size_t len = measureJson(*pDoc) + 1;
@@ -80,9 +80,10 @@ static void doSaveState() {
     } else {
       writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, pDoc);
     }
-  } else
+  } else {
 #endif
     writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, pDoc);
+}
 
   if (persist) {
     presetsModifiedTime = toki.second();  // unix time
@@ -231,7 +232,7 @@ void handlePresets() {
     currentPreset = tmpPreset;
   }
 
-#if defined(ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP32
   // Aircoookie recommended not to delete buffer
   if (tmpPreset == 255 && tmpRAMbuffer != nullptr) {
     p_free(tmpRAMbuffer);

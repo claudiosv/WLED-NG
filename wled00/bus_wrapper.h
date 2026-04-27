@@ -83,7 +83,7 @@
 // S3: I2S0 methods not supported, I2S1 supports LCD parallel methods (has two I2S buses)
 // https://github.com/Makuna/NeoPixelBus/blob/b32f719e95ef3c35c46da5c99538017ef925c026/src/internal/Esp32_i2s.h#L4
 // https://github.com/Makuna/NeoPixelBus/blob/b32f719e95ef3c35c46da5c99538017ef925c026/src/internal/NeoEsp32RmtMethod.h#L857
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#ifdef CONFIG_IDF_TARGET_ESP32S3
 // S3 will always use LCD parallel output
 typedef X8Ws2812xMethod X1Ws2812xMethod;
 typedef X8Sk6812Method  X1Sk6812Method;
@@ -107,15 +107,15 @@ typedef NeoEsp32I2s0Ws2805Method  X1Ws2805Method;
 typedef NeoEsp32I2s0Tm1914Method  X1Tm1914Method;
 #elif !defined(CONFIG_IDF_TARGET_ESP32C3)
 // regular ESP32 will use I2S1
-typedef NeoEsp32I2s1Ws2812xMethod X1Ws2812xMethod;
-typedef NeoEsp32I2s1Sk6812Method  X1Sk6812Method;
-typedef NeoEsp32I2s1400KbpsMethod X1400KbpsMethod;
-typedef NeoEsp32I2s1800KbpsMethod X1800KbpsMethod;
-typedef NeoEsp32I2s1Tm1814Method  X1Tm1814Method;
-typedef NeoEsp32I2s1Tm1829Method  X1Tm1829Method;
-typedef NeoEsp32I2s1Apa106Method  X1Apa106Method;
-typedef NeoEsp32I2s1Ws2805Method  X1Ws2805Method;
-typedef NeoEsp32I2s1Tm1914Method  X1Tm1914Method;
+using X1Ws2812xMethod = NeoEsp32I2s1Ws2812xMethod;
+using X1Sk6812Method = NeoEsp32I2s1Sk6812Method;
+using X1400KbpsMethod = NeoEsp32I2s1400KbpsMethod;
+using X1800KbpsMethod = NeoEsp32I2s1800KbpsMethod;
+using X1Tm1814Method = NeoEsp32I2s1Tm1814Method;
+using X1Tm1829Method = NeoEsp32I2s1Tm1829Method;
+using X1Apa106Method = NeoEsp32I2s1Apa106Method;
+using X1Ws2805Method = NeoEsp32I2s1Ws2805Method;
+using X1Tm1914Method = NeoEsp32I2s1Tm1914Method;
 #endif
 
 // RMT driver selection
@@ -210,17 +210,17 @@ typedef NeoEsp32I2s1Tm1914Method  X1Tm1914Method;
 #define B_SS_P98_3 NeoPixelBus<P9813BgrFeature, P9813Method>
 
 // 48bit & 64bit to 24bit & 32bit RGB(W) conversion
-#define toRGBW32(c)        (RGBW32((c >> 40) & 0xFF, (c >> 24) & 0xFF, (c >> 8) & 0xFF, (c >> 56) & 0xFF))
+#define toRGBW32(c)        (RGBW32(((c) >> 40) & 0xFF, ((c) >> 24) & 0xFF, ((c) >> 8) & 0xFF, ((c) >> 56) & 0xFF))
 #define RGBW32(r, g, b, w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 
 // handles pointer type conversion for all possible bus types
 class PolyBus {
  private:
-  static bool    _useParallelI2S;       // use parallel I2S/LCD (8 channels)
-  static uint8_t _rmtChannelsAssigned;  // RMT channel tracking for dynamic allocation
-  static uint8_t _rmtChannel;           // physical RMT channel to use during bus creation
-  static uint8_t _i2sChannelsAssigned;  // I2S channel tracking for dynamic allocation
-  static uint8_t _parallelBusItype;     // parallel output does not allow mixed LED types, track I_Type
+  static bool    useParallelI2S_;       // use parallel I2S/LCD (8 channels)
+  static uint8_t rmtChannelsAssigned_;  // RMT channel tracking for dynamic allocation
+  static uint8_t rmtChannel_;           // physical RMT channel to use during bus creation
+  static uint8_t i2sChannelsAssigned_;  // I2S channel tracking for dynamic allocation
+  static uint8_t parallelBusItype_;     // parallel output does not allow mixed LED types, track I_Type
   static uint8_t
       _2PchannelsAssigned;  // 2-Pin (SPI) channel assigned: first one gets the hardware SPI, others use bit-banged SPI
   // note on 2-Pin Types: all supported types except WS2801 use start/stop or latch frames, speed is not critical.
@@ -261,7 +261,7 @@ class PolyBus {
         NeoTm1914Settings());  // NeoTm1914_Mode_DinFdinAutoSwitch, NeoTm1914_Mode_DinOnly, NeoTm1914_Mode_FdinOnly
   }
 
-  static void begin(void* busPtr, uint8_t busType, uint8_t* pins, uint16_t clock_kHz /* only used by DotStar */) {
+  static void begin(void* busPtr, uint8_t busType, const uint8_t* pins, uint16_t clock_kHz /* only used by DotStar */) {
     switch (busType) {
       case I_NONE:
         break;
@@ -306,84 +306,84 @@ class PolyBus {
 // I2S1 bus or parellel buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_3*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_NEO_3*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_4*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_NEO_4*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_400_3*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_400_3*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           beginTM1814<B_32_IP_TM1_4*>(busPtr);
         } else {
           beginTM1814<B_32_I2_TM1_4*>(busPtr);
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM2_3*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_TM2_3*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_3*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_UCS_3*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_4*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_UCS_4*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_FW6_5*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_FW6_5*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_APA106_3*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_APA106_3*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_2805_5*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_2805_5*>(busPtr))->Begin();
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           beginTM1914<B_32_IP_TM1914_3*>(busPtr);
         } else {
           beginTM1914<B_32_I2_TM1914_3*>(busPtr);
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_SM16825_5*>(busPtr))->Begin();
         } else {
           (static_cast<B_32_I2_SM16825_5*>(busPtr))->Begin();
@@ -473,84 +473,84 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_NEO_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_NEO_3(len, pins[0]);
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_NEO_4(len, pins[0]);
         } else {
           busPtr = new B_32_I2_NEO_4(len, pins[0]);
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_400_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_400_3(len, pins[0]);
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_TM1_4(len, pins[0]);
         } else {
           busPtr = new B_32_I2_TM1_4(len, pins[0]);
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_TM2_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_TM2_3(len, pins[0]);
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_UCS_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_UCS_3(len, pins[0]);
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_UCS_4(len, pins[0]);
         } else {
           busPtr = new B_32_I2_UCS_4(len, pins[0]);
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_APA106_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_APA106_3(len, pins[0]);
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_FW6_5(len, pins[0]);
         } else {
           busPtr = new B_32_I2_FW6_5(len, pins[0]);
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_2805_5(len, pins[0]);
         } else {
           busPtr = new B_32_I2_2805_5(len, pins[0]);
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_TM1914_3(len, pins[0]);
         } else {
           busPtr = new B_32_I2_TM1914_3(len, pins[0]);
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           busPtr = new B_32_IP_SM16825_5(len, pins[0]);
         } else {
           busPtr = new B_32_I2_SM16825_5(len, pins[0]);
@@ -639,84 +639,84 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_NEO_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_4*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_NEO_4*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_400_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_400_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM1_4*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_TM1_4*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM2_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_TM2_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_UCS_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_4*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_UCS_4*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_APA106_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_APA106_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_FW6_5*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_FW6_5*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_2805_5*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_2805_5*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM1914_3*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_TM1914_3*>(busPtr))->Show(consistent);
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_SM16825_5*>(busPtr))->Show(consistent);
         } else {
           (static_cast<B_32_I2_SM16825_5*>(busPtr))->Show(consistent);
@@ -802,84 +802,84 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_NEO_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_NEO_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_NEO_4*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_NEO_4*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_400_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_400_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_TM1_4*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_TM1_4*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_TM2_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_TM2_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_UCS_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_UCS_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_UCS_4*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_UCS_4*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_APA106_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_APA106_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_FW6_5*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_FW6_5*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_2805_5*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_2805_5*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_TM1914_3*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_TM1914_3*>(busPtr))->CanShow();
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           return (static_cast<B_32_IP_SM16825_5*>(busPtr))->CanShow();
         } else {
           return (static_cast<B_32_I2_SM16825_5*>(busPtr))->CanShow();
@@ -928,7 +928,8 @@ class PolyBus {
     uint8_t   b = c >> 0;
     uint8_t   w = c >> 24;
     RgbwColor col;
-    uint8_t   cctWW = wwcw & 0xFF, cctCW = (wwcw >> 8) & 0xFF;
+    uint8_t   cctWW = wwcw & 0xFF;
+    uint8_t   cctCW = (wwcw >> 8) & 0xFF;
 
     // reorder channels to selected order
     switch (co & 0x0F) {
@@ -1030,84 +1031,84 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         } else {
           (static_cast<B_32_I2_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_NEO_4*>(busPtr))->SetPixelColor(pix, col);
         } else {
           (static_cast<B_32_I2_NEO_4*>(busPtr))->SetPixelColor(pix, col);
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         } else {
           (static_cast<B_32_I2_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM1_4*>(busPtr))->SetPixelColor(pix, col);
         } else {
           (static_cast<B_32_I2_TM1_4*>(busPtr))->SetPixelColor(pix, col);
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         } else {
           (static_cast<B_32_I2_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col)));
         } else {
           (static_cast<B_32_I2_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col)));
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col));
         } else {
           (static_cast<B_32_I2_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col));
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         } else {
           (static_cast<B_32_I2_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW));
         } else {
           (static_cast<B_32_I2_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW));
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW));
         } else {
           (static_cast<B_32_I2_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW));
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_TM1914_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         } else {
           (static_cast<B_32_I2_TM1914_3*>(busPtr))->SetPixelColor(pix, RgbColor(col));
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           (static_cast<B_32_IP_SM16825_5*>(busPtr))
               ->SetPixelColor(pix, Rgbww80Color(col.R * 257, col.G * 257, col.B * 257, cctWW * 257, cctCW * 257));
         } else {
@@ -1201,55 +1202,55 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_NEO_3*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_NEO_3*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_NEO_3*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_NEO_4:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_NEO_4*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_NEO_4*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_NEO_4*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_400_3:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_400_3*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_400_3*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_400_3*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_TM1_4:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_TM1_4*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_TM1_4*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_TM1_4*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_TM2_3:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_TM2_3*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_TM2_3*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_TM2_3*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_UCS_3: {
-        Rgb48Color c = (_useParallelI2S) ? (static_cast<B_32_IP_UCS_3*>(busPtr))->GetPixelColor(pix)
+        Rgb48Color c = useParallelI2S_ ? (static_cast<B_32_IP_UCS_3*>(busPtr))->GetPixelColor(pix)
                                          : (static_cast<B_32_I2_UCS_3*>(busPtr))->GetPixelColor(pix);
         col          = RGBW32(c.R / 257, c.G / 257, c.B / 257, 0);
       } break;
       case I_32_I2_UCS_4: {
-        Rgbw64Color c = (_useParallelI2S) ? (static_cast<B_32_IP_UCS_4*>(busPtr))->GetPixelColor(pix)
+        Rgbw64Color c = useParallelI2S_ ? (static_cast<B_32_IP_UCS_4*>(busPtr))->GetPixelColor(pix)
                                           : (static_cast<B_32_I2_UCS_4*>(busPtr))->GetPixelColor(pix);
         col           = RGBW32(c.R / 257, c.G / 257, c.B / 257, c.W / 257);
       } break;
       case I_32_I2_APA106_3:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_APA106_3*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_APA106_3*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_APA106_3*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_FW6_5: {
-        RgbwwColor c = (_useParallelI2S) ? (static_cast<B_32_IP_FW6_5*>(busPtr))->GetPixelColor(pix)
+        RgbwwColor c = useParallelI2S_ ? (static_cast<B_32_IP_FW6_5*>(busPtr))->GetPixelColor(pix)
                                          : (static_cast<B_32_I2_FW6_5*>(busPtr))->GetPixelColor(pix);
         col          = RGBW32(c.R, c.G, c.B, max(c.WW, c.CW));
       } break;  // will not return original W
       case I_32_I2_2805_5: {
-        RgbwwColor c = (_useParallelI2S) ? (static_cast<B_32_IP_2805_5*>(busPtr))->GetPixelColor(pix)
+        RgbwwColor c = useParallelI2S_ ? (static_cast<B_32_IP_2805_5*>(busPtr))->GetPixelColor(pix)
                                          : (static_cast<B_32_I2_2805_5*>(busPtr))->GetPixelColor(pix);
         col          = RGBW32(c.R, c.G, c.B, max(c.WW, c.CW));
       } break;  // will not return original W
       case I_32_I2_TM1914_3:
-        col = (_useParallelI2S) ? (static_cast<B_32_IP_TM1914_3*>(busPtr))->GetPixelColor(pix)
+        col = useParallelI2S_ ? (static_cast<B_32_IP_TM1914_3*>(busPtr))->GetPixelColor(pix)
                                 : (static_cast<B_32_I2_TM1914_3*>(busPtr))->GetPixelColor(pix);
         break;
       case I_32_I2_SM16825_5: {
-        Rgbww80Color c = (_useParallelI2S) ? (static_cast<B_32_IP_SM16825_5*>(busPtr))->GetPixelColor(pix)
+        Rgbww80Color c = useParallelI2S_ ? (static_cast<B_32_IP_SM16825_5*>(busPtr))->GetPixelColor(pix)
                                            : (static_cast<B_32_I2_SM16825_5*>(busPtr))->GetPixelColor(pix);
         col            = RGBW32(c.R / 257, c.G / 257, c.B / 257, max(c.WW, c.CW) / 257);
       } break;  // will not return original W
@@ -1370,84 +1371,84 @@ class PolyBus {
 // I2S1 bus or paralell buses
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_NEO_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_NEO_3*>(busPtr));
         }
         break;
       case I_32_I2_NEO_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_NEO_4*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_NEO_4*>(busPtr));
         }
         break;
       case I_32_I2_400_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_400_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_400_3*>(busPtr));
         }
         break;
       case I_32_I2_TM1_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_TM1_4*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_TM1_4*>(busPtr));
         }
         break;
       case I_32_I2_TM2_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_TM2_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_TM2_3*>(busPtr));
         }
         break;
       case I_32_I2_UCS_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_UCS_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_UCS_3*>(busPtr));
         }
         break;
       case I_32_I2_UCS_4:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_UCS_4*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_UCS_4*>(busPtr));
         }
         break;
       case I_32_I2_APA106_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_APA106_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_APA106_3*>(busPtr));
         }
         break;
       case I_32_I2_FW6_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_FW6_5*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_FW6_5*>(busPtr));
         }
         break;
       case I_32_I2_2805_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_2805_5*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_2805_5*>(busPtr));
         }
         break;
       case I_32_I2_TM1914_3:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_TM1914_3*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_TM1914_3*>(busPtr));
         }
         break;
       case I_32_I2_SM16825_5:
-        if (_useParallelI2S) {
+        if (useParallelI2S_) {
           delete (static_cast<B_32_IP_SM16825_5*>(busPtr));
         } else {
           delete (static_cast<B_32_I2_SM16825_5*>(busPtr));
@@ -1539,51 +1540,51 @@ class PolyBus {
 // largest bus counts for DMA memory, this is not done correctly here, also assumes 3-step cadence
 #ifndef CONFIG_IDF_TARGET_ESP32C3
       case I_32_I2_NEO_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_NEO_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_NEO_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_NEO_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_NEO_4:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_NEO_4*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_NEO_4*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_NEO_4*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_400_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_400_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_400_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_400_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_TM1_4:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_TM1_4*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_TM1_4*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_TM1_4*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_TM2_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_TM2_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_TM2_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_TM2_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_UCS_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_UCS_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_UCS_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_UCS_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_UCS_4:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_UCS_4*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_UCS_4*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_UCS_4*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_APA106_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_APA106_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_APA106_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_APA106_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_FW6_5:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_FW6_5*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_FW6_5*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_FW6_5*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_2805_5:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_2805_5*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_2805_5*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_2805_5*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_TM1914_3:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_TM1914_3*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_TM1914_3*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_TM1914_3*>(busPtr))->PixelsSize() * 4;
         break;
       case I_32_I2_SM16825_5:
-        size += (_useParallelI2S) ? (static_cast<B_32_IP_SM16825_5*>(busPtr))->PixelsSize() * 4
+        size += useParallelI2S_ ? (static_cast<B_32_IP_SM16825_5*>(busPtr))->PixelsSize() * 4
                                   : (static_cast<B_32_I2_SM16825_5*>(busPtr))->PixelsSize() * 4;
         break;
 #endif
@@ -1643,10 +1644,10 @@ class PolyBus {
         break;             // 16bit, 4 channels
       case I_32_RN_FW6_5:  // fallthrough
       case I_32_RN_2805_5:
-        size = (size + 2 * count) * 2;
+        size = (size + (2 * count)) * 2;
         break;  // 5 channels
       case I_32_RN_SM16825_5:
-        size = (size + 2 * count) * 2 * 2;
+        size = (size + (2 * count)) * 2 * 2;
         break;  // 16bit, 5 channels
 // I2S bus or paralell I2S buses (1x front, does not include DMA buffer which is front*cadence, a bit(?) more for LCD)
 #ifndef CONFIG_IDF_TARGET_ESP32C3
@@ -1667,10 +1668,10 @@ class PolyBus {
         break;             // 16 bit, 4 channels
       case I_32_I2_FW6_5:  // fallthrough
       case I_32_I2_2805_5:
-        size = (size + 2 * count);
+        size = (size + (2 * count));
         break;  // 5 channels
       case I_32_I2_SM16825_5:
-        size = (size + 2 * count) * 2;
+        size = (size + (2 * count)) * 2;
         break;  // 16 bit, 5 channels
 #endif
       default:
@@ -1682,16 +1683,16 @@ class PolyBus {
 
   // Reset channel tracking (call before adding buses)
   static void resetChannelTracking() {
-    _useParallelI2S      = false;
-    _rmtChannelsAssigned = 0;
-    _rmtChannel          = 0;
-    _i2sChannelsAssigned = 0;
-    _parallelBusItype    = I_NONE;
+    useParallelI2S_      = false;
+    rmtChannelsAssigned_ = 0;
+    rmtChannel_          = 0;
+    i2sChannelsAssigned_ = 0;
+    parallelBusItype_    = I_NONE;
     _2PchannelsAssigned  = 0;
   }
 
   // reserves and gives back the internal type index (I_XX_XXX_X above) for the input based on bus type and pins
-  static uint8_t getI(uint8_t busType, const uint8_t* pins, uint8_t driverPreference) {
+  static uint8_t getI(uint8_t busType, const uint8_t*  /*pins*/, uint8_t driverPreference) {
     if (!Bus::isDigital(busType)) {
       return I_NONE;
     }
@@ -1727,11 +1728,11 @@ class PolyBus {
       // determine which driver to use based on preference and availability. First I2S bus locks the I2S type, all
       // subsequent I2S buses are assigned the same type (hardware restriction)
       uint8_t offset = 0;  // 0 = RMT, 1 = I2S/LCD
-      if (driverPreference == 0 && _rmtChannelsAssigned < WLED_MAX_RMT_CHANNELS) {
-        _rmtChannelsAssigned++;
-      } else if (_i2sChannelsAssigned < WLED_MAX_I2S_CHANNELS) {
+      if (driverPreference == 0 && rmtChannelsAssigned_ < WLED_MAX_RMT_CHANNELS) {
+        rmtChannelsAssigned_++;
+      } else if (i2sChannelsAssigned_ < WLED_MAX_I2S_CHANNELS) {
         offset = 1;  // I2S requested or RMT full
-        _i2sChannelsAssigned++;
+        i2sChannelsAssigned_++;
       } else {
         return I_NONE;  // No channels available
       }
@@ -1779,14 +1780,14 @@ class PolyBus {
           break;
       }
       // If using parallel I2S, set the type accordingly
-      if (_i2sChannelsAssigned == 1 && offset == 1) {  // first I2S channel request, lock the type
-        _parallelBusItype = t;
+      if (i2sChannelsAssigned_ == 1 && offset == 1) {  // first I2S channel request, lock the type
+        parallelBusItype_ = t;
 #ifdef CONFIG_IDF_TARGET_ESP32S3
         _useParallelI2S = true;  // ESP32-S3 always uses parallel I2S (LCD method)
 #endif
       } else if (offset == 1) {  // not first I2S channel, use locked type and enable parallel flag
-        _useParallelI2S = true;
-        t               = _parallelBusItype;
+        useParallelI2S_ = true;
+        t               = parallelBusItype_;
       }
     }
     return t;

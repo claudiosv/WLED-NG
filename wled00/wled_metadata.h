@@ -25,7 +25,9 @@
 #endif
 
 #define WLED_VERSION_MAX_LEN      48
-#define WLED_RELEASE_NAME_MAX_LEN 48
+enum {
+WLED_RELEASE_NAME_MAX_LEN = 48
+};
 
 /**
  * WLED Custom Description Structure
@@ -33,7 +35,7 @@
  * fixed offset in ESP32 binaries, where it can be found and validated
  * by the OTA process.
  */
-typedef struct {
+using wled_metadata_t = struct {
   uint32_t magic;         // Magic number to identify WLED custom description
   uint32_t desc_version;  // Structure version for future compatibility
   char     wled_version[WLED_VERSION_MAX_LEN];
@@ -41,16 +43,16 @@ typedef struct {
   uint32_t hash;                                     // Structure sanity check
   uint8_t safe_update_version[3];  // Indicates version it's known to be safe to install this update from: major, minor,
                                    // patch
-} __attribute__((packed)) wled_metadata_t;
+};
 
 // Global build description
-extern const wled_metadata_t WLED_BUILD_DESCRIPTION;
+extern const wled_metadata_t kWledBuildDescription;
 
 // Convenient metdata pointers
 #define versionString (WLED_BUILD_DESCRIPTION.wled_version)  // Build version, WLED_VERSION
 #define releaseString (WLED_BUILD_DESCRIPTION.release_name)  // Release name,  WLED_RELEASE_NAME
-inline constexpr char repoString[]  = WLED_REPO;             // Github repository (if available)
-inline constexpr char brandString[] = WLED_BRAND;            // Brand
+inline constexpr char kRepoString[]  = WLED_REPO;             // Github repository (if available)
+inline constexpr char kBrandString[] = WLED_BRAND;            // Brand
 
 // Metadata analysis functions
 

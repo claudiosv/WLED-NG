@@ -9,7 +9,7 @@
 
 #ifndef _Time_h
 #ifdef __cplusplus
-#define _Time_h
+#define Time_h
 
 #include <inttypes.h>
 #ifndef __AVR__
@@ -17,7 +17,7 @@
 #endif
 
 #if !defined(__time_t_defined)  // avoid conflict with newlib or other posix libc
-typedef unsigned long time_t;
+using time_t = unsigned long;
 #endif
 
 // This ugly hack allows us to define C++ overloaded functions, when included
@@ -30,7 +30,7 @@ typedef unsigned long time_t;
 // nothing too terrible will result from overriding the C library header?!
 extern "C++" {
 
-typedef enum {
+using timeDayOfWeek_t = enum {
   dowInvalid,
   dowSunday,
   dowMonday,
@@ -39,9 +39,9 @@ typedef enum {
   dowThursday,
   dowFriday,
   dowSaturday
-} timeDayOfWeek_t;
+};
 
-typedef enum {
+using tmByteFields = enum {
   tmSecond,
   tmMinute,
   tmHour,
@@ -50,9 +50,9 @@ typedef enum {
   tmMonth,
   tmYear,
   tmNbrFields
-} tmByteFields;
+};
 
-typedef struct {
+using tmElements_t = struct {
   uint8_t Second;
   uint8_t Minute;
   uint8_t Hour;
@@ -60,7 +60,9 @@ typedef struct {
   uint8_t Day;
   uint8_t Month;
   uint8_t Year;  // offset from 1970;
-} tmElements_t, TimeElements, *tmElementsPtr_t;
+};
+using TimeElements = struct;
+using tmElementsPtr_t = tmElements_t*;
 
 // convenience macros to convert to and from tm years
 #define tmYearToCalendar(Y) ((Y) + 1970)  // full four digit year
@@ -68,7 +70,7 @@ typedef struct {
 #define tmYearToY2k(Y)      ((Y) - 30)  // offset is from 2000
 #define y2kYearToTm(Y)      ((Y) + 30)
 
-typedef time_t (*getExternalTime)();
+using getExternalTime = time_t (*)();
 // typedef void  (*setExternalTime)(const time_t); // not used in this version
 
 /*==============================================================================*/
@@ -82,20 +84,20 @@ typedef time_t (*getExternalTime)();
 #define SECS_YR_2000  ((time_t)(946684800UL))  // the time at the start of y2k
 
 /* Useful Macros for getting elapsed time */
-#define numberOfSeconds(_time_)  (_time_ % SECS_PER_MIN)
-#define numberOfMinutes(_time_)  ((_time_ / SECS_PER_MIN) % SECS_PER_MIN)
-#define numberOfHours(_time_)    ((_time_ % SECS_PER_DAY) / SECS_PER_HOUR)
-#define dayOfWeek(_time_)        (((_time_ / SECS_PER_DAY + 4) % DAYS_PER_WEEK) + 1)  // 1 = Sunday
-#define elapsedDays(_time_)      (_time_ / SECS_PER_DAY)  // this is number of days since Jan 1 1970
-#define elapsedSecsToday(_time_) (_time_ % SECS_PER_DAY)  // the number of seconds since last midnight
+#define numberOfSeconds(_time_)  ((_time_) % SECS_PER_MIN)
+#define numberOfMinutes(_time_)  (((_time_) / SECS_PER_MIN) % SECS_PER_MIN)
+#define numberOfHours(_time_)    (((_time_) % SECS_PER_DAY) / SECS_PER_HOUR)
+#define dayOfWeek(_time_)        ((((_time_) / SECS_PER_DAY + 4) % DAYS_PER_WEEK) + 1)  // 1 = Sunday
+#define elapsedDays(_time_)      ((_time_) / SECS_PER_DAY)  // this is number of days since Jan 1 1970
+#define elapsedSecsToday(_time_) ((_time_) % SECS_PER_DAY)  // the number of seconds since last midnight
 // The following macros are used in calculating alarms and assume the clock is set to a date later than Jan 1 1971
 // Always set the correct time before settting alarms
-#define previousMidnight(_time_) ((_time_ / SECS_PER_DAY) * SECS_PER_DAY)   // time at the start of the given day
+#define previousMidnight(_time_) (((_time_) / SECS_PER_DAY) * SECS_PER_DAY)   // time at the start of the given day
 #define nextMidnight(_time_)     (previousMidnight(_time_) + SECS_PER_DAY)  // time at the end of the given day
 #define elapsedSecsThisWeek(_time_) \
   (elapsedSecsToday(_time_) + ((dayOfWeek(_time_) - 1) * SECS_PER_DAY))  // note that week starts on day 1
 #define previousSunday(_time_) \
-  (_time_ - elapsedSecsThisWeek(_time_))                             // time at the start of the week for the given time
+  ((_time_) - elapsedSecsThisWeek(_time_))                             // time at the start of the week for the given time
 #define nextSunday(_time_) (previousSunday(_time_) + SECS_PER_WEEK)  // time at the end of the week for the given time
 
 /* Useful Macros for converting elapsed time to a time_t */

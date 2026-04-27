@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 
 /*
@@ -136,7 +138,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
     if (!strcmp(oldSSID, apSSID) && apActive) {
       forceReconnect = true;
     }
-    apHide      = request->hasArg("AH");
+    apHide      = static_cast<byte>(request->hasArg("AH"));
     int passlen = request->arg("AP").length();
     if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg("AP").c_str(), 65))) {
       strlcpy(apPass, request->arg("AP").c_str(), 65);
@@ -213,8 +215,16 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
       }
     }
 
-    unsigned colorOrder, type, skip, awmode, channelSwap, maPerLed, driverType;
-    unsigned length, start, maMax;
+    unsigned colorOrder;
+    unsigned type;
+    unsigned skip;
+    unsigned awmode;
+    unsigned channelSwap;
+    unsigned maPerLed;
+    unsigned driverType;
+    unsigned length;
+    unsigned start;
+    unsigned maMax;
     uint8_t  pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
     String   text;
 
@@ -348,9 +358,9 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
         maMax    = 0;
       } else {
         maPerLed = request->arg(la).toInt();
-        maMax = request->arg(ma).toInt() * request->hasArg("PPL");  // if PP-ABL is disabled maMax (per bus) must be 0
+        maMax = request->arg(ma).toInt() * static_cast<long>(request->hasArg("PPL"));  // if PP-ABL is disabled maMax (per bus) must be 0
       }
-      type |= request->hasArg(rf) << 7;       // off refresh override
+      type |= static_cast<int>(request->hasArg(rf)) << 7;       // off refresh override
       driverType = request->arg(ld).toInt();  // 0=RMT (default), 1=I2S
       text       = request->arg(hs).substring(0, 31);
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
@@ -489,8 +499,8 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
     gammaCorrectBri = request->hasArg("GB");
     gammaCorrectCol = request->hasArg("GC");
     gammaCorrectVal = request->arg("GV").toFloat();
-    if (gammaCorrectVal < 0.1f || gammaCorrectVal > 3) {
-      gammaCorrectVal = 1.0f;  // no gamma correction
+    if (gammaCorrectVal < 0.1F || gammaCorrectVal > 3) {
+      gammaCorrectVal = 1.0F;  // no gamma correction
       gammaCorrectBri = false;
       gammaCorrectCol = false;
     }
@@ -693,7 +703,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
 
     // start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) {
-      ntpConnected = ntpUdp.begin(ntpLocalPort);
+      ntpConnected = (ntpUdp.begin(ntpLocalPort) != 0u);
     }
     ntpLastSyncTime = NTP_NEVER;  // force new NTP query
 
@@ -763,16 +773,15 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
       uint8_t h     = request->arg(k).toInt();
       k[0]          = 'N';
       int minuteVal = request->arg(k).toInt();
-      if (minuteVal < -120) {
-        minuteVal = -120;
-      }
-      if (minuteVal > 120) {
-        minuteVal = 120;
-      }
-      int8_t m   = static_cast<int8_t>(minuteVal);
+      minuteVal = std::max(minuteVal, -120);
+      minuteVal = std::min(minuteVal, 120);
+      auto m   = static_cast<int8_t>(minuteVal);
       k[0]       = 'W';
       uint8_t wd = request->arg(k).toInt();
-      uint8_t ms = 1, me = 12, ds = 1, de = 31;
+      uint8_t ms = 1;
+      uint8_t me = 12;
+      uint8_t ds = 1;
+      uint8_t de = 31;
       k[0] = 'M';
       ms   = request->arg(k).toInt();
       if (ms == 0) {
@@ -813,7 +822,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
       if (pinLen == 4 || pinLen == 0) {
         unsigned numZeros = 0;
         for (unsigned i = 0; i < pinLen; i++) {
-          numZeros += (pin[i] == '0');
+          numZeros += static_cast<unsigned int>(pin[i] == '0');
         }
         if (numZeros < pinLen || pinLen == 0) {  // ignore 0000 input (placeholder)
           strlcpy(settingsPIN, pin, 5);
@@ -1039,7 +1048,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
 #ifndef WLED_DISABLE_2D
   // 2D panels
   if (subPage == SUBPAGE_2D) {
-    strip.isMatrix = request->arg("SOMP").toInt();
+    strip.isMatrix = (request->arg("SOMP").toInt() != 0);
     strip.panel.clear();
     if (strip.isMatrix) {
       unsigned panels = constrain(request->arg("MPC").toInt(), 1, WLED_MAX_PANELS);
@@ -1056,11 +1065,11 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
           break;
         }
         pO[l]         = 'B';
-        p.bottomStart = request->arg(pO).toInt();
+        p.bottomStart = (request->arg(pO).toInt() != 0);
         pO[l]         = 'R';
-        p.rightStart  = request->arg(pO).toInt();
+        p.rightStart  = (request->arg(pO).toInt() != 0);
         pO[l]         = 'V';
-        p.vertical    = request->arg(pO).toInt();
+        p.vertical    = (request->arg(pO).toInt() != 0);
         pO[l]         = 'S';
         p.serpentine  = request->hasArg(pO);
         pO[l]         = 'X';
@@ -1088,7 +1097,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
 
   lastEditTime = millis();
   // do not save if factory reset or LED settings (which are saved after LED re-init)
-  configNeedsWrite = subPage != SUBPAGE_LEDS && !(subPage == SUBPAGE_SEC && doReboot);
+  configNeedsWrite = subPage != SUBPAGE_LEDS && (subPage != SUBPAGE_SEC || !doReboot);
   if (subPage == SUBPAGE_UM) {
     doReboot = request->hasArg(
         "RBT");  // prevent race condition on dual core system (set reboot here, after configNeedsWrite has been set)
@@ -1137,7 +1146,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
         strip.getSegment(i).selected = false;  // unselect other segments
       }
     }
-    selseg.selected = t;
+    selseg.selected = (t != 0u);
   }
 
   // temporary values, write directly to segments, globals are updated by setValuesFromFirstSelectedSeg()
@@ -1195,7 +1204,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   pos = req.indexOf("SB=");  // Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri);  // use transition
+    selseg.setOption(SEG_OPTION_ON, segbri != 0u);  // use transition
     if (segbri) {
       selseg.setOpacity(segbri);
     }
@@ -1244,7 +1253,9 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   // set brightness
   updateVal(req.c_str(), "&A=", bri);
 
-  bool col0Changed = false, col1Changed = false, col2Changed = false;
+  bool col0Changed = false;
+  bool col1Changed = false;
+  bool col2Changed = false;
   // set colors
   col0Changed |= updateVal(req.c_str(), "&R=", colIn[0]);
   col0Changed |= updateVal(req.c_str(), "&G=", colIn[1]);
@@ -1289,7 +1300,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
     }
     byte sec = req.indexOf("H2");
     colorHStoRGB(temphue, tempsat, (sec > 0) ? colInSec : colIn);
-    col0Changed |= (!sec);
+    col0Changed |= (sec == 0u);
     col1Changed |= sec;
   }
 
@@ -1298,7 +1309,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   if (pos > 0) {
     byte sec = req.indexOf("K2");
     colorKtoRGB(getNumVal(req, pos), (sec > 0) ? colInSec : colIn);
-    col0Changed |= (!sec);
+    col0Changed |= (sec == 0u);
     col1Changed |= sec;
   }
 
@@ -1327,7 +1338,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   if (pos > 0) {
     byte sec = getNumVal(req, pos);
     setRandomColor(sec ? colInSec : colIn);
-    col0Changed |= (!sec);
+    col0Changed |= (sec == 0u);
     col1Changed |= sec;
   }
 
@@ -1349,9 +1360,16 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
     col0Changed = col1Changed = true;
   }
 
-  bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
-  bool custom1Changed = false, custom2Changed = false, custom3Changed = false, check1Changed = false,
-       check2Changed = false, check3Changed = false;
+  bool fxModeChanged = false;
+  bool speedChanged = false;
+  bool intensityChanged = false;
+  bool paletteChanged = false;
+  bool custom1Changed = false;
+  bool custom2Changed = false;
+  bool custom3Changed = false;
+  bool check1Changed = false;
+  bool check2Changed = false;
+  bool check3Changed = false;
   // set effect parameters
   if (updateVal(req.c_str(), "FX=", effectIn, 0, strip.getModeCount() - 1)) {
     if (request != nullptr) {
@@ -1508,9 +1526,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
 
     nightlightActiveOld = false;  // re-init
   }
-  if (nightlightMode > NL_MODE_SUN) {
-    nightlightMode = NL_MODE_SUN;
-  }
+  nightlightMode = std::min<byte>(nightlightMode, NL_MODE_SUN);
 
   pos = req.indexOf("TT=");
   if (pos > 0) {
@@ -1536,11 +1552,9 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   pos = req.indexOf("LO=");
   if (pos > 0) {
     realtimeOverride = getNumVal(req, pos);
-    if (realtimeOverride > 2) {
-      realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
-    }
+    realtimeOverride = std::min<byte>(realtimeOverride, 2);
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().freeze = !realtimeOverride;
+      strip.getMainSegment().freeze = (realtimeOverride == 0u);
       realtimeOverride              = REALTIME_OVERRIDE_NONE;  // ignore request for override if using main segment only
     }
   }
@@ -1578,7 +1592,7 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   // internal call, does not send XML response
   pos = req.indexOf("IN");
   if ((request != nullptr) && (pos < 1)) {
-    auto response = request->beginResponseStream("text/xml");
+    auto *response = request->beginResponseStream("text/xml");
     XML_response(*response);
     request->send(response);
   }

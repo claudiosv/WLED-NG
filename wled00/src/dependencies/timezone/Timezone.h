@@ -21,34 +21,34 @@
 
 // convenient constants for dstRules
 enum week_t {
-  Last,
-  First,
-  Second,
-  Third,
-  Fourth
+  kLast,
+  kFirst,
+  kSecond,
+  kThird,
+  kFourth
 };
 enum dow_t {
-  Sun = 1,
-  Mon,
-  Tue,
-  Wed,
-  Thu,
-  Fri,
-  Sat
+  kSun = 1,
+  kMon,
+  kTue,
+  kWed,
+  kThu,
+  kFri,
+  kSat
 };
 enum month_t {
-  Jan = 1,
-  Feb,
-  Mar,
-  Apr,
-  May,
-  Jun,
-  Jul,
-  Aug,
-  Sep,
-  Oct,
-  Nov,
-  Dec
+  kJan = 1,
+  kFeb,
+  kMar,
+  kApr,
+  kMay,
+  kJun,
+  kJul,
+  kAug,
+  kSep,
+  kOct,
+  kNov,
+  kDec
 };
 
 // structure to describe rules for when daylight/summer time begins,
@@ -64,7 +64,7 @@ struct TimeChangeRule {
 class Timezone {
  public:
   Timezone(TimeChangeRule dstStart, TimeChangeRule stdStart);
-  Timezone(int address);
+  explicit Timezone(int address);
   time_t  toLocal(time_t utc);
   time_t  toLocal(time_t utc, TimeChangeRule **tcr);
   time_t  toUTC(time_t local);
@@ -76,11 +76,11 @@ class Timezone {
  private:
   void           calcTimeChanges(int yr);
   time_t         toTime_t(TimeChangeRule r, int yr);
-  TimeChangeRule _dst;     // rule for start of dst or summer time for any year
-  TimeChangeRule _std;     // rule for start of standard time for any year
-  time_t         _dstUTC;  // dst start for given/current year, given in UTC
-  time_t         _stdUTC;  // std time start for given/current year, given in UTC
-  time_t         _dstLoc;  // dst start for given/current year, given in local time
-  time_t         _stdLoc;  // std time start for given/current year, given in local time
+  TimeChangeRule dst_;     // rule for start of dst or summer time for any year
+  TimeChangeRule std_;     // rule for start of standard time for any year
+  time_t         dstUTC_;  // dst start for given/current year, given in UTC
+  time_t         stdUTC_;  // std time start for given/current year, given in UTC
+  time_t         dstLoc_;  // dst start for given/current year, given in local time
+  time_t         stdLoc_;  // std time start for given/current year, given in local time
 };
 #endif

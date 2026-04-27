@@ -38,7 +38,7 @@
 struct NodeStruct {
   String    nodeName;
   IPAddress ip;
-  uint8_t   age;
+  uint8_t   age{0};
   union {
     uint8_t nodeType;  // a waste of space as we only have 5 types
     struct {
@@ -46,14 +46,14 @@ struct NodeStruct {
       bool    on   : 1;
     };
   };
-  uint32_t build;
+  uint32_t build{0};
 
-  NodeStruct() : age(0), nodeType(0), build(0) {
+  NodeStruct() :  nodeType(0) {
     for (unsigned i = 0; i < 4; ++i) {
       ip[i] = 0;
     }
   }
 };
-typedef std::map<uint8_t, NodeStruct> NodesMap;
+using NodesMap = ;
 
 #endif  // WLED_NODESTRUCT_H

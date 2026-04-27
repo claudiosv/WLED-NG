@@ -1,14 +1,16 @@
+#include <algorithm>
+
 #include "wled.h"
 
 /*
  * Handles playlists, timed sequences of presets
  */
 
-typedef struct PlaylistEntry {
+using ple = struct PlaylistEntry {
   uint8_t  preset;  // ID of the preset to apply
   uint16_t tr;      // Duration of the transition TO this entry (in tenths of seconds)
   uint32_t dur;     // Duration of the entry (in milliseconds)
-} ple;
+};
 
 static byte playlistRepeat    = 1;  // how many times to repeat the playlist (0 = infinitely)
 static byte playlistEndPreset = 0;  // what preset to apply after playlist end (0 = stay on last preset)
@@ -68,9 +70,7 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   if (playlistLen == 0) {
     return -1;
   }
-  if (playlistLen > 100) {
-    playlistLen = 100;
-  }
+  playlistLen = std::min<byte>(playlistLen, 100);
 
   playlistEntries = new (std::nothrow) PlaylistEntry[playlistLen];
   if (playlistEntries == nullptr) {

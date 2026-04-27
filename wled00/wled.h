@@ -7,7 +7,9 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2602141
+enum {
+VERSION = 2602141
+};
 
 // uncomment this if you have a "my_config.h" file you'd like to use
 // #define WLED_USE_MY_CONFIG
@@ -147,7 +149,7 @@
 // The following is a construct to enable code to compile without it.
 // There is a code that will still not use PSRAM though:
 //    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
-#if defined(BOARD_HAS_PSRAM)
+#ifdef BOARD_HAS_PSRAM
 struct PSRAM_Allocator {
   void* allocate(size_t size) {
     return ps_malloc(size);  // use PSRAM
@@ -237,14 +239,14 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #define WLED_GLOBAL extern
 #define _INIT(x)
 #define _INIT_N(x)
-#define _INIT_PROGMEM(x)
+#define INIT_PROGMEM(x)
 #else
 #define WLED_GLOBAL
 #define _INIT(x)         = x
 // needed to ignore commas in array definitions
 #define UNPACK(...)      __VA_ARGS__
 #define _INIT_N(x)       UNPACK x
-#define _INIT_PROGMEM(x) = x
+#define INIT_PROGMEM(x) = x
 #endif
 
 #define STRINGIFY(X) #X
@@ -285,7 +287,7 @@ WLED_GLOBAL bool rlyOpenDrain _INIT(false);
 WLED_GLOBAL bool rlyOpenDrain _INIT(RLYODRAIN);
 #endif
 #ifndef IRPIN
-#define IRPIN -1
+#define IRPIN (-1)
 #endif
 #ifndef IRTYPE
 #define IRTYPE 0
@@ -298,8 +300,8 @@ constexpr uint8_t hardwareRX = RX;
 constexpr uint8_t hardwareTX = TX;
 #else
 // use defaults for RX/TX
-constexpr uint8_t hardwareRX = 3;
-constexpr uint8_t hardwareTX = 1;
+constexpr uint8_t kHardwareRx = 3;
+constexpr uint8_t kHardwareTx = 1;
 #endif
 
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");  // NTP server to use
@@ -387,7 +389,7 @@ WLED_GLOBAL bool cctICused _INIT(false);  // CCT IC used (Athom 15W bulbs)
 #endif
 WLED_GLOBAL bool gammaCorrectCol  _INIT(true);   // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri  _INIT(false);  // use gamma correction on brightness
-WLED_GLOBAL float gammaCorrectVal _INIT(2.2f);   // gamma correction value
+WLED_GLOBAL float gammaCorrectVal _INIT(2.2F);   // gamma correction value
 
 WLED_GLOBAL byte colPri[] _INIT_N(
     ({255, 160, 0, 0}));  // current RGB(W) primary color. colPri[] should be updated if you want to change the color.
@@ -481,7 +483,7 @@ WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);  // used for other 
 #ifndef MQTT_MAX_SERVER_LEN
 #define MQTT_MAX_SERVER_LEN 32
 #endif
-WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
+WLED_GLOBAL AsyncMqttClient* mqtt _INIT(nullptr);
 WLED_GLOBAL bool mqttEnabled      _INIT(false);
 WLED_GLOBAL char mqttStatusTopic[MQTT_MAX_TOPIC_LEN + 8] _INIT("");  // this must be global because of async handlers
 WLED_GLOBAL char mqttDeviceTopic[MQTT_MAX_TOPIC_LEN + 1] _INIT(
@@ -632,8 +634,8 @@ WLED_GLOBAL byte whiteLast           _INIT(128);  // white channel before turned
 
 // button
 struct Button {
-  unsigned long pressedTime;  // time button was pressed
-  unsigned long waitTime;     // time to wait for next button press
+  unsigned long pressedTime{0};  // time button was pressed
+  unsigned long waitTime{0};     // time to wait for next button press
   int8_t        pin;          // pin number
   struct {
     uint8_t type          : 6;  // button type (push, long, double, etc.)
@@ -645,8 +647,7 @@ struct Button {
   uint8_t macroDoublePress;  // macro/preset to call on double press
 
   Button(int8_t p, uint8_t t, uint8_t mB = 0, uint8_t mLP = 0, uint8_t mDP = 0)
-      : pressedTime(0),
-        waitTime(0),
+      : 
         pin(p),
         type(t),
         pressedBefore(false),
@@ -851,12 +852,14 @@ WLED_GLOBAL DNSServer dnsServer;
 
 // network time
 #ifndef WLED_LAT
-#define WLED_LAT 0.0f
+#define WLED_LAT 0.0F
 #endif
 #ifndef WLED_LON
-#define WLED_LON 0.0f
+#define WLED_LON 0.0F
 #endif
-#define NTP_NEVER 999000000L
+enum {
+NTP_NEVER = 999000000L
+};
 WLED_GLOBAL bool ntpConnected               _INIT(false);
 WLED_GLOBAL time_t localTime                _INIT(0);
 WLED_GLOBAL unsigned long ntpLastSyncTime   _INIT(NTP_NEVER);
@@ -888,7 +891,7 @@ WLED_GLOBAL bool configNeedsWrite _INIT(false);  // flag to initiate saving of c
 WLED_GLOBAL bool doReboot         _INIT(false);  // flag to initiate reboot from async handlers
 
 // status led
-#if defined(STATUSLED)
+#ifdef STATUSLED
 WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
 WLED_GLOBAL uint8_t ledStatusType _INIT(0);      // current status type - corresponds to number of blinks per second
 WLED_GLOBAL bool ledStatusState   _INIT(false);  // the current LED state
@@ -901,7 +904,7 @@ WLED_GLOBAL AsyncWebServer server _INIT_N(((80, {0, WLED_REQUEST_MAX_QUEUE, WLED
 WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
 #ifndef WLED_DISABLE_HUESYNC
-WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
+WLED_GLOBAL AsyncClient* hueClient _INIT(nullptr);
 #endif
 WLED_GLOBAL AsyncWebHandler* editHandler _INIT(nullptr);
 
@@ -958,7 +961,7 @@ WLED_GLOBAL int8_t spi_sclk _INIT(SPISCLKPIN);
 #endif
 
 // global ArduinoJson buffer
-#if defined(ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP32
 WLED_GLOBAL SemaphoreHandle_t jsonBufferLockMutex _INIT(xSemaphoreCreateRecursiveMutex());
 #endif
 #ifdef BOARD_HAS_PSRAM
@@ -971,7 +974,7 @@ WLED_GLOBAL JsonDocument* pDoc                   _INIT(&gDoc);
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
-#if defined(WLED_DEBUG_HOST)
+#ifdef WLED_DEBUG_HOST
 #include "net_debug.h"
 // On the host side, use netcat to receive the log statements: nc -l 7868 -u
 // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
@@ -1032,7 +1035,7 @@ WLED_GLOBAL unsigned loops                     _INIT(0);
 #endif
 
 // macro to convert F to const
-// TODO: is this needed?
+// TODO: claudio - is this needed?
 #define SET_F(x) (const char*)x
 
 class WLED {
@@ -1047,14 +1050,14 @@ class WLED {
   void setup();
 
   void loop();
-  void reset();
+  static void reset();
 
-  void beginStrip();
+  static void beginStrip();
   void handleConnection();
-  void initAP(bool resetAP = false);
+  static void initAP(bool resetAP = false);
   void initConnection();
-  void initInterfaces();
-#if defined(STATUSLED)
+  static void initInterfaces();
+#ifdef STATUSLED
   void handleStatusLED();
 #endif
 #if WLED_WATCHDOG_TIMEOUT > 0

@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 #include "wled_ethernet.h"
 
@@ -36,9 +38,9 @@ static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTy
 }
 
 // simple macro for ArduinoJSON's or syntax
-#define CJSON(a, b) a = b | a
+#define CJSON(a, b) a = (b) | a
 
-static inline void getStringFromJson(char* dest, const char* src, size_t len) {
+static inline void getStringFromJson(const char* dest, const char* src, size_t len) {
   if (src != nullptr) {
     strlcpy(dest, src, len);
   }
@@ -96,7 +98,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       char      ssid[33]  = "";
       char      pass[65]  = "";
       char      bssid[13] = "";
-      IPAddress nIP = static_cast<uint32_t>(0U), nGW = static_cast<uint32_t>(0U), nSN = static_cast<uint32_t>(0x00FFFFFF);  // little endian
+      IPAddress nIP = static_cast<uint32_t>(0U);
+      IPAddress nGW = static_cast<uint32_t>(0U);
+      IPAddress nSN = static_cast<uint32_t>(0x00FFFFFF);  // little endian
       getStringFromJson(ssid, wifi["ssid"], 33);
       getStringFromJson(pass, wifi["psk"], 65);  // password is not normally present but if it is, use it
       getStringFromJson(bssid, wifi["bssid"], 13);
@@ -158,9 +162,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     apChannel = 6;  // reset to default if invalid
   }
   CJSON(apHide, ap["hide"]);
-  if (apHide > 1) {
-    apHide = 1;
-  }
+  apHide = std::min<byte>(apHide, 1);
   CJSON(apBehavior, ap["behav"]);
   /*
   JsonArray ap_ip = ap["ip"];
@@ -272,7 +274,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         maPerLed = 0;
         maMax    = 0;
       }
-      ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
+      ledType |= static_cast<int>(refresh) << 7;  // hack bit 7 to indicate strip requires off refresh
       uint8_t driverType =
           elm["drv"] | 0;  // 0=RMT (default), 1=I2S note: polybus may override this if driver is not available
 
@@ -290,14 +292,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     busConfigs.clear();
 
     DEBUG_PRINTLN("No busses, init default");
-    constexpr unsigned defDataTypes[] = {LED_TYPES};
-    constexpr unsigned defDataPins[]  = {DATA_PINS};
-    constexpr unsigned defCounts[]    = {PIXEL_COUNTS};
-    constexpr unsigned defNumTypes    = (sizeof(defDataTypes) / sizeof(defDataTypes[0]));
-    constexpr unsigned defNumPins     = (sizeof(defDataPins) / sizeof(defDataPins[0]));
-    constexpr unsigned defNumCounts   = (sizeof(defCounts) / sizeof(defCounts[0]));
+    constexpr unsigned kDefDataTypes[] = {LED_TYPES};
+    constexpr unsigned kDefDataPins[]  = {DATA_PINS};
+    constexpr unsigned kDefCounts[]    = {PIXEL_COUNTS};
+    constexpr unsigned kDefNumTypes    = (sizeof(kDefDataTypes) / sizeof(kDefDataTypes[0]));
+    constexpr unsigned kDefNumPins     = (sizeof(kDefDataPins) / sizeof(kDefDataPins[0]));
+    constexpr unsigned kDefNumCounts   = (sizeof(kDefCounts) / sizeof(kDefCounts[0]));
 
-    static_assert(validatePinsAndTypes(defDataTypes, defNumTypes, defNumPins),
+    static_assert(validatePinsAndTypes(kDefDataTypes, kDefNumTypes, kDefNumPins),
                   "The default pin list defined in DATA_PINS does not match the pin requirements for the default buses "
                   "defined in LED_TYPES");
 
@@ -305,17 +307,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (unsigned i = 0; i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[OUTPUT_MAX_PINS];
       // if we have less types than requested outputs and they do not align, use last known type to set current type
-      unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes - 1];
+      unsigned dataType = kDefDataTypes[(i < kDefNumTypes) ? i : kDefNumTypes - 1];
       unsigned busPins  = Bus::getNumberOfPins(dataType);
 
       // if we need more pins than available all outputs have been configured
-      if (pinsIndex + busPins > defNumPins) {
+      if (pinsIndex + busPins > kDefNumPins) {
         break;
       }
 
       // Assign all pins first so we can check for conflicts on this bus
       for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
-        defPin[j] = defDataPins[pinsIndex + j];
+        defPin[j] = kDefDataPins[pinsIndex + j];
       }
 
       for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
@@ -349,7 +351,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             // We already have a clash on current bus, no point checking next buses
             if (!clash) {
               // check for conflicts in defined pins
-              for (const auto& pin : defDataPins) {
+              for (const auto& pin : kDefDataPins) {
                 if (pin == defPin[j]) {
                   clash = true;
                   break;
@@ -368,7 +370,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       pinsIndex += busPins;
 
       // if we have less counts than pins and they do not align, use last known count to set current count
-      unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts - 1];
+      unsigned count = kDefCounts[(i < kDefNumCounts) ? i : kDefNumCounts - 1];
       unsigned start = 0;
       // analog always has length 1
       if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) {
@@ -424,9 +426,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             PinManager::deallocatePin(pin, PinOwner::Button);
             pin = -1;
             continue;
-          } else {
-            analogReadResolution(12);  // see #4040
-          }
+          }             analogReadResolution(12);  // see #4040
+         
         } else if ((type == BTN_TYPE_TOUCH || type == BTN_TYPE_TOUCH_SWITCH)) {
           if (digitalPinToTouchChannel(pin) < 0) {
             // not a touch pin
@@ -470,20 +471,20 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   } else if (fromFS) {
     // new install/missing configuration (button 0 has defaults)
     // relies upon only being called once with fromFS == true, which is currently true.
-    constexpr uint8_t  defTypes[] = {BTNTYPE};
-    constexpr int8_t   defPins[]  = {BTNPIN};
-    constexpr unsigned numTypes   = (sizeof(defTypes) / sizeof(defTypes[0]));
-    constexpr unsigned numPins    = (sizeof(defPins) / sizeof(defPins[0]));
+    constexpr uint8_t  kDefTypes[] = {BTNTYPE};
+    constexpr int8_t   kDefPins[]  = {BTNPIN};
+    constexpr unsigned kNumTypes   = (sizeof(kDefTypes) / sizeof(kDefTypes[0]));
+    constexpr unsigned kNumPins    = (sizeof(kDefPins) / sizeof(kDefPins[0]));
     // check if the number of pins and types are valid; count of pins must be greater than or equal to types
-    static_assert(numTypes <= numPins,
+    static_assert(kNumTypes <= kNumPins,
                   "The default button pins defined in BTNPIN do not match the button types defined in BTNTYPE");
 
     uint8_t type = BTN_TYPE_NONE;
     buttons.clear();  // clear existing buttons (just in case)
-    for (size_t s = 0; s < WLED_MAX_BUTTONS && s < numPins; s++) {
+    for (size_t s = 0; s < WLED_MAX_BUTTONS && s < kNumPins; s++) {
       type =
-          defTypes[s < numTypes ? s : numTypes - 1];  // use last known type to set current type if types less than pins
-      if (type == BTN_TYPE_NONE || defPins[s] < 0 || !PinManager::allocatePin(defPins[s], false, PinOwner::Button)) {
+          kDefTypes[s < kNumTypes ? s : kNumTypes - 1];  // use last known type to set current type if types less than pins
+      if (type == BTN_TYPE_NONE || kDefPins[s] < 0 || !PinManager::allocatePin(kDefPins[s], false, PinOwner::Button)) {
         if (buttons.size() == 0) {
           buttons.emplace_back(
               -1, BTN_TYPE_NONE);  // add disabled button to vector (so we have at least one button defined)
@@ -491,15 +492,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         continue;  // pin not available or invalid, skip configuring this GPIO
       }
       if (disablePullUp) {
-        pinMode(defPins[s], INPUT);
+        pinMode(kDefPins[s], INPUT);
       } else {
 #ifdef ESP32
-        pinMode(defPins[s], type == BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        pinMode(kDefPins[s], type == BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
 #else
         pinMode(defPins[s], INPUT_PULLUP);
 #endif
       }
-      buttons.emplace_back(defPins[s], type);  // add button to vector
+      buttons.emplace_back(kDefPins[s], type);  // add button to vector
     }
   }
 
@@ -595,18 +596,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(gammaCorrectVal, light["gc"]["val"]);                 // default 2.2
   float light_gc_bri = light["gc"]["bri"] | 1.0f;             // default to 1.0 (false)
   float light_gc_col = light["gc"]["col"] | gammaCorrectVal;  // default to gammaCorrectVal (true)
-  if (light_gc_bri != 1.0f) {
-    gammaCorrectBri = true;
-  } else {
-    gammaCorrectBri = false;
-  }
-  if (light_gc_col != 1.0f) {
-    gammaCorrectCol = true;
-  } else {
-    gammaCorrectCol = false;
-  }
-  if (gammaCorrectVal < 0.1f || gammaCorrectVal > 3) {
-    gammaCorrectVal = 1.0f;  // no gamma correction
+  gammaCorrectBri = light_gc_bri != 1.0f;
+  gammaCorrectCol = light_gc_col != 1.0f;
+  if (gammaCorrectVal < 0.1F || gammaCorrectVal > 3) {
+    gammaCorrectVal = 1.0F;  // no gamma correction
     gammaCorrectBri = false;
     gammaCorrectCol = false;
   }
@@ -695,9 +688,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     DMXSegmentSpacing = 0;
   }
   CJSON(e131Priority, if_live_dmx["e131prio"]);
-  if (e131Priority > 200) {
-    e131Priority = 200;
-  }
+  e131Priority = std::min<byte>(e131Priority, 200);
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live["timeout"] | -1;
@@ -800,7 +791,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t    p   = timer["macro"] | 0;
       uint8_t    dow = timer["dow"] | 127;
       uint8_t    wd  = (dow << 1) | ((timer["en"] | 0) ? 1 : 0);
-      uint8_t    ms = 1, me = 12, ds = 1, de = 31;
+      uint8_t    ms = 1;
+      uint8_t    me = 12;
+      uint8_t    ds = 1;
+      uint8_t    de = 31;
       JsonObject start = timer["start"];
       if (!start.isNull()) {
         ms = start["mon"] | 1;
@@ -868,32 +862,32 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   return (doc["sv"] | true);
 }
 
-static const char s_cfg_json[] = "/cfg.json";
+static const char kSCfgJson[] = "/cfg.json";
 
 bool backupConfig() {
-  return backupFile(s_cfg_json);
+  return backupFile(kSCfgJson);
 }
 
 bool restoreConfig() {
-  return restoreFile(s_cfg_json);
+  return restoreFile(kSCfgJson);
 }
 
 bool verifyConfig() {
-  return validateJsonFile(s_cfg_json);
+  return validateJsonFile(kSCfgJson);
 }
 
 bool configBackupExists() {
-  return checkBackupExists(s_cfg_json);
+  return checkBackupExists(kSCfgJson);
 }
 
 // rename config file and reboot
 // if the cfg file doesn't exist, such as after a reset, do nothing
 void resetConfig() {
-  if (WLED_FS.exists(s_cfg_json)) {
+  if (WLED_FS.exists(kSCfgJson)) {
     DEBUG_PRINTLN("Reset config");
     char backupname[32];
-    snprintf(backupname, sizeof(backupname), "/rst.%s", &s_cfg_json[1]);
-    WLED_FS.rename(s_cfg_json, backupname);
+    snprintf(backupname, sizeof(backupname), "/rst.%s", &kSCfgJson[1]);
+    WLED_FS.rename(kSCfgJson, backupname);
     doReboot = true;
   }
 }
@@ -907,7 +901,7 @@ bool deserializeConfigFromFS() {
 
   DEBUG_PRINTLN("Reading settings from /cfg.json...");
 
-  success = readObjectFromFile(s_cfg_json, nullptr, pDoc);
+  success = readObjectFromFile(kSCfgJson, nullptr, pDoc);
 
   // NOTE: This routine deserializes *and* applies the configuration
   //       Therefore, must also initialize ethernet from this function
@@ -932,7 +926,7 @@ void serializeConfigToFS() {
 
   serializeConfig(root);
 
-  File f = WLED_FS.open(s_cfg_json, "w");
+  File f = WLED_FS.open(kSCfgJson, "w");
   if (f) {
     serializeJson(root, f);
   }
@@ -1382,7 +1376,7 @@ void serializeConfig(JsonObject root) {
   UsermodManager::addToConfig(usermods_settings);
 }
 
-static const char s_wsec_json[] = "/wsec.json";
+static const char kSWsecJson[] = "/wsec.json";
 
 // settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
@@ -1392,7 +1386,7 @@ bool deserializeConfigSec() {
     return false;
   }
 
-  bool success = readObjectFromFile(s_wsec_json, nullptr, pDoc);
+  bool success = readObjectFromFile(kSWsecJson, nullptr, pDoc);
   if (!success) {
     releaseJSONBufferLock();
     return false;
@@ -1485,7 +1479,7 @@ void serializeConfigSec() {
   ota["aota"] = aOtaEnabled;
 #endif
 
-  File f = WLED_FS.open(s_wsec_json, "w");
+  File f = WLED_FS.open(kSWsecJson, "w");
   if (f) {
     serializeJson(root, f);
   }

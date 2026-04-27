@@ -21,9 +21,9 @@ void XML_response(Print& dest) {
   dest.printf(
       "<ns>%d</ns><nr>%d</nr><nl>%d</nl><nf>%d</nf><nd>%d</nd><nt>%d</nt><fx>%d</fx><sx>%d</sx><ix>%d</ix><fp>%d</"
       "fp><wv>%d</wv><ws>%d</ws><ps>%d</ps><cy>%d</cy><ds>%s%s</ds><ss>%d</ss></vs>",
-      notifyDirect, receiveGroups != 0, nightlightActive, nightlightMode > NL_MODE_SET, nightlightDelayMins,
+      static_cast<int>(notifyDirect), static_cast<int>(receiveGroups != 0), static_cast<int>(nightlightActive), static_cast<int>(nightlightMode > NL_MODE_SET), nightlightDelayMins,
       nightlightTargetBri, effectCurrent, effectSpeed, effectIntensity, effectPalette,
-      strip.hasWhiteChannel() ? colPri[3] : -1, colSec[3], currentPreset, currentPlaylist >= 0, serverDescription,
+      strip.hasWhiteChannel() ? colPri[3] : -1, colSec[3], currentPreset, static_cast<int>(currentPlaylist >= 0), serverDescription,
       realtimeMode ? " (live)" : "", strip.getFirstSelectedSegId());
 }
 
@@ -44,12 +44,12 @@ static void extractPin(Print& settingsScript, const JsonObject& obj, const char*
   }
 }
 
-static void fillWLEDVersion(char* buf, size_t len) {
+static void fillWLEDVersion(const char* buf, size_t len) {
   if (!buf || len == 0) {
     return;
   }
 
-  snprintf(buf, len, "WLED %.10s (%d)<br>\\\"%.32s\\\"<br>(Processor: %.10s)", versionString, VERSION, releaseString,
+  snprintf(buf, len, R"(WLED %.10s (%d)<br>\"%.32s\"<br>(Processor: %.10s))", versionString, VERSION, releaseString,
            ESP.getChipModel());
 }
 
@@ -255,7 +255,7 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
           (uint32_t)multiWiFi[n].staticGW, (uint32_t)multiWiFi[n].staticSN, multiWiFi[n].encryptionType,
           multiWiFi[n].enterpriseAnonIdentity, multiWiFi[n].enterpriseIdentity);
 #else
-      settingsScript.printf("addWiFi(\"%s\",\"%s\",\"%s\",0x%X,0x%X,0x%X;", multiWiFi[n].clientSSID, fpass, bssid,
+      settingsScript.printf(R"(addWiFi("%s","%s","%s",0x%X,0x%X,0x%X;)", multiWiFi[n].clientSSID, fpass, bssid,
                             (uint32_t)multiWiFi[n].staticIP,  // explicit cast required as this is a struct
                             (uint32_t)multiWiFi[n].staticGW, (uint32_t)multiWiFi[n].staticSN);
 #endif
@@ -283,14 +283,14 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
 #else
     settingsScript.print("gId('tx').style.display='none';");
 #endif
-    printSetFormCheckbox(settingsScript, "FG", force802_3g);
-    printSetFormCheckbox(settingsScript, "WS", noWifiSleep);
+    printSetFormCheckbox(settingsScript, "FG", static_cast<int>(force802_3g));
+    printSetFormCheckbox(settingsScript, "WS", static_cast<int>(noWifiSleep));
 
 #ifndef WLED_DISABLE_ESPNOW
-    printSetFormCheckbox(settingsScript, "RE", enableESPNow);
+    printSetFormCheckbox(settingsScript, "RE", static_cast<int>(enableESPNow));
     settingsScript.printf("rstR();");  // reset remote list
     for (size_t i = 0; i < linked_remotes.size(); i++) {
-      settingsScript.printf("aR(\"RM%u\",\"%s\");", i, linked_remotes[i].data());  // add remote to list
+      settingsScript.printf(R"(aR("RM%u","%s");)", i, linked_remotes[i].data());  // add remote to list
     }
     settingsScript.print("tE();");  // fill fields
 #else
@@ -344,14 +344,14 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
 
     // set limits
     settingsScript.printf("bLimits(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d);",
-                          WLED_PLATFORM_ID,  // TODO: replace with a info json lookup
+                          WLED_PLATFORM_ID,  // TODO: claudio - replace with a info json lookup
                           MAX_LEDS_PER_BUS, MAX_LED_MEMORY, MAX_LEDS, WLED_MAX_COLOR_ORDER_MAPPINGS,
                           WLED_MAX_DIGITAL_CHANNELS, WLED_MAX_RMT_CHANNELS, WLED_MAX_I2S_CHANNELS,
                           WLED_MAX_ANALOG_CHANNELS, WLED_MAX_BUTTONS);
 
     printSetFormCheckbox(settingsScript, "MS", strip.autoSegments);
     printSetFormCheckbox(settingsScript, "CCT", strip.correctWB);
-    printSetFormCheckbox(settingsScript, "IC", cctICused);
+    printSetFormCheckbox(settingsScript, "IC", static_cast<int>(cctICused));
     printSetFormCheckbox(settingsScript, "CR", strip.cctFromRgb);
     printSetFormValue(settingsScript, "CB", Bus::getCCTBlend());
     printSetFormValue(settingsScript, "FR", strip.getTargetFps());
@@ -423,9 +423,9 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
       printSetFormValue(settingsScript, ld, bus->getDriverType());
       printSetFormValue(settingsScript, co, bus->getColorOrder() & 0x0F);
       printSetFormValue(settingsScript, ls, bus->getStart());
-      printSetFormCheckbox(settingsScript, cv, bus->isReversed());
+      printSetFormCheckbox(settingsScript, cv, static_cast<int>(bus->isReversed()));
       printSetFormValue(settingsScript, sl, bus->skippedLeds());
-      printSetFormCheckbox(settingsScript, rf, bus->isOffRefreshRequired());
+      printSetFormCheckbox(settingsScript, rf, static_cast<int>(bus->isOffRefreshRequired()));
       printSetFormValue(settingsScript, aw, bus->getAutoWhiteMode());
       printSetFormValue(settingsScript, wo, bus->getColorOrder() >> 4);
       unsigned speed = bus->getFrequency();
@@ -475,8 +475,8 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
       sumMa += bus->getMaxCurrent();
     }
     printSetFormValue(settingsScript, "MA", BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
-    printSetFormCheckbox(settingsScript, "ABL", BusManager::ablMilliampsMax() || sumMa > 0);
-    printSetFormCheckbox(settingsScript, "PPL", !BusManager::ablMilliampsMax() && sumMa > 0);
+    printSetFormCheckbox(settingsScript, "ABL", static_cast<int>((BusManager::ablMilliampsMax() != 0u) || sumMa > 0));
+    printSetFormCheckbox(settingsScript, "PPL", static_cast<int>((BusManager::ablMilliampsMax() == 0u) && sumMa > 0));
 
     settingsScript.printf("resetCOM(%d);", WLED_MAX_COLOR_ORDER_MAPPINGS);
     const ColorOrderMap& com = BusManager::getColorOrderMap();
@@ -490,40 +490,40 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
 
     printSetFormValue(settingsScript, "CA", briS);
 
-    printSetFormCheckbox(settingsScript, "BO", turnOnAtBoot);
+    printSetFormCheckbox(settingsScript, "BO", static_cast<int>(turnOnAtBoot));
     printSetFormValue(settingsScript, "BP", bootPreset);
 
-    printSetFormCheckbox(settingsScript, "GB", gammaCorrectBri);
-    printSetFormCheckbox(settingsScript, "GC", gammaCorrectCol);
+    printSetFormCheckbox(settingsScript, "GB", static_cast<int>(gammaCorrectBri));
+    printSetFormCheckbox(settingsScript, "GC", static_cast<int>(gammaCorrectCol));
     dtostrf(gammaCorrectVal, 3, 1, nS);
     printSetFormValue(settingsScript, "GV", nS);
     printSetFormValue(settingsScript, "TD", transitionDelayDefault);
     printSetFormValue(settingsScript, "TP", randomPaletteChangeTime);
-    printSetFormCheckbox(settingsScript, "TH", useHarmonicRandomPalette);
+    printSetFormCheckbox(settingsScript, "TH", static_cast<int>(useHarmonicRandomPalette));
     printSetFormValue(settingsScript, "BF", briMultiplier);
     printSetFormValue(settingsScript, "TB", nightlightTargetBri);
     printSetFormValue(settingsScript, "TL", nightlightDelayMinsDefault);
     printSetFormValue(settingsScript, "TW", nightlightMode);
     printSetFormIndex(settingsScript, "PB", paletteBlend);
     printSetFormValue(settingsScript, "RL", rlyPin);
-    printSetFormCheckbox(settingsScript, "RM", rlyMde);
-    printSetFormCheckbox(settingsScript, "RO", rlyOpenDrain);
+    printSetFormCheckbox(settingsScript, "RM", static_cast<int>(rlyMde));
+    printSetFormCheckbox(settingsScript, "RO", static_cast<int>(rlyOpenDrain));
     int i = 0;
     for (const auto& button : buttons) {
       settingsScript.printf("addBtn(%d,%d,%d);", i++, button.pin, button.type);
     }
-    printSetFormCheckbox(settingsScript, "IP", disablePullUp);
+    printSetFormCheckbox(settingsScript, "IP", static_cast<int>(disablePullUp));
     printSetFormValue(settingsScript, "TT", touchThreshold);
 #ifndef WLED_DISABLE_INFRARED
     printSetFormValue(settingsScript, "IR", irPin);
     printSetFormValue(settingsScript, "IT", irEnabled);
 #endif
-    printSetFormCheckbox(settingsScript, "MSO", !irApplyToAllSelected);
+    printSetFormCheckbox(settingsScript, "MSO", static_cast<int>(!irApplyToAllSelected));
   }
 
   if (subPage == SUBPAGE_UI) {
     printSetFormValue(settingsScript, "DS", serverDescription);
-    printSetFormCheckbox(settingsScript, "SU", simplifiedUI);
+    printSetFormCheckbox(settingsScript, "SU", static_cast<int>(simplifiedUI));
   }
 
   if (subPage == SUBPAGE_SYNC) {
@@ -531,7 +531,7 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "U2", udpPort2);
 #ifndef WLED_DISABLE_ESPNOW
     if (enableESPNow) {
-      printSetFormCheckbox(settingsScript, "EN", useESPNowSync);
+      printSetFormCheckbox(settingsScript, "EN", static_cast<int>(useESPNowSync));
     } else {
       settingsScript.print("toggle('ESPNOW');");  // hide ESP-NOW setting
     }
@@ -541,27 +541,27 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "GS", syncGroups);
     printSetFormValue(settingsScript, "GR", receiveGroups);
 
-    printSetFormCheckbox(settingsScript, "RB", receiveNotificationBrightness);
-    printSetFormCheckbox(settingsScript, "RC", receiveNotificationColor);
-    printSetFormCheckbox(settingsScript, "RX", receiveNotificationEffects);
-    printSetFormCheckbox(settingsScript, "RP", receiveNotificationPalette);
-    printSetFormCheckbox(settingsScript, "SO", receiveSegmentOptions);
-    printSetFormCheckbox(settingsScript, "SG", receiveSegmentBounds);
-    printSetFormCheckbox(settingsScript, "SS", sendNotifications);
-    printSetFormCheckbox(settingsScript, "SD", notifyDirect);
-    printSetFormCheckbox(settingsScript, "SB", notifyButton);
-    printSetFormCheckbox(settingsScript, "SH", notifyHue);
+    printSetFormCheckbox(settingsScript, "RB", static_cast<int>(receiveNotificationBrightness));
+    printSetFormCheckbox(settingsScript, "RC", static_cast<int>(receiveNotificationColor));
+    printSetFormCheckbox(settingsScript, "RX", static_cast<int>(receiveNotificationEffects));
+    printSetFormCheckbox(settingsScript, "RP", static_cast<int>(receiveNotificationPalette));
+    printSetFormCheckbox(settingsScript, "SO", static_cast<int>(receiveSegmentOptions));
+    printSetFormCheckbox(settingsScript, "SG", static_cast<int>(receiveSegmentBounds));
+    printSetFormCheckbox(settingsScript, "SS", static_cast<int>(sendNotifications));
+    printSetFormCheckbox(settingsScript, "SD", static_cast<int>(notifyDirect));
+    printSetFormCheckbox(settingsScript, "SB", static_cast<int>(notifyButton));
+    printSetFormCheckbox(settingsScript, "SH", static_cast<int>(notifyHue));
     printSetFormValue(settingsScript, "UR", udpNumRetries);
 
-    printSetFormCheckbox(settingsScript, "NL", nodeListEnabled);
-    printSetFormCheckbox(settingsScript, "NB", nodeBroadcastEnabled);
+    printSetFormCheckbox(settingsScript, "NL", static_cast<int>(nodeListEnabled));
+    printSetFormCheckbox(settingsScript, "NB", static_cast<int>(nodeBroadcastEnabled));
 
-    printSetFormCheckbox(settingsScript, "RD", receiveDirect);
-    printSetFormCheckbox(settingsScript, "MO", useMainSegmentOnly);
-    printSetFormCheckbox(settingsScript, "RLM", realtimeRespectLedMaps);
+    printSetFormCheckbox(settingsScript, "RD", static_cast<int>(receiveDirect));
+    printSetFormCheckbox(settingsScript, "MO", static_cast<int>(useMainSegmentOnly));
+    printSetFormCheckbox(settingsScript, "RLM", static_cast<int>(realtimeRespectLedMaps));
     printSetFormValue(settingsScript, "EP", e131Port);
-    printSetFormCheckbox(settingsScript, "ES", e131SkipOutOfSequence);
-    printSetFormCheckbox(settingsScript, "EM", e131Multicast);
+    printSetFormCheckbox(settingsScript, "ES", static_cast<int>(e131SkipOutOfSequence));
+    printSetFormCheckbox(settingsScript, "EM", static_cast<int>(e131Multicast));
     printSetFormValue(settingsScript, "EU", e131Universe);
 #ifdef WLED_ENABLE_DMX
     settingsScript.print(SET_F("hideNoDMXOutput();"));  // hide "not compiled in" message
@@ -580,20 +580,20 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "PY", e131Priority);
     printSetFormValue(settingsScript, "DM", DMXMode);
     printSetFormValue(settingsScript, "ET", realtimeTimeoutMs);
-    printSetFormCheckbox(settingsScript, "FB", arlsForceMaxBri);
-    printSetFormCheckbox(settingsScript, "RG", arlsDisableGammaCorrection);
+    printSetFormCheckbox(settingsScript, "FB", static_cast<int>(arlsForceMaxBri));
+    printSetFormCheckbox(settingsScript, "RG", static_cast<int>(arlsDisableGammaCorrection));
     printSetFormValue(settingsScript, "WO", arlsOffset);
 #ifndef WLED_DISABLE_ALEXA
-    printSetFormCheckbox(settingsScript, "AL", alexaEnabled);
+    printSetFormCheckbox(settingsScript, "AL", static_cast<int>(alexaEnabled));
     printSetFormValue(settingsScript, "AI", alexaInvocationName);
-    printSetFormCheckbox(settingsScript, "SA", notifyAlexa);
+    printSetFormCheckbox(settingsScript, "SA", static_cast<int>(notifyAlexa));
     printSetFormValue(settingsScript, "AP", alexaNumPresets);
 #else
     settingsScript.print("toggle('Alexa');");  // hide Alexa settings
 #endif
 
 #ifndef WLED_DISABLE_MQTT
-    printSetFormCheckbox(settingsScript, "MQ", mqttEnabled);
+    printSetFormCheckbox(settingsScript, "MQ", static_cast<int>(mqttEnabled));
     printSetFormValue(settingsScript, "MS", mqttServer);
     printSetFormValue(settingsScript, "MQPORT", mqttPort);
     printSetFormValue(settingsScript, "MQUSER", mqttUser);
@@ -605,8 +605,8 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "MQCID", mqttClientID);
     printSetFormValue(settingsScript, "MD", mqttDeviceTopic);
     printSetFormValue(settingsScript, "MG", mqttGroupTopic);
-    printSetFormCheckbox(settingsScript, "BM", buttonPublishMqtt);
-    printSetFormCheckbox(settingsScript, "RT", retainMqttMsg);
+    printSetFormCheckbox(settingsScript, "BM", static_cast<int>(buttonPublishMqtt));
+    printSetFormCheckbox(settingsScript, "RT", static_cast<int>(retainMqttMsg));
     settingsScript.printf("d.Sf.MD.maxLength=%d;d.Sf.MG.maxLength=%d;d.Sf.MS.maxLength=%d;", MQTT_MAX_TOPIC_LEN,
                           MQTT_MAX_TOPIC_LEN, MQTT_MAX_SERVER_LEN);
 #else
@@ -620,10 +620,10 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "H3", hueIP[3]);
     printSetFormValue(settingsScript, "HL", huePollLightId);
     printSetFormValue(settingsScript, "HI", huePollIntervalMs);
-    printSetFormCheckbox(settingsScript, "HP", huePollingEnabled);
-    printSetFormCheckbox(settingsScript, "HO", hueApplyOnOff);
-    printSetFormCheckbox(settingsScript, "HB", hueApplyBri);
-    printSetFormCheckbox(settingsScript, "HC", hueApplyColor);
+    printSetFormCheckbox(settingsScript, "HP", static_cast<int>(huePollingEnabled));
+    printSetFormCheckbox(settingsScript, "HO", static_cast<int>(hueApplyOnOff));
+    printSetFormCheckbox(settingsScript, "HB", static_cast<int>(hueApplyBri));
+    printSetFormCheckbox(settingsScript, "HC", static_cast<int>(hueApplyColor));
     char hueErrorString[25];
     switch (hueError) {
       case HUE_ERROR_INACTIVE:
@@ -662,9 +662,9 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
   }
 
   if (subPage == SUBPAGE_TIME) {
-    printSetFormCheckbox(settingsScript, "NT", ntpEnabled);
+    printSetFormCheckbox(settingsScript, "NT", static_cast<int>(ntpEnabled));
     printSetFormValue(settingsScript, "NS", ntpServerName);
-    printSetFormCheckbox(settingsScript, "CF", !useAMPM);
+    printSetFormCheckbox(settingsScript, "CF", static_cast<int>(!useAMPM));
     printSetFormIndex(settingsScript, "TZ", currentTimezone);
     printSetFormValue(settingsScript, "UO", utcOffsetSecs);
     char tm[32];
@@ -674,7 +674,7 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "LT", tm);
     getTimeString(tm);
     printSetClassElementHTML(settingsScript, "times", 0, tm);
-    if (static_cast<int>(longitude * 10.0f) || static_cast<int>(latitude * 10.0f)) {
+    if (static_cast<int>(longitude * 10.0F) || static_cast<int>(latitude * 10.0F)) {
       sprintf(tm, "Sunrise: %02d:%02d Sunset: %02d:%02d", hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       printSetClassElementHTML(settingsScript, "times", 1, tm);
     }
@@ -682,11 +682,11 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "O1", overlayMin);
     printSetFormValue(settingsScript, "O2", overlayMax);
     printSetFormValue(settingsScript, "OM", analogClock12pixel);
-    printSetFormCheckbox(settingsScript, "OS", analogClockSecondsTrail);
-    printSetFormCheckbox(settingsScript, "O5", analogClock5MinuteMarks);
-    printSetFormCheckbox(settingsScript, "OB", analogClockSolidBlack);
+    printSetFormCheckbox(settingsScript, "OS", static_cast<int>(analogClockSecondsTrail));
+    printSetFormCheckbox(settingsScript, "O5", static_cast<int>(analogClock5MinuteMarks));
+    printSetFormCheckbox(settingsScript, "OB", static_cast<int>(analogClockSolidBlack));
 
-    printSetFormCheckbox(settingsScript, "CE", countdownMode);
+    printSetFormCheckbox(settingsScript, "CE", static_cast<int>(countdownMode));
     printSetFormValue(settingsScript, "CY", countdownYear);
     printSetFormValue(settingsScript, "CI", countdownMonth);
     printSetFormValue(settingsScript, "CD", countdownDay);
@@ -722,10 +722,10 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     fpass[l] = 0;
     memset(fpass, '0', l);
     printSetFormValue(settingsScript, "PIN", fpass);
-    printSetFormCheckbox(settingsScript, "NO", otaLock);
-    printSetFormCheckbox(settingsScript, "OW", wifiLock);
-    printSetFormCheckbox(settingsScript, "AO", aOtaEnabled);
-    printSetFormCheckbox(settingsScript, "SU", otaSameSubnet);
+    printSetFormCheckbox(settingsScript, "NO", static_cast<int>(otaLock));
+    printSetFormCheckbox(settingsScript, "OW", static_cast<int>(wifiLock));
+    printSetFormCheckbox(settingsScript, "AO", static_cast<int>(aOtaEnabled));
+    printSetFormCheckbox(settingsScript, "SU", static_cast<int>(otaSameSubnet));
     char tmp_buf[128];
     fillWLEDVersion(tmp_buf, sizeof(tmp_buf));
     printSetClassElementHTML(settingsScript, "sip", 0, tmp_buf);
@@ -775,18 +775,18 @@ void getSettingsJS(byte subPage, Print& settingsScript) {
     printSetFormValue(settingsScript, "MOSI", spi_mosi);
     printSetFormValue(settingsScript, "MISO", spi_miso);
     printSetFormValue(settingsScript, "SCLK", spi_sclk);
-    settingsScript.printf(("addInfo('SDA','%d');"
+    settingsScript.printf("addInfo('SDA','%d');"
                            "addInfo('SCL','%d');"
                            "addInfo('MOSI','%d');"
                            "addInfo('MISO','%d');"
-                           "addInfo('SCLK','%d');"),
+                           "addInfo('SCLK','%d');",
                           HW_PIN_SDA, HW_PIN_SCL, HW_PIN_DATASPI, HW_PIN_MISOSPI, HW_PIN_CLOCKSPI);
     UsermodManager::appendConfigData(settingsScript);
   }
 
   if (subPage == SUBPAGE_2D)  // 2D matrices
   {
-    printSetFormValue(settingsScript, "SOMP", strip.isMatrix);
+    printSetFormValue(settingsScript, "SOMP", static_cast<int>(strip.isMatrix));
 #ifndef WLED_DISABLE_2D
     settingsScript.printf("maxPanels=%d;resetPanels();", WLED_MAX_PANELS);
     if (strip.isMatrix) {

@@ -4,19 +4,23 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define UDP_SEG_SIZE   36
-#define SEG_OFFSET     (41)
+enum {
+UDP_SEG_SIZE =   36,
+SEG_OFFSET =     (41)
+};
 #define WLEDPACKETSIZE (41 + (WS2812FX::getMaxSegments() * UDP_SEG_SIZE) + 0)
-#define UDP_IN_MAXSIZE 1472
-#define PRESUMED_NETWORK_DELAY \
+enum {
+UDP_IN_MAXSIZE = 1472,
+PRESUMED_NETWORK_DELAY = \
   3  // how many ms could it take on avg to reach the receiver? This will be added to transmitted times
+};
 
-typedef struct PartialEspNowPacket {
+using partial_packet_t = struct PartialEspNowPacket {
   uint8_t magic;
   uint8_t packet;
   uint8_t noOfPackets;
   uint8_t data[247];
-} partial_packet_t;
+};
 
 void notify(byte callMode, bool followUp) {
 #ifndef WLED_DISABLE_ESPNOW
@@ -72,7 +76,7 @@ void notify(byte callMode, bool followUp) {
     default:
       return;
   }
-  byte     udpOut[WLEDPACKETSIZE];  // TODO: optimize size to use only active segments
+  byte     udpOut[WLEDPACKETSIZE];  // TODO: claudio - optimize size to use only active segments
   Segment& mainseg = strip.getMainSegment();
   udpOut[0]        = 0;  // 0: wled notifier protocol 1: WARLS protocol
   udpOut[1]        = callMode;
@@ -81,7 +85,7 @@ void notify(byte callMode, bool followUp) {
   udpOut[3]        = R(col);
   udpOut[4]        = G(col);
   udpOut[5]        = B(col);
-  udpOut[6]        = nightlightActive;
+  udpOut[6]        = static_cast<byte>(nightlightActive);
   udpOut[7]        = nightlightDelayMins;
   udpOut[8]        = mainseg.mode;
   udpOut[9]        = mainseg.speed;
@@ -108,7 +112,7 @@ void notify(byte callMode, bool followUp) {
   udpOut[22] = B(col);
   udpOut[23] = W(col);
 
-  udpOut[24] = followUp;
+  udpOut[24] = static_cast<byte>(followUp);
   uint32_t t = millis() + strip.timebase;
   udpOut[25] = (t >> 24) & 0xFF;
   udpOut[26] = (t >> 16) & 0xFF;
@@ -137,13 +141,14 @@ void notify(byte callMode, bool followUp) {
 
   udpOut[39] = strip.getActiveSegmentsNum();
   udpOut[40] = UDP_SEG_SIZE;  // size of each loop iteration (one segment)
-  size_t s = 0, nsegs = strip.getSegmentsNum();
+  size_t s = 0;
+  size_t nsegs = strip.getSegmentsNum();
   for (size_t i = 0; i < nsegs; i++) {
     const Segment& selseg = strip.getSegment(i);
     if (!selseg.isActive()) {
       continue;
     }
-    unsigned ofs    = 41 + s * UDP_SEG_SIZE;  // start of segment offset byte
+    unsigned ofs    = 41 + (s * UDP_SEG_SIZE);  // start of segment offset byte
     udpOut[0 + ofs] = s;
     udpOut[1 + ofs] = selseg.start >> 8;
     udpOut[2 + ofs] = selseg.start & 0xFF;
@@ -198,12 +203,12 @@ void notify(byte callMode, bool followUp) {
     memcpy(buffer.data, udpOut, packetSize);
     // stuff as many segments in first packet as possible (normally up to 5)
     for (size_t i = 0; packetSize < bufferSize && i < s; i++) {
-      memcpy(buffer.data + packetSize, &udpOut[41 + i * UDP_SEG_SIZE], UDP_SEG_SIZE);
+      memcpy(buffer.data + packetSize, &udpOut[41 + (i * UDP_SEG_SIZE)], UDP_SEG_SIZE);
       packetSize += UDP_SEG_SIZE;
       s0++;
     }
     if (s > s0) {
-      buffer.noOfPackets += 1 + ((s - s0) * UDP_SEG_SIZE) / bufferSize;  // set number of packets
+      buffer.noOfPackets += 1 + (((s - s0) * UDP_SEG_SIZE) / bufferSize);  // set number of packets
     }
     auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize + 3);
     if (!err && s0 < s) {
@@ -214,7 +219,7 @@ void notify(byte callMode, bool followUp) {
       // of holding 3 queued messages to work around that limitation it is mandatory to utilize onDataSent() callback
       // which should reduce number queued messages and wait until at least one space is available in the buffer
       for (size_t i = s0; i < s; i++) {
-        memcpy(buffer.data + packetSize, &udpOut[41 + i * UDP_SEG_SIZE], UDP_SEG_SIZE);
+        memcpy(buffer.data + packetSize, &udpOut[41 + (i * UDP_SEG_SIZE)], UDP_SEG_SIZE);
         packetSize += UDP_SEG_SIZE;
         if (packetSize + UDP_SEG_SIZE < bufferSize) {
           continue;
@@ -242,7 +247,7 @@ void notify(byte callMode, bool followUp) {
     DEBUG_PRINTLN("UDP sending packet.");
     IPAddress broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
     notifierUdp.beginPacket(broadcastIp, udpPort);
-    notifierUdp.write(udpOut, WLEDPACKETSIZE);  // TODO: add actual used buffer size
+    notifierUdp.write(udpOut, WLEDPACKETSIZE);  // TODO: claudio - add actual used buffer size
     notifierUdp.endPacket();
   }
   notificationSentCallMode = callMode;
@@ -325,12 +330,12 @@ static void parseNotifyPacket(const uint8_t* udpIn) {
     }
     size_t inactiveSegs = 0;
     for (size_t i = 0; i < numSrcSegs && i < WS2812FX::getMaxSegments(); i++) {
-      unsigned ofs = 41 + i * udpIn[40];  // start of segment offset byte
+      unsigned ofs = 41 + (i * udpIn[40]);  // start of segment offset byte
       unsigned id  = udpIn[0 + ofs];
       DEBUG_PRINTF_P("UDP segment received: %u\n", id);
       if (id > strip.getSegmentsNum()) {
         break;
-      } else if (id == strip.getSegmentsNum()) {
+      } if (id == strip.getSegmentsNum()) {
         if (receiveSegmentBounds && id < WS2812FX::getMaxSegments()) {
           strip.appendSegment();
         } else {
@@ -349,9 +354,8 @@ static void parseNotifyPacket(const uint8_t* udpIn) {
           inactiveSegs++;
           DEBUG_PRINTLN("Inactive segment.");
           continue;
-        } else {
-          id += inactiveSegs;  // adjust id
-        }
+        }           id += inactiveSegs;  // adjust id
+       
       }
       DEBUG_PRINTF_P("UDP segment processing: %u\n", id);
 
@@ -402,9 +406,9 @@ static void parseNotifyPacket(const uint8_t* udpIn) {
           selseg.custom1 = udpIn[29 + ofs];
           selseg.custom2 = udpIn[30 + ofs];
           selseg.custom3 = udpIn[31 + ofs] & 0x1F;
-          selseg.check1  = (udpIn[31 + ofs] >> 5) & 0x1;
-          selseg.check2  = (udpIn[31 + ofs] >> 6) & 0x1;
-          selseg.check3  = (udpIn[31 + ofs] >> 7) & 0x1;
+          selseg.check1  = (((udpIn[31 + ofs] >> 5) & 0x1) != 0);
+          selseg.check2  = (((udpIn[31 + ofs] >> 6) & 0x1) != 0);
+          selseg.check3  = (((udpIn[31 + ofs] >> 7) & 0x1) != 0);
         }
       }
       if (receiveSegmentBounds) {
@@ -483,7 +487,7 @@ static void parseNotifyPacket(const uint8_t* udpIn) {
     }
   }
 
-  nightlightActive = udpIn[6];
+  nightlightActive = (udpIn[6] != 0u);
   if (nightlightActive) {
     nightlightDelayMins = udpIn[7];
   }
@@ -553,7 +557,9 @@ void exitRealtime() {
   updateInterfaces(CALL_MODE_WS_SEND);
 }
 
-#define TMP2NET_OUT_PORT 65442
+enum {
+TMP2NET_OUT_PORT = 65442
+};
 
 static void sendTPM2Ack() {
   notifierUdp.beginPacket(notifierUdp.remoteIP(), TMP2NET_OUT_PORT);
@@ -702,7 +708,7 @@ void handleNotifications() {
         return;  // return if notTPM2.NET data
       }
 
-      realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
+      realtimeIP = isSupp ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
       if (realtimeOverride) {
         return;
@@ -734,7 +740,7 @@ void handleNotifications() {
 
     // UDP realtime: 1 warls 2 drgb 3 drgbw 4 dnrgb 5 dnrgbw
     if (udpIn[0] > 0 && udpIn[0] < 6) {
-      realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
+      realtimeIP = isSupp ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
       DEBUG_PRINTLN(realtimeIP);
       if (packetSize < 2) {
         return;
@@ -743,9 +749,8 @@ void handleNotifications() {
       if (udpIn[1] == 0) {
         realtimeTimeout = 0;  // cancel realtime mode immediately
         return;
-      } else {
-        realtimeLock(udpIn[1] * 1000 + 1, REALTIME_MODE_UDP);
-      }
+      }         realtimeLock(udpIn[1] * 1000 + 1, REALTIME_MODE_UDP);
+     
       if (realtimeOverride) {
         return;
       }
@@ -840,11 +845,11 @@ void sendSysInfoUDP() {
   }
 
   IPAddress ip = Network.localIP();
-  if (!ip || ip == IPAddress(255, 255, 255, 255)) {
+  if ((ip == 0u) || ip == IPAddress(255, 255, 255, 255)) {
     ip = IPAddress(4, 3, 2, 1);
   }
 
-  // TODO: make a nice struct of it and clean up
+  // TODO: claudio - make a nice struct of it and clean up
   //  0: 1 byte 'binary token 255'
   //  1: 1 byte id '1'
   //  2: 4 byte ip
@@ -863,7 +868,7 @@ void sendSysInfoUDP() {
     data[x + 2] = ip[x];
   }
   memcpy((byte*)data + 6, serverDescription, 32);
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#ifdef CONFIG_IDF_TARGET_ESP32C3
   data[38] = NODE_TYPE_ID_ESP32C3;
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
   data[38] = NODE_TYPE_ID_ESP32S3;
@@ -904,8 +909,8 @@ void sendSysInfoUDP() {
 // isRGBW - true if the buffer contains 4 components per pixel
 
 static size_t       sequenceNumber      = 0;  // this needs to be shared across all outputs
-static const size_t ART_NET_HEADER_SIZE = 12;
-static const byte   ART_NET_HEADER[]    = {0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00, 0x00, 0x50, 0x00, 0x0e};
+static const size_t kArtNetHeaderSize = 12;
+static const byte   kArtNetHeader[]    = {0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00, 0x00, 0x50, 0x00, 0x0e};
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const uint8_t* buffer, uint8_t bri,
                           bool isRGBW) {
@@ -923,7 +928,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
       size_t packetCount  = ((channelCount - 1) / DDP_CHANNELS_PER_PACKET) + 1;
 
       // there are 3 channels per RGB pixel
-      uint32_t channel = 0;  // TODO: allow specifying the start channel
+      uint32_t channel = 0;  // TODO: claudio - allow specifying the start channel
       // the current position in the buffer
       size_t bufferOffset = 0;
 
@@ -932,7 +937,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
           sequenceNumber = 0;
         }
 
-        if (!ddpUdp.beginPacket(client, DDP_DEFAULT_PORT)) {  // port defined in ESPAsyncE131.h
+        if (ddpUdp.beginPacket(client, DDP_DEFAULT_PORT) == 0) {  // port defined in ESPAsyncE131.h
           // DEBUG_PRINTLN("WiFiUDP.beginPacket returned an error");
           return 1;  // problem
         }
@@ -943,7 +948,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
         uint8_t flags = DDP_FLAGS_VER1;
         if (currentPacket == (packetCount - 1U)) {
           // last packet, set the push flag
-          // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
+          // TODO: claudio - determine if we want to send an empty push packet to each destination after sending the pixel data
           flags = DDP_FLAGS_VER1 | DDP_FLAGS_PUSH;
           if (channelCount % DDP_CHANNELS_PER_PACKET) {
             packetSize = channelCount % DDP_CHANNELS_PER_PACKET;
@@ -961,10 +966,10 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
         /*4*/ ddpUdp.write(0xFF & (channel >> 24));
         /*5*/ ddpUdp.write(0xFF & (channel >> 16));
         /*6*/ ddpUdp.write(0xFF & (channel >> 8));
-        /*7*/ ddpUdp.write(0xFF & (channel));
+        /*7*/ ddpUdp.write(0xFF & channel);
         // data length in bytes, 16-bit number, MSB first
         /*8*/ ddpUdp.write(0xFF & (packetSize >> 8));
-        /*9*/ ddpUdp.write(0xFF & (packetSize));
+        /*9*/ ddpUdp.write(0xFF & packetSize);
 
         // write the colors, the write write(const uint8_t *buffer, size_t size)
         // function is just a loop internally too
@@ -1007,7 +1012,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
           sequenceNumber = 0;
         }
 
-        if (!ddpUdp.beginPacket(client, ARTNET_DEFAULT_PORT)) {
+        if (ddpUdp.beginPacket(client, ARTNET_DEFAULT_PORT) == 0) {
           DEBUG_PRINTLN("Art-Net WiFiUDP.beginPacket returned an error");
           return 1;  // borked
         }
@@ -1021,17 +1026,17 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
           }
         }
 
-        byte header_buffer[ART_NET_HEADER_SIZE];
-        memcpy_P(header_buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
+        byte header_buffer[kArtNetHeaderSize];
+        memcpy_P(header_buffer, kArtNetHeader, kArtNetHeaderSize);
         ddpUdp.write(header_buffer,
-                     ART_NET_HEADER_SIZE);    // This doesn't change. Hard coded ID, OpCode, and protocol version.
+                     kArtNetHeaderSize);    // This doesn't change. Hard coded ID, OpCode, and protocol version.
         ddpUdp.write(sequenceNumber & 0xFF);  // sequence number. 1..255
         ddpUdp.write(0x00);                   // physical - more an FYI, not really used for anything. 0..3
-        ddpUdp.write((currentPacket) &
+        ddpUdp.write(currentPacket &
                      0xFF);  // Universe LSB. 1 full packet == 1 full universe, so just use current packet number.
         ddpUdp.write(0x00);  // Universe MSB, unused.
         ddpUdp.write(0xFF & (packetSize >> 8));  // 16-bit length of channel data, MSB
-        ddpUdp.write(0xFF & (packetSize));       // 16-bit length of channel data, LSB
+        ddpUdp.write(0xFF & packetSize);       // 16-bit length of channel data, LSB
 
         for (size_t i = 0; i < packetSize; i += (isRGBW ? 4 : 3)) {
           ddpUdp.write(scale8(buffer[bufferOffset++], bri));  // R
@@ -1055,12 +1060,12 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
 
 #ifndef WLED_DISABLE_ESPNOW
 // ESP-NOW message sent callback function
-void espNowSentCB(uint8_t* address, uint8_t status) {
+void espNowSentCB(uint8_t*  /*address*/, uint8_t  /*status*/) {
   DEBUG_PRINTF_P("Message sent to " MACSTR ", status: %d\n", MAC2STR(address), status);
 }
 
 // ESP-NOW message receive callback function
-void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast) {
+void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int  /*rssi*/, bool broadcast) {
   sprintf(last_signal_src, "%02x%02x%02x%02x%02x%02x", address[0], address[1], address[2], address[3], address[4],
           address[5]);
 
@@ -1099,7 +1104,7 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     return;
   }
 
-  partial_packet_t* buffer = reinterpret_cast<partial_packet_t*>(data);
+  auto* buffer = reinterpret_cast<partial_packet_t*>(data);
   if (len < 3 || !broadcast || buffer->magic != 'W' || !useESPNowSync || WLED_CONNECTED) {
     DEBUG_PRINTLN("ESP-NOW unexpected packet, not syncing or connected to WiFi.");
     return;

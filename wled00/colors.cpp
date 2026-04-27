@@ -31,7 +31,7 @@ uint32_t WLED_O2_ATTR IRAM_ATTR color_blend(uint32_t color1, uint32_t color2, ui
       (color2 >> 8) & TWO_CHANNEL_MASK;  // extract W & G channels from color2 (shifted for multiplication later)
   uint32_t rb3 = ((((rb1 << 8) | rb2) + (rb2 * blend) - (rb1 * blend)) >> 8) & TWO_CHANNEL_MASK;  // blend red and blue
   uint32_t wg3 =
-      ((((wg1 << 8) | wg2) + (wg2 * blend) - (wg1 * blend))) & ~TWO_CHANNEL_MASK;  // negated mask for white and green
+      (((wg1 << 8) | wg2) + (wg2 * blend) - (wg1 * blend)) & ~TWO_CHANNEL_MASK;  // negated mask for white and green
   return rb3 | wg3;
 }
 
@@ -101,10 +101,12 @@ uint32_t IRAM_ATTR color_fade(uint32_t c1, uint8_t amount, bool video) {
 
   // video scaling: make sure colors do not dim to zero if they started non-zero unless they distort the hue
   if (video) {
-    rb_scaled = ((rb * amount + 0x007F007F) >> 8) & TWO_CHANNEL_MASK;  // scale red and blue, add 0.5 for rounding
-    wg_scaled = (wg * amount + 0x007F007F) & ~TWO_CHANNEL_MASK;        // scale white and green, add 0.5 for rounding
-    uint8_t r = static_cast<byte>(rb >> 16), g = static_cast<byte>(wg), b = static_cast<byte>(rb),
-            w    = static_cast<byte>(wg >> 16);  // extract r, g, b, w channels from original color (wg is shifted)
+    rb_scaled = (((rb * amount) + 0x007F007F) >> 8) & TWO_CHANNEL_MASK;  // scale red and blue, add 0.5 for rounding
+    wg_scaled = ((wg * amount) + 0x007F007F) & ~TWO_CHANNEL_MASK;        // scale white and green, add 0.5 for rounding
+    uint8_t r = static_cast<byte>(rb >> 16);
+    uint8_t g = static_cast<byte>(wg);
+    uint8_t b = static_cast<byte>(rb);
+    uint8_t w    = static_cast<byte>(wg >> 16);  // extract r, g, b, w channels from original color (wg is shifted)
     uint8_t maxc = (r > g) ? ((r > b) ? r : b) : ((g > b) ? g : b);  // determine dominant channel for hue preservation
     maxc = (maxc >> 2) + 1;  // divide by 4 to get ~25% threshold for hue preservation, add 1 to prevent "washout" of
                              // very dark colors (prevents them becoming gray)
@@ -158,9 +160,9 @@ uint32_t ColorFromPalette(const CRGBPalette16& pal, unsigned index, uint8_t brig
     }
     unsigned f2 = (lo4 << 4);
     unsigned f1 = 256 - f2;
-    red1        = (red1 * f1 + static_cast<unsigned>(entry->r) * f2) >> 8;  // note: using color_blend() is slower
-    green1      = (green1 * f1 + static_cast<unsigned>(entry->g) * f2) >> 8;
-    blue1       = (blue1 * f1 + static_cast<unsigned>(entry->b) * f2) >> 8;
+    red1        = ((red1 * f1) + (static_cast<unsigned>(entry->r) * f2)) >> 8;  // note: using color_blend() is slower
+    green1      = ((green1 * f1) + (static_cast<unsigned>(entry->g) * f2)) >> 8;
+    blue1       = ((blue1 * f1) + (static_cast<unsigned>(entry->b) * f2)) >> 8;
   }
   if (brightness <
       255) {  // note: zero checking could be done to return black but that is hardly ever used so it is omitted
@@ -173,7 +175,7 @@ uint32_t ColorFromPalette(const CRGBPalette16& pal, unsigned index, uint8_t brig
   return RGBW32(red1, green1, blue1, 0);
 }
 
-void setRandomColor(byte* rgb) {
+static void setRandomColor(const byte* rgb) {
   lastRandomIndex = get_random_wheel_index(lastRandomIndex);
   colorHStoRGB(lastRandomIndex * 256, 255, rgb);
 }
@@ -351,7 +353,9 @@ void loadCustomPalettes() {
 
 // convert HSV (16bit hue) to RGB (32bit with white = 0), optimized for speed
 WLED_O2_ATTR void hsv2rgb_spectrum(const CHSV32& hsv, CRGBW& rgb) {
-  unsigned p, q, t;
+  unsigned p;
+  unsigned q;
+  unsigned t;
   unsigned region    = (static_cast<unsigned>(hsv.h) * 6) >> 16;     // h / (65536 / 6)
   unsigned remainder = (hsv.h - (region * 10923)) * 6;  // 10923 = (65536 / 6)
 
@@ -412,7 +416,8 @@ WLED_O3_ATTR void rgb2hsv(const CRGBW& rgb, CHSV32& hsv) {
   int32_t  r = rgb.r;  // note: using 32bit variables tested faster than 8bit
   int32_t  g = rgb.g;
   int32_t  b = rgb.b;
-  uint32_t minval, maxval;
+  uint32_t minval;
+  uint32_t maxval;
   int32_t  delta;
   // find min/max value. note: faster than using min/max functions (lets compiler optimize more when using "O3"), other
   // variants (nested ifs, xor) tested slower
@@ -430,9 +435,9 @@ WLED_O3_ATTR void rgb2hsv(const CRGBW& rgb, CHSV32& hsv) {
     if (maxval == r) {
       hsv.h = static_cast<uint16_t>((10923 * (g - b)) / delta);
     } else if (maxval == g) {
-      hsv.h = static_cast<uint16_t>(21845 + (10923 * (b - r)) / delta);
+      hsv.h = static_cast<uint16_t>(21845 + ((10923 * (b - r)) / delta));
     } else {
-      hsv.h = static_cast<uint16_t>(43690 + (10923 * (r - g)) / delta);
+      hsv.h = static_cast<uint16_t>(43690 + ((10923 * (r - g)) / delta));
     }
   } else {
     hsv.s = 0;
@@ -446,7 +451,7 @@ CHSV rgb2hsv(const CRGB c) {  // CRGB to CHSV
   return CHSV(hsv);
 }
 
-void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) {  // hue, sat to rgb
+static void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) {  // hue, sat to rgb
   CRGBW crgb;
   hsv2rgb_spectrum(CHSV32(hue, sat, 255), crgb);
   rgb[0] = crgb.r;
@@ -456,21 +461,23 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) {  // hue, sat to rgb
 
 // get RGB values from color temperature in K
 // (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
-void colorKtoRGB(uint16_t kelvin, byte* rgb)  // white spectrum to rgb, calc
+static void colorKtoRGB(uint16_t kelvin, byte* rgb)  // white spectrum to rgb, calc
 {
-  int   r = 0, g = 0, b = 0;
-  float temp = kelvin / 100.0f;
-  if (temp <= 66.0f) {
+  int   r = 0;
+  int   g = 0;
+  int   b = 0;
+  float temp = kelvin / 100.0F;
+  if (temp <= 66.0F) {
     r = 255;
-    g = roundf(99.4708025861f * logf(temp) - 161.1195681661f);
-    if (temp <= 19.0f) {
+    g = roundf(99.4708025861F * logf(temp) - 161.1195681661F);
+    if (temp <= 19.0F) {
       b = 0;
     } else {
-      b = roundf(138.5177312231f * logf((temp - 10.0f)) - 305.0447927307f);
+      b = roundf(138.5177312231F * logf((temp - 10.0F)) - 305.0447927307F);
     }
   } else {
-    r = roundf(329.698727446f * powf((temp - 60.0f), -0.1332047592f));
-    g = roundf(288.1221695283f * powf((temp - 60.0f), -0.0755148492f));
+    r = roundf(329.698727446F * powf((temp - 60.0F), -0.1332047592F));
+    g = roundf(288.1221695283F * powf((temp - 60.0F), -0.0755148492F));
     b = 255;
   }
   // g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
@@ -480,7 +487,7 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb)  // white spectrum to rgb, calc
   rgb[3] = 0;
 }
 
-void colorCTtoRGB(uint16_t mired, byte* rgb)  // white spectrum to rgb, bins
+static void colorCTtoRGB(uint16_t mired, byte* rgb)  // white spectrum to rgb, bins
 {
   // this is only an approximation using WS2812B with gamma correction enabled
   if (mired > 475) {
@@ -519,78 +526,78 @@ void colorCTtoRGB(uint16_t mired, byte* rgb)  // white spectrum to rgb, bins
 }
 
 #ifndef WLED_DISABLE_HUESYNC
-void colorXYtoRGB(
+static void colorXYtoRGB(
     float x, float y,
     byte* rgb)  // coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
-  float z = 1.0f - x - y;
-  float X = (1.0f / y) * x;
-  float Z = (1.0f / y) * z;
-  float r = 255 * (X * 1.656492f - 0.354851f - Z * 0.255038f);
-  float g = 255 * (-X * 0.707196f + 1.655397f + Z * 0.036152f);
-  float b = 255 * (X * 0.051713f - 0.121364f + Z * 1.011530f);
-  if (r > b && r > g && r > 1.0f) {
+  float z = 1.0F - x - y;
+  float X = (1.0F / y) * x;
+  float Z = (1.0F / y) * z;
+  float r = 255 * ((X * 1.656492F) - 0.354851F - (Z * 0.255038F));
+  float g = 255 * ((-X * 0.707196F) + 1.655397F + (Z * 0.036152F));
+  float b = 255 * ((X * 0.051713F) - 0.121364F + (Z * 1.011530F));
+  if (r > b && r > g && r > 1.0F) {
     // red is too big
     g = g / r;
     b = b / r;
-    r = 1.0f;
-  } else if (g > b && g > r && g > 1.0f) {
+    r = 1.0F;
+  } else if (g > b && g > r && g > 1.0F) {
     // green is too big
     r = r / g;
     b = b / g;
-    g = 1.0f;
-  } else if (b > r && b > g && b > 1.0f) {
+    g = 1.0F;
+  } else if (b > r && b > g && b > 1.0F) {
     // blue is too big
     r = r / b;
     g = g / b;
-    b = 1.0f;
+    b = 1.0F;
   }
   // Apply gamma correction
-  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * powf(r, (1.0f / 2.4f)) - 0.055f;
-  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * powf(g, (1.0f / 2.4f)) - 0.055f;
-  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * powf(b, (1.0f / 2.4f)) - 0.055f;
+  r = r <= 0.0031308F ? 12.92F * r : (1.0F + 0.055F) * powf(r, (1.0F / 2.4F)) - 0.055F;
+  g = g <= 0.0031308F ? 12.92F * g : (1.0F + 0.055F) * powf(g, (1.0F / 2.4F)) - 0.055F;
+  b = b <= 0.0031308F ? 12.92F * b : (1.0F + 0.055F) * powf(b, (1.0F / 2.4F)) - 0.055F;
 
   if (r > b && r > g) {
     // red is biggest
-    if (r > 1.0f) {
+    if (r > 1.0F) {
       g = g / r;
       b = b / r;
-      r = 1.0f;
+      r = 1.0F;
     }
   } else if (g > b && g > r) {
     // green is biggest
-    if (g > 1.0f) {
+    if (g > 1.0F) {
       r = r / g;
       b = b / g;
-      g = 1.0f;
+      g = 1.0F;
     }
   } else if (b > r && b > g) {
     // blue is biggest
-    if (b > 1.0f) {
+    if (b > 1.0F) {
       r = r / b;
       g = g / b;
-      b = 1.0f;
+      b = 1.0F;
     }
   }
-  rgb[0] = static_cast<byte>(255.0f * r);
-  rgb[1] = static_cast<byte>(255.0f * g);
-  rgb[2] = static_cast<byte>(255.0f * b);
+  rgb[0] = static_cast<byte>(255.0F * r);
+  rgb[1] = static_cast<byte>(255.0F * g);
+  rgb[2] = static_cast<byte>(255.0F * b);
 }
 
-void colorRGBtoXY(
+static void colorRGBtoXY(
     const byte* rgb,
     float*      xy)  // rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
-  float X = rgb[0] * 0.664511f + rgb[1] * 0.154324f + rgb[2] * 0.162028f;
-  float Y = rgb[0] * 0.283881f + rgb[1] * 0.668433f + rgb[2] * 0.047685f;
-  float Z = rgb[0] * 0.000088f + rgb[1] * 0.072310f + rgb[2] * 0.986039f;
+  float X = (rgb[0] * 0.664511F) + (rgb[1] * 0.154324F) + (rgb[2] * 0.162028F);
+  float Y = (rgb[0] * 0.283881F) + (rgb[1] * 0.668433F) + (rgb[2] * 0.047685F);
+  float Z = (rgb[0] * 0.000088F) + (rgb[1] * 0.072310F) + (rgb[2] * 0.986039F);
   xy[0]   = X / (X + Y + Z);
   xy[1]   = Y / (X + Y + Z);
 }
 #endif  // WLED_DISABLE_HUESYNC
 
 // RRGGBB / WWRRGGBB order for hex
-void colorFromDecOrHexString(byte* rgb, const char* in) {
+static void colorFromDecOrHexString(byte* rgb, const char* in) {
   if (in[0] == 0) {
     return;
   }
@@ -611,7 +618,7 @@ void colorFromDecOrHexString(byte* rgb, const char* in) {
 }
 
 // contrary to the colorFromDecOrHexString() function, this uses the more standard RRGGBB / RRGGBBWW order
-bool colorFromHexString(byte* rgb, const char* in) {
+static bool colorFromHexString(byte* rgb, const char* in) {
   if (in == nullptr) {
     return false;
   }
@@ -676,7 +683,8 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb) {
 // minimum returned: 1900K, maximum returned: 10091K (range of 8192)
 uint16_t approximateKelvinFromRGB(uint32_t rgb) {
   // if not either red or blue is 255, color is dimmed. Scale up
-  uint8_t r = R(rgb), b = B(rgb);
+  uint8_t r = R(rgb);
+  uint8_t b = B(rgb);
   if (r == b) {
     return 6550;  // red == blue at about 6600K (also can't go further if both R and B are 0)
   }
@@ -688,32 +696,31 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
     // For all temps K<6600 R is bigger than B (for full bri colors R=255)
     //-> Use 9 linear approximations for blackbody radiation blue values from 2000-6600K (blue is always 0 below 2000K)
     if (b < 33) {
-      return 1900 + b * 6;
+      return 1900 + (b * 6);
     }
     if (b < 72) {
-      return 2100 + (b - 33) * 10;
+      return 2100 + ((b - 33) * 10);
     }
     if (b < 101) {
-      return 2492 + (b - 72) * 14;
+      return 2492 + ((b - 72) * 14);
     }
     if (b < 132) {
-      return 2900 + (b - 101) * 16;
+      return 2900 + ((b - 101) * 16);
     }
     if (b < 159) {
-      return 3398 + (b - 132) * 19;
+      return 3398 + ((b - 132) * 19);
     }
     if (b < 186) {
-      return 3906 + (b - 159) * 22;
+      return 3906 + ((b - 159) * 22);
     }
     if (b < 210) {
-      return 4500 + (b - 186) * 25;
+      return 4500 + ((b - 186) * 25);
     }
     if (b < 230) {
-      return 5100 + (b - 210) * 30;
+      return 5100 + ((b - 210) * 30);
     }
-    return 5700 + (b - 230) * 34;
-  } else {
-    // scale red up as if blue was at 255
+    return 5700 + ((b - 230) * 34);
+  }     // scale red up as if blue was at 255
     uint16_t scale = 0xFFFF / b;  // get scale factor (range 257-65535)
     r              = (static_cast<uint16_t>(r) * scale) >> 8;
     // For all temps K>6600 B is bigger than R (for full bri colors B=255)
@@ -723,7 +730,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
     }
     uint16_t k = 8080 + (225 - r) * 86;
     return (k > 10091) ? 10091 : k;
-  }
+ 
 }
 
 // gamma lookup tables used for color correction (filled on 1st use (cfg.cpp & set.cpp))
@@ -732,10 +739,10 @@ uint8_t NeoGammaWLEDMethod::gammaT_inv[256];
 
 // re-calculates & fills gamma tables
 void NeoGammaWLEDMethod::calcGammaTable(float gamma) {
-  float gamma_inv = 1.0f / gamma;  // inverse gamma
+  float gamma_inv = 1.0F / gamma;  // inverse gamma
   for (size_t i = 1; i < 256; i++) {
-    gammaT[i]     = (int)(powf(static_cast<float>(i) / 255.0f, gamma) * 255.0f + 0.5f);
-    gammaT_inv[i] = (int)(powf((static_cast<float>(i) - 0.5f) / 255.0f, gamma_inv) * 255.0f + 0.5f);
+    gammaT[i]     = (int)(powf(static_cast<float>(i) / 255.0F, gamma) * 255.0F + 0.5F);
+    gammaT_inv[i] = (int)(powf((static_cast<float>(i) - 0.5F) / 255.0F, gamma_inv) * 255.0F + 0.5F);
     // DEBUG_PRINTF_P("gammaT[%d] = %d gammaT_inv[%d] = %d\n", i, gammaT[i], i, gammaT_inv[i]);
   }
   gammaT[0]     = 0;

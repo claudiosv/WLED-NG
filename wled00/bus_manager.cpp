@@ -7,6 +7,8 @@
 #ifdef ARDUINO_ARCH_ESP32
 #include <ESPmDNS.h>
 
+#include <algorithm>
+
 #include "driver/ledc.h"
 #include "soc/ledc_struct.h"
 #include "src/dependencies/network/Network.h"  // for isConnected() (& WiFi)
@@ -22,7 +24,7 @@ static inline bool getBitFromArray(const uint8_t *byteArray, size_t position) { 
   size_t   byteIndex = position >> 3;                                            // divide by 8
   unsigned bitIndex  = position & 0x07;                                          // modulo 8
   uint8_t  byteValue = byteArray[byteIndex];
-  return (byteValue >> bitIndex) & 1;
+  return ((byteValue >> bitIndex) & 1) != 0;
 }
 
 static inline void setBitInArray(uint8_t *byteArray, size_t position,
@@ -41,7 +43,7 @@ static inline size_t getBitArrayBytes(size_t num_bits) {  // number of bytes nee
   return (num_bits + 7) >> 3;
 }
 
-static inline void setBitArray(uint8_t *byteArray, size_t numBits, bool value) {  // set all bits to same value
+static inline void setBitArray(const uint8_t *byteArray, size_t numBits, bool value) {  // set all bits to same value
   if (byteArray == nullptr) {
     return;
   }
@@ -53,9 +55,9 @@ static inline void setBitArray(uint8_t *byteArray, size_t numBits, bool value) {
   }
 }
 
-static ColorOrderMap _colorOrderMap = {};
+static ColorOrderMap colorOrderMap = {};
 
-bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
+bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) const {
   if (count() >= WLED_MAX_COLOR_ORDER_MAPPINGS || len == 0 || (colorOrder & 0x0F) > COL_ORDER_MAX) {
     return false;  // upper nibble contains W swap information
   }
@@ -64,7 +66,7 @@ bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
   return true;
 }
 
-uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
+uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) {
   // upper nibble contains W swap information
   // when ColorOrderMap's upper nibble contains value >0 then swap information is used from it, otherwise global swap is
   // used
@@ -93,12 +95,12 @@ void Bus::calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
   // CCT blending modes (_cctBlend):
   // blend<0: ww: ▓▓▒░__  | blend=0: ww: ▓▒▒░░ |  blend>0 ww: ▓▓▓▒░
   //          cw: __░▒▓▓  |          cw: ░░▒▒▓ |          cw: ░▒▓▓▓
-  int32_t ww_val, cw_val;
+  int32_t ww_val;
+  int32_t cw_val;
   if (_cctBlend < 0) {
-    uint16_t range = 255 - 2 * static_cast<uint16_t>(-_cctBlend);
-    if (range > 255) {
-      range = 255;  // prevent overflow
-    }
+    uint16_t range = 255 - (2 * static_cast<uint16_t>(-_cctBlend));
+    range = std::min<uint16_t>(range, 255); // prevent overflow
+    
     ww_val = range ? (static_cast<int32_t>(255 + _cctBlend - cct) * 255) / range : (cct < 128 ? 255 : 0);  // exclusive blending
     cw_val = 255 - ww_val;
   } else {
@@ -231,7 +233,7 @@ void BusDigital::estimateCurrent() {
   // _colorSum has all the values of color channels summed, max would be getLength()*(3*255 + (255 if hasWhite()):
   // convert to milliAmps
   uint32_t clrUnitsPerChannel = hasWhite() ? 4 * 255 : 3 * 255;
-  _milliAmpsTotal             = (static_cast<uint64_t>(_colorSum) * actualMilliampsPerLed) / clrUnitsPerChannel +
+  _milliAmpsTotal             = ((static_cast<uint64_t>(_colorSum) * actualMilliampsPerLed) / clrUnitsPerChannel) +
                                 getLength();  // add 1mA standby current per LED to total (WS2812: ~0.7mA, WS2815: ~2mA)
 }
 
@@ -247,7 +249,7 @@ void BusDigital::applyBriLimit(uint8_t newBri) {
     if (_milliAmpsLimit > getLength()) {  // each LED uses about 1mA in standby
       if (_milliAmpsTotal > _milliAmpsLimit) {
         // scale brightness down to stay in current limit
-        newBri          = (static_cast<uint32_t>(_milliAmpsLimit) * 255) / _milliAmpsTotal + 1;  // +1 to avoid 0 brightness
+        newBri          = ((static_cast<uint32_t>(_milliAmpsLimit) * 255) / _milliAmpsTotal) + 1;  // +1 to avoid 0 brightness
         _milliAmpsTotal = _milliAmpsLimit;
       }
     } else {
@@ -265,14 +267,15 @@ void BusDigital::applyBriLimit(uint8_t newBri) {
       hwLen = NUM_ICS_WS2812_1CH_3X(_len);  // only needs a third of "RGB" LEDs for NeoPixelBus
     }
     for (unsigned i = 0; i < hwLen; i++) {
-      uint8_t co = _colorOrderMap.getPixelColorOrder(
+      uint8_t co = colorOrderMap.getPixelColorOrder(
           i + _start,
           _colorOrder);  // need to revert color order for correct color scaling and CCT calc in case white is swapped
       uint32_t c = PolyBus::getPixelColor(
           _busPtr, _iType, i, co);  // Note: if ABL would be calculated as a seperate loop (as it was before) it is
                                     // slower but could use original color, making it more color-accurate
       if (hasCCT()) {
-        uint8_t cctWW, cctCW;
+        uint8_t cctWW;
+        uint8_t cctCW;
         Bus::calculateCCT(
             c, cctWW,
             cctCW);  // calculate CCT before fade (more accurate) | Note: if using "accurate" white calculation mode,
@@ -295,7 +298,7 @@ void BusDigital::show() {
     return;
   }
   _NPBbri = (_NPBbri * _bri) / 255;       // total applied brightness for use in restoreColorLossy (see applyBriLimit())
-  PolyBus::show(_busPtr, _iType, _skip);  // faster if buffer consistency is not important (no skipped LEDs)
+  PolyBus::show(_busPtr, _iType, _skip != 0u);  // faster if buffer consistency is not important (no skipped LEDs)
 }
 
 bool BusDigital::canShow() const {
@@ -306,10 +309,10 @@ bool BusDigital::canShow() const {
 }
 
 // If LEDs are skipped, it is possible to use the first as a status LED.
-// TODO only show if no new show due in the next 50ms
+// TODO: claudio - only show if no new show due in the next 50ms
 void BusDigital::setStatusPixel(uint32_t c) {
   if (_valid && _skip) {
-    PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
+    PolyBus::setPixelColor(_busPtr, _iType, 0, c, colorOrderMap.getPixelColorOrder(_start, _colorOrder));
     if (canShow()) {
       PolyBus::show(_busPtr, _iType);
     }
@@ -324,7 +327,8 @@ void IRAM_ATTR BusDigital::setPixelColor(unsigned pix, uint32_t c) {
   if (Bus::_cct >= 1900) {
     c = colorBalanceFromKelvin(Bus::_cct, c);  // color correction from CCT
   }
-  uint8_t  cctWW = 0, cctCW = 0;
+  uint8_t  cctWW = 0;
+  uint8_t  cctCW = 0;
   uint16_t wwcw = 0;
   if (hasWhite()) {
     c = autoWhiteCalc(c, cctWW, cctCW);
@@ -341,7 +345,9 @@ void IRAM_ATTR BusDigital::setPixelColor(unsigned pix, uint32_t c) {
 
   if (BusManager::_useABL) {
     // if using ABL, sum all color channels to estimate current and limit brightness in show()
-    uint8_t r = R(c), g = G(c), b = B(c);
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
     if (_milliAmpsPerLed < 255) {  // normal ABL
       _colorSum += r + g + b + W(c);
     } else {  // wacky WS2815 power model, ignore white channel, use max of RGB (issue #549)
@@ -353,7 +359,7 @@ void IRAM_ATTR BusDigital::setPixelColor(unsigned pix, uint32_t c) {
     pix = _len - pix - 1;
   }
   pix += _skip;
-  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
+  const uint8_t co = colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
   if (_type == TYPE_WS2812_1CH_X3) {  // map to correct IC, each controls 3 LEDs
     unsigned pOld = pix;
     pix           = IC_INDEX_WS2812_1CH_3X(pix);
@@ -383,7 +389,7 @@ uint32_t IRAM_ATTR BusDigital::getPixelColor(unsigned pix) const {
     pix = _len - pix - 1;
   }
   pix += _skip;
-  const uint8_t co = _colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
+  const uint8_t co = colorOrderMap.getPixelColorOrder(pix + _start, _colorOrder);
   uint32_t      c  = restoreColorLossy(
       PolyBus::getPixelColor(_busPtr, _iType, (_type == TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co),
       _NPBbri);
@@ -411,7 +417,7 @@ uint32_t IRAM_ATTR BusDigital::getPixelColor(unsigned pix) const {
 }
 
 size_t BusDigital::getPins(uint8_t *pinArray) const {
-  unsigned numPins = is2Pin(_type) + 1;
+  unsigned numPins = static_cast<int>(is2Pin(_type)) + 1;
   if (pinArray) {
     for (unsigned i = 0; i < numPins; i++) {
       pinArray[i] = _pins[i];
@@ -434,7 +440,7 @@ void BusDigital::setColorOrder(uint8_t colorOrder) {
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
-std::vector<LEDType> BusDigital::getLEDTypes() {
+static std::vector<LEDType> BusDigital::getLEDTypes() {
   return {
       {   TYPE_WS2812_RGB,  "D",             "WS281x"},
       {  TYPE_SK6812_RGBW,  "D", "SK6812/WS2814 RGBW"},
@@ -459,7 +465,7 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
   };
 }
 
-bool BusDigital::isI2S() {
+bool BusDigital::isI2S() const {
   return (_iType & 0x01) == 0;  // I2S types have even iType values
 }
 
@@ -535,10 +541,11 @@ BusPwm::BusPwm(const BusConfig &bc)
       _pins[i]         = bc.pins[i];  // store only after allocateMultiplePins() succeeded
       unsigned channel = _ledcStart + i;
       ledcSetup(channel, _frequency,
-                _depth - (dithering * 4));  // with dithering _frequency doesn't really matter as resolution is 8 bit
+                _depth - (static_cast<int>(dithering) * 4));  // with dithering _frequency doesn't really matter as resolution is 8 bit
       ledcAttachPin(_pins[i], channel);
       // LEDC timer reset credit @dedehai
-      uint8_t group = (channel / 8), timer = ((channel / 2) % 4);  // same fromula as in ledcSetup()
+      uint8_t group = (channel / 8);
+      uint8_t timer = ((channel / 2) % 4);  // same fromula as in ledcSetup()
       ledc_timer_rst(static_cast<ledc_mode_t>(group),
                      static_cast<ledc_timer_t>(timer));  // reset timer so all timers are almost in sync (for phase shift)
     }
@@ -559,11 +566,15 @@ void BusPwm::setPixelColor(unsigned pix, uint32_t c) {
   if (Bus::_cct >= 1900 && (_type == TYPE_ANALOG_3CH || _type == TYPE_ANALOG_4CH)) {
     c = colorBalanceFromKelvin(Bus::_cct, c);  // color correction from CCT
   }
-  uint8_t cctWW, cctCW;
+  uint8_t cctWW;
+  uint8_t cctCW;
   if (_type != TYPE_ANALOG_3CH) {
     c = autoWhiteCalc(c, cctWW, cctCW);
   }
-  uint8_t r = R(c), g = G(c), b = B(c), w = W(c);
+  uint8_t r = R(c);
+  uint8_t g = G(c);
+  uint8_t b = B(c);
+  uint8_t w = W(c);
   // note: no color scaling, brightness is applied in show()
 
   switch (_type) {
@@ -598,11 +609,11 @@ void BusPwm::setPixelColor(unsigned pix, uint32_t c) {
 }
 
 // does no index check
-uint32_t BusPwm::getPixelColor(unsigned pix) const {
+uint32_t BusPwm::getPixelColor(unsigned  /*pix*/) const {
   if (!_valid) {
     return 0;
   }
-  // TODO getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
+  // TODO: claudio - getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
   switch (_type) {
     case TYPE_ANALOG_1CH:  // one channel (white), relies on auto white calculation
       return RGBW32(0, 0, 0, _data[0]);
@@ -637,13 +648,13 @@ void BusPwm::show() {
   const unsigned maxBri =
       (1 << _depth);  // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
   const unsigned bitShift =
-      dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
+      static_cast<int>(dithering) * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
 
   // use CIE brightness formula (linear + cubic) to approximate human eye perceived brightness
   // see: https://en.wikipedia.org/wiki/Lightness
   unsigned pwmBri = _bri;
   if (pwmBri < 21) {  // linear response for values [0-20]
-    pwmBri = (pwmBri * maxBri + 2300 / 2) /
+    pwmBri = ((pwmBri * maxBri) + (2300 / 2)) /
              2300;  // adding '0.5' before division for correct rounding, 2300 gives a good match to CIE curve
   } else {          // cubic response for values [21-255]
     float temp = static_cast<float>(pwmBri + 41) / static_cast<float>(255 + 41);  // 41 is to match offset & slope to linear part
@@ -664,7 +675,7 @@ void BusPwm::show() {
 
     if (_type == TYPE_ANALOG_2CH && Bus::_cctBlend <= 0) {
       // add dead time between signals (when using dithering, two full 8bit pulses are required)
-      deadTime = (1 + dithering) << bitShift;
+      deadTime = (1 + static_cast<int>(dithering)) << bitShift;
       // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
       if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) {
         duty -= deadTime << 1;  // shorten duty of larger signal except if full on
@@ -683,7 +694,7 @@ void BusPwm::show() {
     // directly write to LEDC struct as there is no HAL exposed function for dithering
     // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
     LEDC.channel_group[gr].channel[ch].duty.duty =
-        duty << ((!dithering) * 4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
+        duty << (static_cast<int>(!dithering) * 4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
     LEDC.channel_group[gr].channel[ch].hpoint.hpoint =
         hPoint >> bitShift;  // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty(static_cast<ledc_mode_t>(gr), static_cast<ledc_channel_t>(ch));
@@ -712,7 +723,7 @@ size_t BusPwm::getPins(uint8_t *pinArray) const {
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
-std::vector<LEDType> BusPwm::getLEDTypes() {
+static std::vector<LEDType> BusPwm::getLEDTypes() {
   return {
       {TYPE_ANALOG_1CH,     "A",   "PWM White"},
       {TYPE_ANALOG_2CH,    "AA",     "PWM CCT"},
@@ -739,7 +750,7 @@ void BusPwm::deallocatePins() {
 #endif
 }
 
-BusOnOff::BusOnOff(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed), _data(0) {
+BusOnOff::BusOnOff(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed) {
   if (!Bus::isOnOff(bc.type)) {
     return;
   }
@@ -764,7 +775,7 @@ void BusOnOff::setPixelColor(unsigned pix, uint32_t c) {
   _data = (c > 0) && static_cast<bool>(_bri) ? 0xFF : 0;  // if any color channel is on and brightness is not zero, set to on
 }
 
-uint32_t BusOnOff::getPixelColor(unsigned pix) const {
+uint32_t BusOnOff::getPixelColor(unsigned  /*pix*/) const {
   if (!_valid) {
     return 0;
   }
@@ -775,7 +786,7 @@ void BusOnOff::show() {
   if (!_valid) {
     return;
   }
-  digitalWrite(_pin, _reversed ? !static_cast<bool>(_data) : static_cast<bool>(_data));
+  digitalWrite(_pin, static_cast<uint8_t>(_reversed ? !static_cast<bool>(_data) : static_cast<bool>(_data)));
 }
 
 size_t BusOnOff::getPins(uint8_t *pinArray) const {
@@ -789,13 +800,13 @@ size_t BusOnOff::getPins(uint8_t *pinArray) const {
 }
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
-std::vector<LEDType> BusOnOff::getLEDTypes() {
+static std::vector<LEDType> BusOnOff::getLEDTypes() {
   return {
       {TYPE_ONOFF, "", "On/Off"},
   };
 }
 
-BusNetwork::BusNetwork(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, bc.count), _broadcastLock(false) {
+BusNetwork::BusNetwork(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite, bc.count) {
   switch (bc.type) {
     case TYPE_NET_ARTNET_RGB:
       _UDPtype = 2;
@@ -813,7 +824,7 @@ BusNetwork::BusNetwork(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhit
   _hasRgb      = hasRGB(bc.type);
   _hasWhite    = hasWhite(bc.type);
   _hasCCT      = false;
-  _UDPchannels = _hasWhite + 3;
+  _UDPchannels = static_cast<int>(_hasWhite) + 3;
   _client      = IPAddress(bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
 #ifdef ARDUINO_ARCH_ESP32
   _hostname = bc.text;
@@ -829,7 +840,8 @@ void BusNetwork::setPixelColor(unsigned pix, uint32_t c) {
   if (!_valid || pix >= _len) {
     return;
   }
-  uint8_t ww, cw;  // dummy, unused
+  uint8_t ww;
+  uint8_t cw;  // dummy, unused
   if (_hasWhite) {
     c = autoWhiteCalc(c, ww, cw);
   }
@@ -873,7 +885,7 @@ size_t BusNetwork::getPins(uint8_t *pinArray) const {
 
 #ifdef ARDUINO_ARCH_ESP32
 void BusNetwork::resolveHostname() {
-  static std::shared_ptr<AsyncDNS> DNSlookup;  // TODO: make this dynamic? requires to handle the callback properly
+  static std::shared_ptr<AsyncDNS> DNSlookup;  // TODO: claudio - make this dynamic? requires to handle the callback properly
   if (Network.isConnected()) {
     IPAddress clnt;
     if (strlen(cmDNS) > 0) {
@@ -896,7 +908,7 @@ void BusNetwork::resolveHostname() {
 #endif
 
 // credit @willmmiles & @netmindz https://github.com/wled/WLED/pull/4056
-std::vector<LEDType> BusNetwork::getLEDTypes() {
+static std::vector<LEDType> BusNetwork::getLEDTypes() {
   return {
       {    TYPE_NET_DDP_RGB, "N",      "DDP RGB (network"}, // should be "NNNN" to determine 4 "pin" fields
       { TYPE_NET_ARTNET_RGB, "N",  "Art-Net RGB (network"},
@@ -1393,10 +1405,10 @@ int BusManager::add(const BusConfig &bc, bool placeholder) {
       twoPin++;
     }
   }
-  digital += (Bus::isDigital(bc.type) && !Bus::is2Pin(bc.type));
+  digital += static_cast<unsigned int>(Bus::isDigital(bc.type) && !Bus::is2Pin(bc.type));
   analog += (Bus::isPWM(bc.type) ? Bus::numPWMPins(bc.type) : 0);
   if (digital > WLED_MAX_DIGITAL_CHANNELS || analog > WLED_MAX_ANALOG_CHANNELS) {
-    placeholder = true;  // TODO: add errorFlag here
+    placeholder = true;  // TODO: claudio - add errorFlag here
   }
   if (placeholder) {
     busses.push_back(make_unique<BusPlaceholder>(bc));
@@ -1545,9 +1557,7 @@ void IRAM_ATTR BusManager::setPixelColor(unsigned pix, uint32_t c) {
 }
 
 void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
-  if (cct > 255) {
-    cct = 255;
-  }
+  cct = std::min<int16_t>(cct, 255);
   if (cct >= 0) {
     // if white balance correction allowed, save as kelvin value instead of 0-255
     if (allowWBCorrection) {
@@ -1644,7 +1654,7 @@ void BusManager::applyABL() {
                                                        : 1;  // subtract ESP current consumption, fully limit if too low
       if (globalMax > totalLEDs) {                           // check if budget is larger than standby current
         if (milliAmpsSum > globalMax) {
-          newBri       = globalMax * 255 / milliAmpsSum +
+          newBri       = (globalMax * 255 / milliAmpsSum) +
                          1;          // scale brightness down to stay in current limit, +1 to avoid 0 brightness
           milliAmpsSum = globalMax;  // update total used current
         }
@@ -1670,15 +1680,15 @@ void BusManager::applyABL() {
 }
 
 ColorOrderMap &BusManager::getColorOrderMap() {
-  return _colorOrderMap;
+  return colorOrderMap;
 }
 
 // PolyBus channel tracking for dynamic allocation
-bool    PolyBus::_useParallelI2S      = false;
-uint8_t PolyBus::_rmtChannelsAssigned = 0;  // number of RMT channels assigned durig getI() check
-uint8_t PolyBus::_rmtChannel          = 0;  // number of RMT channels actually used during bus creation in create()
-uint8_t PolyBus::_i2sChannelsAssigned = 0;  // number of I2S channels assigned durig getI() check
-uint8_t PolyBus::_parallelBusItype    = 0;  // type I_NONE
+bool    PolyBus::useParallelI2S_      = false;
+uint8_t PolyBus::rmtChannelsAssigned_ = 0;  // number of RMT channels assigned durig getI() check
+uint8_t PolyBus::rmtChannel_          = 0;  // number of RMT channels actually used during bus creation in create()
+uint8_t PolyBus::i2sChannelsAssigned_ = 0;  // number of I2S channels assigned durig getI() check
+uint8_t PolyBus::parallelBusItype_    = 0;  // type I_NONE
 uint8_t PolyBus::_2PchannelsAssigned  = 0;
 
 // Bus static member definition

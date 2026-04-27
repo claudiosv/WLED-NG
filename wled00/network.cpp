@@ -366,7 +366,7 @@ bool isWiFiConfigured() {
 // https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/lwip.html (see the "Note" block under "Adapted
 // APIs" -- though it very much undersells the problem.) https://github.com/espressif/arduino-esp32/discussions/9988 -
 // links to older discussions
-static u8_t blockRouterAdvertisements(void* arg, struct raw_pcb* pcb, struct pbuf* p, const ip_addr_t* addr) {
+static u8_t blockRouterAdvertisements(void*  /*arg*/, struct raw_pcb*  /*pcb*/, struct pbuf* p, const ip_addr_t*  /*addr*/) {
   // ICMPv6 type is the first byte of the payload, so we skip the header
   if (p->len > 0 && (pbuf_get_at(p, sizeof(struct ip6_hdr)) == ICMP6_TYPE_RA)) {
     pbuf_free(p);
@@ -377,7 +377,7 @@ static u8_t blockRouterAdvertisements(void* arg, struct raw_pcb* pcb, struct pbu
 
 void installIPv6RABlocker() {
   struct raw_pcb* ra_blocker = raw_new_ip_type(IPADDR_TYPE_V6, IP6_NEXTH_ICMP6);
-  raw_recv(ra_blocker, blockRouterAdvertisements, NULL);
+  raw_recv(ra_blocker, blockRouterAdvertisements, nullptr);
 }
 #endif
 
@@ -426,7 +426,7 @@ void WiFiEvent(WiFiEvent_t event) {
     case ARDUINO_EVENT_WIFI_AP_STOP:
       DEBUG_PRINTLN("WiFi-E: AP Stopped");
       break;
-#if defined(WLED_USE_ETHERNET)
+#ifdef WLED_USE_ETHERNET
     case ARDUINO_EVENT_ETH_START:
       DEBUG_PRINTLN("ETH-E: Started");
       break;

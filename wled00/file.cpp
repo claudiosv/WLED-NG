@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 
 /*
@@ -11,7 +13,9 @@
 #endif
 #endif
 
-#define FS_BUFSIZE 256
+enum {
+FS_BUFSIZE = 256
+};
 
 /*
  * Structural requirements for files managed by writeObjectToFile() and readObjectFromFile() utilities:
@@ -29,8 +33,8 @@
 
 // There are no consecutive spaces longer than this in the file, so if more space is required, findSpace() can return
 // false immediately Actual space may be lower
-constexpr size_t       MAX_SPACE         = UINT16_MAX * 2U;  // smallest supported config has 128Kb flash size
-static volatile size_t knownLargestSpace = MAX_SPACE;
+constexpr size_t       kMaxSpace         = UINT16_MAX * 2U;  // smallest supported config has 128Kb flash size
+static volatile size_t knownLargestSpace = kMaxSpace;
 
 static File f;  // don't export to other cpp files
 
@@ -120,7 +124,7 @@ static bool bufferedFindSpace(size_t targetLen, bool fromStart = true) {
         if (++index >= targetLen) {  // return true if space long enough
           if (fromStart) {
             f.seek((f.position() - bufsize) + count + 1 - targetLen);
-            knownLargestSpace = MAX_SPACE;  // there may be larger spaces after, so we don't know
+            knownLargestSpace = kMaxSpace;  // there may be larger spaces after, so we don't know
           }
           DEBUGFS_PRINTF("Found at pos %d, took %lu ms", f.position(), millis() - s);
           return true;
@@ -130,7 +134,7 @@ static bool bufferedFindSpace(size_t targetLen, bool fromStart = true) {
           return false;
         }
         if (index) {
-          if (knownLargestSpace < index || (knownLargestSpace == MAX_SPACE)) {
+          if (knownLargestSpace < index || (knownLargestSpace == kMaxSpace)) {
             knownLargestSpace = index;
           }
           index = 0;  // reset index if not space
@@ -193,12 +197,10 @@ static void writeSpace(size_t l) {
     l -= block;
   }
 
-  if (knownLargestSpace < l) {
-    knownLargestSpace = l;
-  }
+  knownLargestSpace = std::max(knownLargestSpace, l);
 }
 
-static bool appendObjectToFile(const char* key, const JsonDocument* content, uint32_t s, uint32_t contentLen = 0) {
+static bool appendObjectToFile(const char* key, const JsonDocument* content, uint32_t contentLen = 0) {
 #ifdef WLED_DEBUG_FS
   DEBUGFS_PRINTLN("Append");
   uint32_t s1 = millis();
@@ -360,7 +362,7 @@ bool writeObjectToFile(const char* file, const char* key, const JsonDocument* co
     f.seek(pos);
     writeSpace(pos2 - pos);
     if (contentLen) {
-      return appendObjectToFile(key, content, s, contentLen);
+      return appendObjectToFile(key, content, contentLen);
     }
   }
 
@@ -539,7 +541,7 @@ bool copyFile(const char* src_path, const char* dst_path) {
 }
 
 // compare two files, return true if identical
-bool compareFiles(const char* path1, const char* path2) {
+static bool compareFiles(const char* path1, const char* path2) {
   DEBUG_PRINTF("compareFile %s and %s\n", path1, path2);
   if (!WLED_FS.exists(path1) || !WLED_FS.exists(path2)) {
     DEBUG_PRINTLN("file not found");
@@ -551,7 +553,8 @@ bool compareFiles(const char* path1, const char* path2) {
   File f2        = WLED_FS.open(path2, "r");
 
   if (f1 && f2) {
-    uint8_t buf1[128], buf2[128];
+    uint8_t buf1[128];
+    uint8_t buf2[128];
     while (f1.available() > 0 || f2.available() > 0) {
       size_t len1 = f1.read(buf1, sizeof(buf1));
       size_t len2 = f2.read(buf2, sizeof(buf2));
@@ -579,7 +582,7 @@ bool compareFiles(const char* path1, const char* path2) {
   return identical;
 }
 
-static const char s_backup_fmt[] = "/bkp.%s";
+static const char kSBackupFmt[] = "/bkp.%s";
 
 bool backupFile(const char* filename) {
   DEBUG_PRINTF("backup %s \n", filename);
@@ -588,7 +591,7 @@ bool backupFile(const char* filename) {
     return false;
   }
   char backupname[32];
-  snprintf(backupname, sizeof(backupname), s_backup_fmt, filename + 1);  // skip leading '/' in filename
+  snprintf(backupname, sizeof(backupname), kSBackupFmt, filename + 1);  // skip leading '/' in filename
 
   if (copyFile(filename, backupname)) {
     DEBUG_PRINTLN("backup ok");
@@ -601,7 +604,7 @@ bool backupFile(const char* filename) {
 bool restoreFile(const char* filename) {
   DEBUG_PRINTF("restore %s \n", filename);
   char backupname[32];
-  snprintf(backupname, sizeof(backupname), s_backup_fmt, filename + 1);  // skip leading '/' in filename
+  snprintf(backupname, sizeof(backupname), kSBackupFmt, filename + 1);  // skip leading '/' in filename
 
   if (!WLED_FS.exists(backupname)) {
     DEBUG_PRINTLN("no backup found");
@@ -623,7 +626,7 @@ bool restoreFile(const char* filename) {
 
 bool checkBackupExists(const char* filename) {
   char backupname[32];
-  snprintf(backupname, sizeof(backupname), s_backup_fmt, filename + 1);  // skip leading '/' in filename
+  snprintf(backupname, sizeof(backupname), kSBackupFmt, filename + 1);  // skip leading '/' in filename
   return WLED_FS.exists(backupname);
 }
 
@@ -635,7 +638,8 @@ bool validateJsonFile(const char* filename) {
   if (!file) {
     return false;
   }
-  StaticJsonDocument<0> doc, filter;  // https://arduinojson.org/v6/how-to/validate-json/
+  StaticJsonDocument<0> doc;
+  StaticJsonDocument<0> filter;  // https://arduinojson.org/v6/how-to/validate-json/
   bool result = deserializeJson(doc, file, DeserializationOption::Filter(filter)) == DeserializationError::Ok;
   file.close();
   if (!result) {

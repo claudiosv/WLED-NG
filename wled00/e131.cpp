@@ -1,14 +1,18 @@
+#include <algorithm>
+
 #include "wled.h"
 
-#define MAX_3_CH_LEDS_PER_UNIVERSE 170
-#define MAX_4_CH_LEDS_PER_UNIVERSE 128
-#define MAX_CHANNELS_PER_UNIVERSE  512
+enum {
+MAX_3_CH_LEDS_PER_UNIVERSE = 170,
+MAX_4_CH_LEDS_PER_UNIVERSE = 128,
+MAX_CHANNELS_PER_UNIVERSE =  512
+};
 
 // forward declarations
 static void handleDDPPacket(e131_packet_t* p);
-static void handleArtnetPollReply(IPAddress ipAddress);
+static void handleArtnetPollReply(const IPAddress& ipAddress);
 static void prepareArtnetPollReply(ArtPollReply* reply);
-static void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
+static void sendArtnetPollReply(ArtPollReply* reply, const IPAddress& ipAddress, uint16_t portAddress);
 
 /*
  * E1.31 handler
@@ -54,7 +58,7 @@ static void handleDDPPacket(e131_packet_t* p) {
   uint32_t start = htonl(p->channelOffset) / ddpChannelsPerLed;
   start += DMXAddress / ddpChannelsPerLed;
   uint16_t dataLen = htons(p->dataLen);
-  unsigned stop    = start + dataLen / ddpChannelsPerLed;
+  unsigned stop    = start + (dataLen / ddpChannelsPerLed);
   uint8_t* data    = p->data;
   unsigned c       = 0;
   if (p->flags & DDP_FLAGS_TIME) {
@@ -63,7 +67,7 @@ static void handleDDPPacket(e131_packet_t* p) {
   }
 
   unsigned numLeds      = stop - start;                     // stop >= start is guaranteed
-  unsigned maxDataIndex = c + numLeds * ddpChannelsPerLed;  // validate bounds before accessing data array
+  unsigned maxDataIndex = c + (numLeds * ddpChannelsPerLed);  // validate bounds before accessing data array
   if (maxDataIndex > dataLen) {
     DEBUG_PRINTLN("DDP packet data bounds exceeded, rejecting.");
     return;
@@ -80,7 +84,7 @@ static void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  bool push = p->flags & DDP_FLAGS_PUSH;
+  bool push = (p->flags & DDP_FLAGS_PUSH) != 0;
   ddpSeenPush |= push;
   if (!ddpSeenPush || push) {  // if we've never seen a push, or this is one, render display
     e131NewData = true;
@@ -92,10 +96,12 @@ static void handleDDPPacket(e131_packet_t* p) {
 }
 
 // E1.31 and Art-Net protocol support
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol) {
-  int      uni = 0, dmxChannels = 0;
+void handleE131Packet(e131_packet_t* p, const IPAddress& clientIP, byte protocol) {
+  int      uni = 0;
+  int      dmxChannels = 0;
   uint8_t* e131_data = nullptr;
-  int      seq = 0, mde = REALTIME_MODE_E131;
+  int      seq = 0;
+  int      mde = REALTIME_MODE_E131;
 
   if (protocol == P_ARTNET) {
     if (p->art_opcode == ARTNET_OPCODE_OPPOLL) {
@@ -280,7 +286,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
       for (unsigned id = 0; id < strip.getSegmentsNum(); id++) {
         Segment& seg = strip.getSegment(id);
         if (isSegmentMode) {
-          dataOffset = DMXAddress + id * (dmxEffectChannels + DMXSegmentSpacing);
+          dataOffset = DMXAddress + (id * (dmxEffectChannels + DMXSegmentSpacing));
         } else {
           dataOffset = DMXAddress;
         }
@@ -374,7 +380,9 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
       const unsigned dmxChannelsPerLed = is4Chan ? 4 : 3;
       const unsigned ledsPerUniverse   = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
       uint8_t        stripBrightness   = bri;
-      unsigned       previousLeds, dmxOffset, ledsTotal;
+      unsigned       previousLeds;
+      unsigned       dmxOffset;
+      unsigned       ledsTotal;
 
       if (previousUniverses == 0) {
         if (availDMXLen < 1) {
@@ -395,7 +403,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
         const unsigned dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
         unsigned       ledsInFirstUniverse =
             (((MAX_CHANNELS_PER_UNIVERSE - DMXAddress) + dmxLenOffset) - dimmerOffset) / dmxChannelsPerLed;
-        previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
+        previousLeds = ledsInFirstUniverse + ((previousUniverses - 1) * ledsPerUniverse);
         ledsTotal    = previousLeds + (dmxChannels / dmxChannelsPerLed);
       }
 
@@ -409,9 +417,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
         return;
       }
 
-      if (ledsTotal > totalLen) {
-        ledsTotal = totalLen;
-      }
+      ledsTotal = std::min(ledsTotal, totalLen);
 
       if (DMXMode == DMX_MODE_MULTIPLE_DRGB && previousUniverses == 0) {
         if (bri != stripBrightness) {
@@ -436,7 +442,7 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
   e131NewData = true;
 }
 
-static void handleArtnetPollReply(IPAddress ipAddress) {
+static void handleArtnetPollReply(const IPAddress& ipAddress) {
   ArtPollReply artnetPollReply;
   prepareArtnetPollReply(&artnetPollReply);
 
@@ -532,7 +538,7 @@ static void prepareArtnetPollReply(ArtPollReply* reply) {
   reply->reply_net_sw = 0x00;
   reply->reply_sub_sw = 0x00;
 
-  reply->reply_oem_h = 0x00;  // TODO add assigned oem code
+  reply->reply_oem_h = 0x00;  // TODO: claudio - add assigned oem code
   reply->reply_oem_l = 0x00;
 
   reply->reply_ubea_ver = 0x00;
@@ -617,12 +623,12 @@ static void prepareArtnetPollReply(ArtPollReply* reply) {
   // Node does not support fail-over
   reply->reply_status_3 = 0x00;
 
-  for (unsigned i = 0; i < 21; i++) {
-    reply->reply_filler[i] = 0x00;
+  for (unsigned char & i : reply->reply_filler) {
+    i = 0x00;
   }
 }
 
-static void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress) {
+static void sendArtnetPollReply(ArtPollReply* reply, const IPAddress& ipAddress, uint16_t portAddress) {
   reply->reply_net_sw    = static_cast<uint8_t>((portAddress >> 8) & 0x007F);
   reply->reply_sub_sw    = static_cast<uint8_t>((portAddress >> 4) & 0x000F);
   reply->reply_sw_out[0] = static_cast<uint8_t>(portAddress & 0x000F);

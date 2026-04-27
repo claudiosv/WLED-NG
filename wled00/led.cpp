@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 
 /*
@@ -67,9 +69,7 @@ void toggleOnOff() {
 // scales the brightness with the briMultiplier factor
 byte scaledBri(byte in) {
   unsigned val = (static_cast<unsigned>(in) * briMultiplier) / 100;
-  if (val > 255) {
-    val = 255;
-  }
+  val = std::min<unsigned int>(val, 255);
   return static_cast<byte>(val);
 }
 
@@ -249,13 +249,12 @@ void handleNightlight() {
         effectCurrent = FX_MODE_SUNRISE;  // colorUpdated() will take care of assigning that to all selected segments
         effectSpeed   = nightlightDelayMins;
         effectPalette = 0;
-        if (effectSpeed > 60) {
-          effectSpeed = 60;  // currently limited to 60 minutes
-        }
+        effectSpeed = std::min<byte>(effectSpeed, 60); // currently limited to 60 minutes
+        
         if (bri) {
           effectSpeed += 60;  // sunset if currently on
         }
-        briNlT = !bri;  // true == sunrise, false == sunset
+        briNlT = static_cast<byte>(bri) == 0u;  // true == sunrise, false == sunset
         if (!bri) {
           bri = briLast;
         }
@@ -311,6 +310,6 @@ void handleNightlight() {
 }
 
 // utility for FastLED to use our custom timer
-uint32_t get_millisecond_timer() {
+static uint32_t get_millisecond_timer() {
   return strip.now;
 }

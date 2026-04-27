@@ -105,7 +105,9 @@ void WS2812FX::setUpMatrix() {
         releaseJSONBufferLock();
       }
 
-      unsigned x, y, pix = 0;  // pixel
+      unsigned x;
+      unsigned y;
+      unsigned pix = 0;  // pixel
       for (const Panel &p : panel) {
         unsigned h = p.vertical ? p.height : p.width;
         unsigned v = p.vertical ? p.width : p.height;
@@ -176,7 +178,7 @@ bool Segment::isPixelXYClipped(int x, int y) const {
       if (len < 2) {
         return false;
       }
-      const unsigned shuffled = hashInt(x + y * width) % len;
+      const unsigned shuffled = hashInt(x + (y * width)) % len;
       const unsigned pos      = (shuffled * 0xFFFFU) / len;
       return progress() <= pos;
     }
@@ -192,7 +194,7 @@ bool Segment::isPixelXYClipped(int x, int y) const {
       }
       const int  dx      = x - cx;
       const int  dy      = y - cy;
-      const bool outside = dx * dx + dy * dy > radius2;
+      const bool outside = (dx * dx) + (dy * dy) > radius2;
       return out ? outside : !outside;
     }
     bool xInside = (x >= cStartX && x < cStopX);
@@ -284,7 +286,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) const {
   const unsigned cols = vWidth();
   const unsigned rows = vHeight();
   const auto     XY   = [&](unsigned x, unsigned y) {
-    return x + y * cols;
+    return x + (y * cols);
   };
   if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
@@ -407,7 +409,7 @@ void Segment::moveX(int delta, bool wrap) const {
   const int  vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int  vH = vHeight();  // segment height in logical pixels (is always >= 1)
   const auto XY = [&](unsigned x, unsigned y) {
-    return x + y * vW;
+    return x + (y * vW);
   };
   int absDelta = abs(delta);
   if (absDelta >= vW) {
@@ -447,7 +449,7 @@ void Segment::moveY(int delta, bool wrap) const {
   const int  vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int  vH = vHeight();  // segment height in logical pixels (is always >= 1)
   const auto XY = [&](unsigned x, unsigned y) {
-    return x + y * vW;
+    return x + (y * vW);
   };
   int absDelta = abs(delta);
   if (absDelta >= vH) {
@@ -531,24 +533,25 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
     int       y       = radius;
     unsigned  oldFade = 0;
     while (x < y) {
-      float   yf   = sqrtf(static_cast<float>(rsq - x * x));       // needs to be floating point
+      float   yf   = sqrtf(static_cast<float>(rsq - (x * x)));       // needs to be floating point
       uint8_t fade = static_cast<float>(0xFF) * (ceilf(yf) - yf);  // how much color to keep
       if (oldFade > fade) {
         y--;
       }
       oldFade = fade;
-      int px, py;
+      int px;
+      int py;
       for (uint8_t i = 0; i < 16; i++) {
         int swaps = (i & 0x4 ? 1 : 0);  // 0,  0,  0,  0,  1,  1,  1,  1,  0,  0,  0,  0,  1,  1,  1,  1
         int adj   = (i < 8) ? 0 : 1;    // 0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1
         int dx    = (i & 1) ? -1 : 1;   // 1, -1,  1, -1,  1, -1,  1, -1,  1, -1,  1, -1,  1, -1,  1, -1
         int dy    = (i & 2) ? -1 : 1;   // 1,  1, -1, -1,  1,  1, -1, -1,  1,  1, -1, -1,  1,  1, -1, -1
         if (swaps) {
-          px = cx + (y - adj) * dx;
-          py = cy + x * dy;
+          px = cx + ((y - adj) * dx);
+          py = cy + (x * dy);
         } else {
-          px = cx + x * dx;
-          py = cy + (y - adj) * dy;
+          px = cx + (x * dx);
+          py = cy + ((y - adj) * dy);
         }
         uint32_t pixCol = getPixelColorXY(px, py);
         setPixelColorXY(px, py, adj ? color_blend(pixCol, col, fade) : color_blend(col, pixCol, fade));
@@ -558,7 +561,8 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
   } else {
     // Bresenham’s Algorithm
     int d = 3 - (2 * radius);
-    int y = radius, x = 0;
+    int y = radius;
+    int x = 0;
     while (y >= x) {
       for (int i = 0; i < 4; i++) {
         int dx = (i & 1) ? -x : x;
@@ -569,9 +573,9 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
       x++;
       if (d > 0) {
         y--;
-        d += 4 * (x - y) + 10;
+        d += (4 * (x - y)) + 10;
       } else {
-        d += 4 * x + 6;
+        d += (4 * x) + 6;
       }
     }
   }
@@ -591,7 +595,7 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
   // fill it
   for (int y = -radius; y <= radius; y++) {
     for (int x = -radius; x <= radius; x++) {
-      if (x * x + y * y <= radius * radius && static_cast<int>(cx) + x >= 0 && static_cast<int>(cy) + y >= 0 && static_cast<int>(cx) + x < vW &&
+      if ((x * x) + (y * y) <= radius * radius && static_cast<int>(cx) + x >= 0 && static_cast<int>(cy) + y >= 0 && static_cast<int>(cx) + x < vW &&
           static_cast<int>(cy) + y < vH) {
         setPixelColorXY(cx + x, cy + y, col);
       }
@@ -610,8 +614,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
     return;
   }
 
-  const int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;  // x distance & step
-  const int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;  // y distance & step
+  const int dx = abs(x1 - x0);
+  const int sx = x0 < x1 ? 1 : -1;  // x distance & step
+  const int dy = abs(y1 - y0);
+  const int sy = y0 < y1 ? 1 : -1;  // y distance & step
 
   // single pixel (line length == 0)
   if (dx + dy == 0) {
@@ -632,7 +638,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       std::swap(x0, x1);
       std::swap(y0, y1);
     }
-    float gradient   = x1 - x0 == 0 ? 1.0f : static_cast<float>(y1 - y0) / static_cast<float>(x1 - x0);
+    float gradient   = x1 - x0 == 0 ? 1.0F : static_cast<float>(y1 - y0) / static_cast<float>(x1 - x0);
     float intersectY = y0;
     for (int x = x0; x <= x1; x++) {
       uint8_t keep = static_cast<float>(0xFF) * (intersectY - static_cast<int>(intersectY));  // how much color to keep
@@ -676,7 +682,10 @@ void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) const {  // awesome wu_pi
     return;  // not active
   }
   // extract the fractional parts and derive their inverses
-  unsigned xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
+  unsigned xx = x & 0xff;
+  unsigned yy = y & 0xff;
+  unsigned ix = 255 - xx;
+  unsigned iy = 255 - yy;
   // calculate the intensities for each affected pixel
   uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy), WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels

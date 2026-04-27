@@ -25,15 +25,15 @@ class AsyncDNS {
   // note: passing the IP as a pointer to query() is not implemented because it is not thread-safe without mutexes
   //       with the IDF V4 bug external error handling is required anyway or dns can just stay stuck
   enum class result {
-    Idle,
-    Busy,
-    Success,
-    Error
+    kIdle,
+    kBusy,
+    kSuccess,
+    kError
   };
 
   // non-blocking query function to start DNS lookup
   static std::shared_ptr<AsyncDNS> query(const char* hostname, std::shared_ptr<AsyncDNS> current = {}) {
-    if (!current || (current->_status == result::Busy)) {
+    if (!current || (current->_status == result::kBusy)) {
       current.reset(new AsyncDNS());
     }
 
@@ -46,59 +46,59 @@ class AsyncDNS {
       return {};
     }
 
-    current->_status = result::Busy;
-    err_t err        = dns_gethostbyname(hostname, &current->_raw_addr, _dns_callback, callback_state.get());
+    current->_status = result::kBusy;
+    err_t err        = dns_gethostbyname(hostname, &current->_raw_addr, dns_callback, callback_state.get());
     if (err == ERR_OK) {
-      current->_status = result::Success;  // result already in cache
+      current->_status = result::kSuccess;  // result already in cache
     } else if (err == ERR_INPROGRESS) {
       callback_state.release();  // belongs to the callback now
     } else {
-      current->_status = result::Error;
+      current->_status = result::kError;
       current->_errorcount++;
     }
     return current;
   }
 
   // get the IP once Success is returned
-  const IPAddress getIP() {
+  IPAddress getIP() const {
     if (_status != result::Success) {
       return IPAddress(0, 0, 0, 0);
     }
 #ifdef ARDUINO_ARCH_ESP32
-    return IPAddress(_raw_addr.u_addr.ip4.addr);
+    return IPAddress(raw_addr_.u_addr.ip4.addr);
 #else
     return IPAddress(_raw_addr.addr);
 #endif
   }
 
   void reset() {
-    _errorcount = 0;
+    errorcount_ = 0;
   }  // reset status and error count
-  const result status() {
+  result status() {
     return _status;
   }
-  const uint16_t getErrorCount() {
-    return _errorcount;
+  uint16_t getErrorCount() const {
+    return errorcount_;
   }
 
  private:
-  ip_addr_t           _raw_addr;
-  std::atomic<result> _status{result::Idle};
-  uint16_t            _errorcount = 0;
+  ip_addr_t           raw_addr_;
+  std::atomic<result> status_{result::Idle};
+  uint16_t            errorcount_ = 0;
 
   AsyncDNS() {};  // may not be explicitly instantiated - use query()
 
   // callback for dns_gethostbyname(), called when lookup is complete or timed out
-  static void _dns_callback(const char* name, const ip_addr_t* ipaddr, void* arg) {
+  static void dns_callback(const char*  /*name*/, const ip_addr_t* ipaddr, void* arg) {
     std::shared_ptr<AsyncDNS>* instance_ptr = reinterpret_cast<std::shared_ptr<AsyncDNS>*>(arg);
     AsyncDNS&                  instance     = **instance_ptr;
     if (ipaddr) {
-      instance._raw_addr = *ipaddr;
-      instance._status   = result::Success;
+      instance.raw_addr_ = *ipaddr;
+      instance._status   = result::kSuccess;
     } else {
-      instance._status = result::Error;  // note: if query timed out (~5s), DNS lookup is broken until WiFi connection
+      instance._status = result::kError;  // note: if query timed out (~5s), DNS lookup is broken until WiFi connection
                                          // is reset (IDF V4 bug)
-      instance._errorcount++;
+      instance.errorcount_++;
     }
     delete instance_ptr;
   }

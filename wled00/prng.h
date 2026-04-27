@@ -5,21 +5,21 @@
 // values found by brute-force test algorithm: sequence has no repetitions and good randomness for its simplicity
 class PRNG {
  private:
-  uint16_t seed;
+  uint16_t seed_;
 
  public:
-  PRNG(uint16_t initialSeed = 0x1234) : seed(initialSeed) {
+  explicit PRNG(uint16_t initialSeed = 0x1234) : seed_(initialSeed) {
   }
   void setSeed(uint16_t s) {
-    seed = s;
+    seed_ = s;
   }
   uint16_t getSeed() const {
-    return seed;
+    return seed_;
   }
   uint16_t random16() {
-    seed = seed * 3001 + 31683;
-    seed ^= seed >> 7;
-    return seed;
+    seed_ = (seed_ * 3001) + 31683;
+    seed_ ^= seed_ >> 7;
+    return seed_;
   }
   uint16_t random16(uint16_t lim) {
     return (static_cast<uint32_t>(random16()) * lim) >> 16;

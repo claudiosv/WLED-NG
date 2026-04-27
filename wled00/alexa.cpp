@@ -47,7 +47,7 @@ void handleAlexa() {
 void onAlexaChange(EspalexaDevice* dev) {
   EspalexaDeviceProperty m = dev->getLastChangedProperty();
 
-  if (m == EspalexaDeviceProperty::on) {
+  if (m == EspalexaDeviceProperty::kOn) {
     if (dev->getId() == 0)  // Device 0 is for on/off or macros
     {
       if (!macroAlexaOn) {
@@ -75,7 +75,7 @@ void onAlexaChange(EspalexaDevice* dev) {
           dev->getId(),
           CALL_MODE_ALEXA);  // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
     }
-  } else if (m == EspalexaDeviceProperty::off) {
+  } else if (m == EspalexaDeviceProperty::kOff) {
     if (!macroAlexaOff) {
       if (bri > 0) {
         briLast = bri;
@@ -89,12 +89,12 @@ void onAlexaChange(EspalexaDevice* dev) {
     for (unsigned i = 0; i < espalexa.getDeviceCount(); i++) {
       espalexa.getDevice(i)->setValue(0);
     }
-  } else if (m == EspalexaDeviceProperty::bri) {
+  } else if (m == EspalexaDeviceProperty::kBri) {
     bri = dev->getValue();
     stateUpdated(CALL_MODE_ALEXA);
   } else  // color
   {
-    if (dev->getColorMode() == EspalexaColorMode::ct)  // shade of white
+    if (dev->getColorMode() == EspalexaColorMode::kCt)  // shade of white
     {
       byte     rgbw[4];
       uint16_t ct = dev->getCt();
@@ -104,7 +104,7 @@ void onAlexaChange(EspalexaDevice* dev) {
       uint16_t k = 1000000 / ct;  // mireds to kelvin
 
       if (strip.hasCCTBus()) {
-        bool hasManualWhite = strip.getActiveSegsLightCapabilities(true) & SEG_CAPABILITY_W;
+        bool hasManualWhite = (strip.getActiveSegsLightCapabilities(true) & SEG_CAPABILITY_W) != 0;
 
         strip.setCCT(k);
         if (hasManualWhite) {

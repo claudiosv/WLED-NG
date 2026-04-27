@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 
 // forward declarations
@@ -13,19 +15,19 @@ static void _overlayAnalogClock() {
     _overlayAnalogCountdown();
     return;
   }
-  float hourP        = (static_cast<float>(hour(localTime) % 12)) / 12.0f;
-  float minuteP      = (static_cast<float>(minute(localTime))) / 60.0f;
-  hourP              = hourP + minuteP / 12.0f;
-  float    secondP   = (static_cast<float>(second(localTime))) / 60.0f;
-  unsigned hourPixel = floorf(analogClock12pixel + overlaySize * hourP);
+  float hourP        = (static_cast<float>(hour(localTime) % 12)) / 12.0F;
+  float minuteP      = (static_cast<float>(minute(localTime))) / 60.0F;
+  hourP              = hourP + (minuteP / 12.0F);
+  float    secondP   = (static_cast<float>(second(localTime))) / 60.0F;
+  unsigned hourPixel = floorf(analogClock12pixel + (overlaySize * hourP));
   if (hourPixel > overlayMax) {
     hourPixel = overlayMin - 1 + hourPixel - overlayMax;
   }
-  unsigned minutePixel = floorf(analogClock12pixel + overlaySize * minuteP);
+  unsigned minutePixel = floorf(analogClock12pixel + (overlaySize * minuteP));
   if (minutePixel > overlayMax) {
     minutePixel = overlayMin - 1 + minutePixel - overlayMax;
   }
-  unsigned secondPixel = floorf(analogClock12pixel + overlaySize * secondP);
+  unsigned secondPixel = floorf(analogClock12pixel + (overlaySize * secondP));
   if (secondPixel > overlayMax) {
     secondPixel = overlayMin - 1 + secondPixel - overlayMax;
   }
@@ -39,7 +41,7 @@ static void _overlayAnalogClock() {
   }
   if (analogClock5MinuteMarks) {
     for (unsigned i = 0; i <= 12; i++) {
-      unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0f) * i);
+      unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0F) * i);
       if (pix > overlayMax) {
         pix -= overlaySize;
       }
@@ -56,31 +58,29 @@ static void _overlayAnalogClock() {
 static void _overlayAnalogCountdown() {
   if (static_cast<unsigned long>(toki.second()) < countdownTime) {
     long  diff = countdownTime - toki.second();
-    float pval = 60.0f;
+    float pval = 60.0F;
     if (diff > 31557600L)  // display in years if more than 365 days
     {
-      pval = 315576000.0f;       // 10 years
+      pval = 315576000.0F;       // 10 years
     } else if (diff > 2592000L)  // display in months if more than a month
     {
-      pval = 31557600.0f;      // 1 year
+      pval = 31557600.0F;      // 1 year
     } else if (diff > 604800)  // display in weeks if more than a week
     {
-      pval = 2592000.0f;      // 1 month
+      pval = 2592000.0F;      // 1 month
     } else if (diff > 86400)  // display in days if more than 24 hours
     {
-      pval = 604800.0f;      // 1 week
+      pval = 604800.0F;      // 1 week
     } else if (diff > 3600)  // display in hours if more than 60 minutes
     {
-      pval = 86400.0f;     // 1 day
+      pval = 86400.0F;     // 1 day
     } else if (diff > 60)  // display in minutes if more than 60 seconds
     {
-      pval = 3600.0f;  // 1 hour
+      pval = 3600.0F;  // 1 hour
     }
     int   overlaySize = overlayMax - overlayMin + 1;
     float perc        = (pval - static_cast<float>(diff)) / pval;
-    if (perc > 1.0f) {
-      perc = 1.0f;
-    }
+    perc = std::min(perc, 1.0f);
     byte pixelCnt = perc * overlaySize;
     if (analogClock12pixel + pixelCnt > overlayMax) {
       strip.setRange(

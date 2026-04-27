@@ -43,7 +43,7 @@
 // Unicode Offset: 0x00000000
 // Variable Width: No
 
-static const unsigned char font_tom_thumb_6px[] = {
+static const unsigned char kFontTomThumb6px[] = {
     0x57, 0x06, 0x03, 0x01, 0x00, 0x20,
     0x7E, 0x00, 0x00, 0x00, 0x00, 0x00,  // Header: 'W', H, W, S, Flags, First, Last, Reserved, UnicodeOffset (32bit)
 

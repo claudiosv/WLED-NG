@@ -45,6 +45,8 @@
 #endif
 #include <WiFiUdp.h>
 
+#include <utility>
+
 #include "../network/Network.h"
 
 #ifdef ESPALEXA_DEBUG
@@ -64,87 +66,87 @@ class Espalexa {
  private:
 // private member vars
 #ifdef ESPALEXA_ASYNC
-  AsyncWebServer*        serverAsync;
-  AsyncWebServerRequest* server;  // this saves many #defines
-  String                 body = "";
+  AsyncWebServer*        serverAsync_;
+  AsyncWebServerRequest* server_;  // this saves many #defines
+  String                 body_ = "";
 #elif defined(ARDUINO_ARCH_ESP32)
   WebServer* server;
 #endif
-  uint8_t currentDeviceCount = 0;
-  bool    discoverable       = true;
-  bool    udpConnected       = false;
+  uint8_t currentDeviceCount_ = 0;
+  bool    discoverable_       = true;
+  bool    udpConnected_       = false;
 
-  EspalexaDevice* devices[ESPALEXA_MAXDEVICES] = {};
+  EspalexaDevice* devices_[ESPALEXA_MAXDEVICES] = {};
   // Keep in mind that Device IDs go from 1 to DEVICES, cpp arrays from 0 to DEVICES-1!!
 
-  WiFiUDP   espalexaUdp;
-  IPAddress ipMulti;
-  uint32_t  mac24;            // bottom 24 bits of mac
-  String    escapedMac = "";  // lowercase mac address
-  String    bridgeId   = "";  // uppercase EUI-64 bridge ID (16 hex chars)
+  WiFiUDP   espalexaUdp_;
+  IPAddress ipMulti_;
+  uint32_t  mac24_;            // bottom 24 bits of mac
+  String    escapedMac_ = "";  // lowercase mac address
+  String    bridgeId_   = "";  // uppercase EUI-64 bridge ID (16 hex chars)
 
   // private member functions
-  const char* modeString(EspalexaColorMode m) {
-    if (m == EspalexaColorMode::xy) {
+  static const char* modeString(EspalexaColorMode m) {
+    if (m == EspalexaColorMode::kXy) {
       return "xy";
     }
-    if (m == EspalexaColorMode::hs) {
+    if (m == EspalexaColorMode::kHs) {
       return "hs";
     }
     return "ct";
   }
 
-  const char* typeString(EspalexaDeviceType t) {
+  static const char* typeString(EspalexaDeviceType t) {
     switch (t) {
-      case EspalexaDeviceType::dimmable:
+      case EspalexaDeviceType::kDimmable:
         return "Dimmable light";
-      case EspalexaDeviceType::whitespectrum:
+      case EspalexaDeviceType::kWhitespectrum:
         return "Color temperature light";
-      case EspalexaDeviceType::color:
+      case EspalexaDeviceType::kColor:
         return "Color light";
-      case EspalexaDeviceType::extendedcolor:
+      case EspalexaDeviceType::kExtendedcolor:
         return "Extended color light";
       default:
         return "";
     }
   }
 
-  const char* modelidString(EspalexaDeviceType t) {
+  static const char* modelidString(EspalexaDeviceType t) {
     switch (t) {
-      case EspalexaDeviceType::dimmable:
+      case EspalexaDeviceType::kDimmable:
         return "LWB010";
-      case EspalexaDeviceType::whitespectrum:
+      case EspalexaDeviceType::kWhitespectrum:
         return "LWT010";
-      case EspalexaDeviceType::color:
+      case EspalexaDeviceType::kColor:
         return "LST001";
-      case EspalexaDeviceType::extendedcolor:
+      case EspalexaDeviceType::kExtendedcolor:
         return "LCT015";
       default:
         return "";
     }
   }
 
-  void encodeLightId(uint8_t idx, char* out) {
+  static void encodeLightId(uint8_t idx, const char* out) {
     String mymac = WiFi.macAddress();
     sprintf(out, "%02X:%s:AB-%02X", idx, mymac.c_str(), idx);
   }
 
   // construct 'globally unique' Json dict key fitting into signed int
-  inline int encodeLightKey(uint8_t idx) {
+  int encodeLightKey(uint8_t idx) const {
     // return idx +1;
     static_assert(ESPALEXA_MAXDEVICES <= 128, "");
-    return (mac24 << 7) | idx;
+    return (mac24_ << 7) | idx;
   }
 
   // get device index from Json key
-  uint8_t decodeLightKey(int key) {
+  uint8_t decodeLightKey(int key) const {
     // return key -1;
-    return ((static_cast<uint32_t>(key) >> 7) == mac24) ? (key & 127U) : 255U;
+    return ((static_cast<uint32_t>(key) >> 7) == mac24_) ? (key & 127U) : 255U;
   }
 
   // device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color
   // temperature device LWT010, color device LST001)
-  void deviceJsonString(EspalexaDevice* dev, char* buf,
+  void deviceJsonString(EspalexaDevice* dev, const char* buf,
                         size_t maxBuf)  // softhack007 "size" parameter added, to avoid buffer overrun
   {
     char buf_lightid[27];
@@ -153,22 +155,22 @@ class Espalexa {
     char buf_col[80] = "";
     // color support
     if (static_cast<uint8_t>(dev->getType()) > 2) {
-      // TODO: %f is not working for some reason on ESP8266 in v0.11.0 (was fine in 0.10.2). Need to investigate
+      // TODO: claudio - %f is not working for some reason on ESP8266 in v0.11.0 (was fine in 0.10.2). Need to investigate
       // sprintf(buf_col,",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%f,%f]"
       //   ,dev->getHue(), dev->getSat(), dev->getX(), dev->getY());
-      snprintf(buf_col, sizeof(buf_col), ",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%s,%s]", dev->getHue(),
+      snprintf(buf_col, sizeof(buf_col), R"(,"hue":%u,"sat":%u,"effect":"none","xy":[%s,%s])", dev->getHue(),
                dev->getSat(), (String(dev->getX())).c_str(), (String(dev->getY())).c_str());
     }
 
     char buf_ct[16] = "";
     // white spectrum support
-    if (static_cast<uint8_t>(dev->getType()) > 1 && dev->getType() != EspalexaDeviceType::color) {
+    if (static_cast<uint8_t>(dev->getType()) > 1 && dev->getType() != EspalexaDeviceType::kColor) {
       snprintf(buf_ct, sizeof(buf_ct), ",\"ct\":%u", dev->getCt());
     }
 
     char buf_cm[20] = "";
     if (static_cast<uint8_t>(dev->getType()) > 1) {
-      snprintf(buf_cm, sizeof(buf_cm), "\",\"colormode\":\"%s", modeString(dev->getColorMode()));
+      snprintf(buf_cm, sizeof(buf_cm), R"(","colormode":"%s)", modeString(dev->getColorMode()));
     }
 
     snprintf(
@@ -219,9 +221,9 @@ class Espalexa {
 #else
     EA_DEBUGLN("URI: " + server->url());
     EA_DEBUGLN("Body: " + body);
-    if (!handleAlexaApiCall(server))
+    if (!handleAlexaApiCall(server_))
 #endif
-      server->send(404, "text/plain", "Not Found (espalexa)");
+      server_->send(404, "text/plain", "Not Found (espalexa)");
   }
 
   // send description.xml device property page
@@ -251,9 +253,9 @@ class Espalexa {
                   "<presentationURL>index.html</presentationURL>"
                   "</device>"
                   "</root>"),
-             s, s, escapedMac.c_str(), escapedMac.c_str());
+             s, s, escapedMac_.c_str(), escapedMac_.c_str());
 
-    server->send(200, "text/xml", buf);
+    server_->send(200, "text/xml", buf);
 
     EA_DEBUGLN("Send setup.xml");
     EA_DEBUGLN(buf);
@@ -262,20 +264,20 @@ class Espalexa {
   // init the server
   void startHttpServer() {
 #ifdef ESPALEXA_ASYNC
-    if (serverAsync == nullptr) {
-      serverAsync = new AsyncWebServer(80);
-      serverAsync->onNotFound([=](AsyncWebServerRequest* request) {
-        server = request;
+    if (serverAsync_ == nullptr) {
+      serverAsync_ = new AsyncWebServer(80);
+      serverAsync_->onNotFound([=](AsyncWebServerRequest* request) {
+        server_ = request;
         serveNotFound();
       });
     }
 
-    serverAsync->onRequestBody(
-        [=](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+    serverAsync_->onRequestBody(
+        [=](AsyncWebServerRequest*  /*request*/, const uint8_t* data, size_t len, size_t  /*index*/, size_t  /*total*/) {
           char b[len + 1];
           b[len] = 0;
           memcpy(b, data, len);
-          body = b;  // save the body so we can use it for the API call
+          body_ = b;  // save the body so we can use it for the API call
           EA_DEBUG("Received body: ");
           EA_DEBUGLN(body);
         });
@@ -285,11 +287,11 @@ class Espalexa {
       servePage();
     });
 #endif
-    serverAsync->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest* request) {
-      server = request;
+    serverAsync_->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest* request) {
+      server_ = request;
       serveDescription();
     });
-    serverAsync->begin();
+    serverAsync_->begin();
 
 #else
     if (server == nullptr) {
@@ -329,15 +331,15 @@ class Espalexa {
                   "ST: urn:schemas-upnp-org:device:Basic:1\r\n"                                    // _deviceType
                   "USN: uuid:2f402f80-da50-11e1-9b23-%s::urn:schemas-upnp-org:device:Basic:1\r\n"  // _uuid::_deviceType
                   "\r\n"),
-             s, bridgeId.c_str(), escapedMac.c_str());
+             s, bridgeId_.c_str(), escapedMac_.c_str());
 
-    espalexaUdp.beginPacket(espalexaUdp.remoteIP(), espalexaUdp.remotePort());
+    espalexaUdp_.beginPacket(espalexaUdp_.remoteIP(), espalexaUdp_.remotePort());
 #ifdef ARDUINO_ARCH_ESP32
-    espalexaUdp.write(reinterpret_cast<uint8_t*>(buf), strlen(buf));
+    espalexaUdp_.write(reinterpret_cast<uint8_t*>(buf), strlen(buf));
 #else
     espalexaUdp.write(buf);
 #endif
-    espalexaUdp.endPacket();
+    espalexaUdp_.endPacket();
   }
 
  public:
@@ -354,30 +356,30 @@ class Espalexa {
     EA_DEBUGLN("Espalexa Begin...");
     EA_DEBUG("MAXDEVICES ");
     EA_DEBUGLN(ESPALEXA_MAXDEVICES);
-    escapedMac = WiFi.macAddress();
-    escapedMac.replace(":", "");
-    escapedMac.toLowerCase();
+    escapedMac_ = WiFi.macAddress();
+    escapedMac_.replace(":", "");
+    escapedMac_.toLowerCase();
 
     // Compute EUI-64 bridge ID from MAC-48: insert standard "FFFE" padding between
     // the first 6 hex chars (OUI/manufacturer) and last 6 hex chars (device), then uppercase
-    bridgeId = escapedMac.substring(0, 6) + "fffe" + escapedMac.substring(6);
-    bridgeId.toUpperCase();
+    bridgeId_ = escapedMac_.substring(0, 6) + "fffe" + escapedMac_.substring(6);
+    bridgeId_.toUpperCase();
 
-    String macSubStr = escapedMac.substring(6, 12);
-    mac24            = strtol(macSubStr.c_str(), 0, 16);
+    String macSubStr = escapedMac_.substring(6, 12);
+    mac24_            = strtol(macSubStr.c_str(), 0, 16);
 
 #ifdef ESPALEXA_ASYNC
-    serverAsync = externalServer;
+    serverAsync_ = externalServer;
 #else
     server = externalServer;
 #endif
 #ifdef ARDUINO_ARCH_ESP32
-    udpConnected = espalexaUdp.beginMulticast(IPAddress(239, 255, 255, 250), 1900);
+    udpConnected_ = (espalexaUdp_.beginMulticast(IPAddress(239, 255, 255, 250), 1900) != 0u);
 #else
     udpConnected = espalexaUdp.beginMulticast(Network.localIP(), IPAddress(239, 255, 255, 250), 1900);
 #endif
 
-    if (udpConnected) {
+    if (udpConnected_) {
       startHttpServer();
       EA_DEBUGLN("Done");
       return true;
@@ -387,8 +389,8 @@ class Espalexa {
   }
 
   // get device count, function only in WLED version of Espalexa
-  uint8_t getDeviceCount() {
-    return currentDeviceCount;
+  uint8_t getDeviceCount() const {
+    return currentDeviceCount_;
   }
 
   // service loop
@@ -400,10 +402,10 @@ class Espalexa {
     server->handleClient();
 #endif
 
-    if (!udpConnected) {
+    if (!udpConnected_) {
       return;
     }
-    int packetSize = espalexaUdp.parsePacket();
+    int packetSize = espalexaUdp_.parsePacket();
     if (packetSize < 1) {
       return;  // no new udp packet
     }
@@ -411,11 +413,11 @@ class Espalexa {
     EA_DEBUGLN("Got UDP!");
 
     unsigned char packetBuffer[packetSize + 1];  // buffer to hold incoming udp packet
-    espalexaUdp.read(packetBuffer, packetSize);
+    espalexaUdp_.read(packetBuffer, packetSize);
     packetBuffer[packetSize] = 0;
 
-    espalexaUdp.flush();
-    if (!discoverable) {
+    espalexaUdp_.flush();
+    if (!discoverable_) {
       return;  // do not reply to M-SEARCH if not discoverable
     }
 
@@ -436,33 +438,32 @@ class Espalexa {
 
   // Function only in WLED version of Espalexa, does not actually release memory for names
   void removeAllDevices() {
-    currentDeviceCount = 0;
-    return;
-  }
+    currentDeviceCount_ = 0;
+     }
 
   // returns device index or 0 on failure
   uint8_t addDevice(EspalexaDevice* d) {
     EA_DEBUG("Adding device ");
     EA_DEBUGLN((currentDeviceCount + 1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) {
+    if (currentDeviceCount_ >= ESPALEXA_MAXDEVICES) {
       return 0;
     }
     if (d == nullptr) {
       return 0;
     }
-    d->setId(currentDeviceCount);
-    devices[currentDeviceCount] = d;
-    return ++currentDeviceCount;
+    d->setId(currentDeviceCount_);
+    devices_[currentDeviceCount_] = d;
+    return ++currentDeviceCount_;
   }
 
   // brightness-only callback
   uint8_t addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0) {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount + 1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) {
+    if (currentDeviceCount_ >= ESPALEXA_MAXDEVICES) {
       return 0;
     }
-    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
+    auto* d = new EspalexaDevice(std::move(deviceName), callback, initialValue);
     return addDevice(d);
   }
 
@@ -470,41 +471,41 @@ class Espalexa {
   uint8_t addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0) {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount + 1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) {
+    if (currentDeviceCount_ >= ESPALEXA_MAXDEVICES) {
       return 0;
     }
-    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
+    auto* d = new EspalexaDevice(std::move(deviceName), callback, initialValue);
     return addDevice(d);
   }
 
   uint8_t addDevice(String deviceName, DeviceCallbackFunction callback,
-                    EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0) {
+                    EspalexaDeviceType t = EspalexaDeviceType::kDimmable, uint8_t initialValue = 0) {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount + 1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) {
+    if (currentDeviceCount_ >= ESPALEXA_MAXDEVICES) {
       return 0;
     }
-    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, t, initialValue);
+    auto* d = new EspalexaDevice(std::move(deviceName), callback, t, initialValue);
     return addDevice(d);
   }
 
   void renameDevice(uint8_t id, const String& deviceName) {
     unsigned int index = id - 1;
-    if (index < currentDeviceCount) {
-      devices[index]->setName(deviceName);
+    if (index < currentDeviceCount_) {
+      devices_[index]->setName(deviceName);
     }
   }
 
 // basic implementation of Philips hue api functions needed for basic Alexa control
 #ifdef ESPALEXA_ASYNC
   bool handleAlexaApiCall(AsyncWebServerRequest* request) {
-    server     = request;         // copy request reference
+    server_     = request;         // copy request reference
     String req = request->url();  // body from global variable
     EA_DEBUGLN(request->contentType());
     if (request->hasParam("body", true))  // This is necessary, otherwise ESP crashes if there is no body
     {
       EA_DEBUG("BodyMethod2");
-      body = request->getParam("body", true)->value();
+      body_ = request->getParam("body", true)->value();
     }
     EA_DEBUG("FinalBody: ");
     EA_DEBUGLN(body);
@@ -519,16 +520,16 @@ class Espalexa {
     }
     EA_DEBUGLN("ok");
 
-    if (body.indexOf("devicetype") > 0)  // client wants a hue api username, we don't care and give static
+    if (body_.indexOf("devicetype") > 0)  // client wants a hue api username, we don't care and give static
     {
       EA_DEBUGLN("devType");
-      body = "";
-      server->send(200, "application/json",
-                   "[{\"success\":{\"username\":\"2BLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBGr\"}}]");
+      body_ = "";
+      server_->send(200, "application/json",
+                   R"([{"success":{"username":"2BLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBGr"}}])");
       return true;
     }
 
-    if ((req.indexOf("state") > 0) && (body.length() > 0))  // client wants to control light
+    if ((req.indexOf("state") > 0) && (body_.length() > 0))  // client wants to control light
     {
       uint32_t devId = req.substring(req.indexOf("lights") + 7).toInt();
       EA_DEBUG("ls");
@@ -536,57 +537,57 @@ class Espalexa {
       unsigned idx = decodeLightKey(devId);
       EA_DEBUGLN(idx);
       char buf[50];
-      snprintf(buf, sizeof(buf), "[{\"success\":{\"/lights/%u/state/\": true}}]", devId);
-      server->send(200, "application/json", buf);
-      if (idx >= currentDeviceCount) {
+      snprintf(buf, sizeof(buf), R"([{"success":{"/lights/%u/state/": true}}])", devId);
+      server_->send(200, "application/json", buf);
+      if (idx >= currentDeviceCount_) {
         return true;  // return if invalid ID
       }
-      EspalexaDevice* dev = devices[idx];
+      EspalexaDevice* dev = devices_[idx];
 
-      dev->setPropertyChanged(EspalexaDeviceProperty::none);
+      dev->setPropertyChanged(EspalexaDeviceProperty::kNone);
 
-      if (body.indexOf("false") > 0)  // OFF command
+      if (body_.indexOf("false") > 0)  // OFF command
       {
         dev->setValue(0);
-        dev->setPropertyChanged(EspalexaDeviceProperty::off);
+        dev->setPropertyChanged(EspalexaDeviceProperty::kOff);
         dev->doCallback();
         return true;
       }
 
-      if (body.indexOf("true") > 0)  // ON command
+      if (body_.indexOf("true") > 0)  // ON command
       {
         dev->setValue(dev->getLastValue());
-        dev->setPropertyChanged(EspalexaDeviceProperty::on);
+        dev->setPropertyChanged(EspalexaDeviceProperty::kOn);
       }
 
-      if (body.indexOf("bri") > 0)  // BRIGHTNESS command
+      if (body_.indexOf("bri") > 0)  // BRIGHTNESS command
       {
-        uint8_t briL = body.substring(body.indexOf("bri") + 5).toInt();
+        uint8_t briL = body_.substring(body_.indexOf("bri") + 5).toInt();
         if (briL == 255) {
           dev->setValue(255);
         } else {
           dev->setValue(briL + 1);
         }
-        dev->setPropertyChanged(EspalexaDeviceProperty::bri);
+        dev->setPropertyChanged(EspalexaDeviceProperty::kBri);
       }
 
-      if (body.indexOf("xy") > 0)  // COLOR command (XY mode)
+      if (body_.indexOf("xy") > 0)  // COLOR command (XY mode)
       {
-        dev->setColorXY(body.substring(body.indexOf("[") + 1).toFloat(),
-                        body.substring(body.indexOf(",0") + 1).toFloat());
-        dev->setPropertyChanged(EspalexaDeviceProperty::xy);
+        dev->setColorXY(body_.substring(body_.indexOf("[") + 1).toFloat(),
+                        body_.substring(body_.indexOf(",0") + 1).toFloat());
+        dev->setPropertyChanged(EspalexaDeviceProperty::kXy);
       }
 
-      if (body.indexOf("hue") > 0)  // COLOR command (HS mode)
+      if (body_.indexOf("hue") > 0)  // COLOR command (HS mode)
       {
-        dev->setColor(body.substring(body.indexOf("hue") + 5).toInt(), body.substring(body.indexOf("sat") + 5).toInt());
-        dev->setPropertyChanged(EspalexaDeviceProperty::hs);
+        dev->setColor(body_.substring(body_.indexOf("hue") + 5).toInt(), body_.substring(body_.indexOf("sat") + 5).toInt());
+        dev->setPropertyChanged(EspalexaDeviceProperty::kHs);
       }
 
-      if (body.indexOf("ct") > 0)  // COLOR TEMP command (white spectrum)
+      if (body_.indexOf("ct") > 0)  // COLOR TEMP command (white spectrum)
       {
-        dev->setColor(body.substring(body.indexOf("ct") + 4).toInt());
-        dev->setPropertyChanged(EspalexaDeviceProperty::ct);
+        dev->setColor(body_.substring(body_.indexOf("ct") + 4).toInt());
+        dev->setPropertyChanged(EspalexaDeviceProperty::kCt);
       }
 
       dev->doCallback();
@@ -610,72 +611,71 @@ class Espalexa {
       {
         EA_DEBUGLN("lAll");
         String jsonTemp = "{";
-        for (int i = 0; i < currentDeviceCount; i++) {
+        for (int i = 0; i < currentDeviceCount_; i++) {
           jsonTemp += '"';
           jsonTemp += encodeLightKey(i);
           jsonTemp += '"';
           jsonTemp += ':';
 
           char buf[512];
-          deviceJsonString(devices[i], buf, sizeof(buf) - 1);
+          deviceJsonString(devices_[i], buf, sizeof(buf) - 1);
           jsonTemp += buf;
-          if (i < currentDeviceCount - 1) {
+          if (i < currentDeviceCount_ - 1) {
             jsonTemp += ',';
           }
         }
         jsonTemp += '}';
-        server->send(200, "application/json", jsonTemp);
+        server_->send(200, "application/json", jsonTemp);
       } else  // client wants one light (devId)
       {
         EA_DEBUGLN(devId);
         unsigned int idx = decodeLightKey(devId);
 
-        if (idx >= currentDeviceCount) {
+        if (idx >= currentDeviceCount_) {
           idx = 0;  // send first device if invalid
         }
-        if (currentDeviceCount == 0) {
-          server->send(200, "application/json", "{}");
+        if (currentDeviceCount_ == 0) {
+          server_->send(200, "application/json", "{}");
           return true;
         }
         char buf[512];
-        deviceJsonString(devices[idx], buf, sizeof(buf) - 1);
-        server->send(200, "application/json", buf);
+        deviceJsonString(devices_[idx], buf, sizeof(buf) - 1);
+        server_->send(200, "application/json", buf);
       }
 
       return true;
     }
 
     // we don't care about other api commands at this time and send empty JSON
-    server->send(200, "application/json", "{}");
+    server_->send(200, "application/json", "{}");
     return true;
   }
 
   // set whether Alexa can discover any devices
   void setDiscoverable(bool d) {
-    discoverable = d;
+    discoverable_ = d;
   }
 
   // get EspalexaDevice at specific index
   EspalexaDevice* getDevice(uint8_t index) {
-    if (index >= currentDeviceCount) {
+    if (index >= currentDeviceCount_) {
       return nullptr;
     }
-    return devices[index];
+    return devices_[index];
   }
 
   // is an unique device ID
   String getEscapedMac() {
-    return escapedMac;
+    return escapedMac_;
   }
 
   // convert brightness (0-255) to percentage
-  uint8_t toPercent(uint8_t bri) {
+  static uint8_t toPercent(uint8_t bri) {
     uint16_t perc = bri * 100;
     return perc / 255;
   }
 
-  ~Espalexa() {
-  }  // note: Espalexa is NOT meant to be destructed
+  ~Espalexa() = default;  // note: Espalexa is NOT meant to be destructed
 };
 
 #endif

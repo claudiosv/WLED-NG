@@ -7,53 +7,53 @@
 
 class EspalexaDevice;
 
-typedef std::function<void(uint8_t b)>                BrightnessCallbackFunction;
-typedef std::function<void(EspalexaDevice* d)>        DeviceCallbackFunction;
-typedef std::function<void(uint8_t br, uint32_t col)> ColorCallbackFunction;
+using BrightnessCallbackFunction = ;
+using DeviceCallbackFunction = ;
+using ColorCallbackFunction = ;
 
 enum class EspalexaColorMode : uint8_t {
-  none = 0,
-  ct   = 1,
-  hs   = 2,
-  xy   = 3
+  kNone = 0,
+  kCt   = 1,
+  kHs   = 2,
+  kXy   = 3
 };
 enum class EspalexaDeviceType : uint8_t {
-  onoff         = 0,
-  dimmable      = 1,
-  whitespectrum = 2,
-  color         = 3,
-  extendedcolor = 4
+  kOnoff         = 0,
+  kDimmable      = 1,
+  kWhitespectrum = 2,
+  kColor         = 3,
+  kExtendedcolor = 4
 };
 enum class EspalexaDeviceProperty : uint8_t {
-  none = 0,
-  on   = 1,
-  off  = 2,
-  bri  = 3,
-  hs   = 4,
-  ct   = 5,
-  xy   = 6
+  kNone = 0,
+  kOn   = 1,
+  kOff  = 2,
+  kBri  = 3,
+  kHs   = 4,
+  kCt   = 5,
+  kXy   = 6
 };
 
 class EspalexaDevice {
  private:
-  String                     _deviceName;
+  String                     deviceName_;
   BrightnessCallbackFunction _callback    = nullptr;
   DeviceCallbackFunction     _callbackDev = nullptr;
   ColorCallbackFunction      _callbackCol = nullptr;
-  uint8_t                    _val, _val_last, _sat = 0;
-  uint16_t                   _hue = 0, _ct = 0;
-  float                      _x = 0.5f, _y = 0.5f;
-  uint32_t                   _rgb = 0;
-  uint8_t                    _id  = 0;
-  EspalexaDeviceType         _type;
-  EspalexaDeviceProperty     _changed = EspalexaDeviceProperty::none;
-  EspalexaColorMode          _mode    = EspalexaColorMode::xy;
+  uint8_t                    val_, val_last_, sat_ = 0;
+  uint16_t                   hue_ = 0, ct_ = 0;
+  float                      x_ = 0.5F, y_ = 0.5F;
+  uint32_t                   rgb_ = 0;
+  uint8_t                    id_  = 0;
+  EspalexaDeviceType         type_;
+  EspalexaDeviceProperty     changed_ = EspalexaDeviceProperty::kNone;
+  EspalexaColorMode          mode_    = EspalexaColorMode::kXy;
 
  public:
   EspalexaDevice();
   ~EspalexaDevice();
   EspalexaDevice(String deviceName, BrightnessCallbackFunction bcb, uint8_t initialValue = 0);
-  EspalexaDevice(String deviceName, DeviceCallbackFunction dcb, EspalexaDeviceType t = EspalexaDeviceType::dimmable,
+  EspalexaDevice(String deviceName, DeviceCallbackFunction dcb, EspalexaDeviceType t = EspalexaDeviceType::kDimmable,
                  uint8_t initialValue = 0);
   EspalexaDevice(String deviceName, ColorCallbackFunction ccb, uint8_t initialValue = 0);
 

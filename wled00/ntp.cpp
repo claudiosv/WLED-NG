@@ -16,43 +16,49 @@ static bool checkNTPResponse();
  * Acquires time from NTP server
  */
 // #define WLED_DEBUG_NTP
-#define NTP_SYNC_INTERVAL 42000UL  // Get fresh NTP time about twice per day
+enum {
+NTP_SYNC_INTERVAL = 42000UL  // Get fresh NTP time about twice per day
+};
 
 static Timezone* tz;
 
-#define TZ_UTC                0
-#define TZ_UK                 1
-#define TZ_EUROPE_CENTRAL     2
-#define TZ_EUROPE_EASTERN     3
-#define TZ_US_EASTERN         4
-#define TZ_US_CENTRAL         5
-#define TZ_US_MOUNTAIN        6
-#define TZ_US_ARIZONA         7
-#define TZ_US_PACIFIC         8
-#define TZ_CHINA              9
-#define TZ_JAPAN              10
-#define TZ_AUSTRALIA_EASTERN  11
-#define TZ_NEW_ZEALAND        12
-#define TZ_NORTH_KOREA        13
-#define TZ_INDIA              14
-#define TZ_SASKACHEWAN        15
-#define TZ_AUSTRALIA_NORTHERN 16
-#define TZ_AUSTRALIA_SOUTHERN 17
-#define TZ_HAWAII             18
-#define TZ_NOVOSIBIRSK        19
-#define TZ_ANCHORAGE          20
-#define TZ_MX_CENTRAL         21
-#define TZ_PAKISTAN           22
-#define TZ_BRASILIA           23
-#define TZ_AUSTRALIA_WESTERN  24
+enum {
+TZ_UTC =                0,
+TZ_UK =                 1,
+TZ_EUROPE_CENTRAL =     2,
+TZ_EUROPE_EASTERN =     3,
+TZ_US_EASTERN =         4,
+TZ_US_CENTRAL =         5,
+TZ_US_MOUNTAIN =        6,
+TZ_US_ARIZONA =         7,
+TZ_US_PACIFIC =         8,
+TZ_CHINA =              9,
+TZ_JAPAN =              10,
+TZ_AUSTRALIA_EASTERN =  11,
+TZ_NEW_ZEALAND =        12,
+TZ_NORTH_KOREA =        13,
+TZ_INDIA =              14,
+TZ_SASKACHEWAN =        15,
+TZ_AUSTRALIA_NORTHERN = 16,
+TZ_AUSTRALIA_SOUTHERN = 17,
+TZ_HAWAII =             18,
+TZ_NOVOSIBIRSK =        19,
+TZ_ANCHORAGE =          20,
+TZ_MX_CENTRAL =         21,
+TZ_PAKISTAN =           22,
+TZ_BRASILIA =           23,
+TZ_AUSTRALIA_WESTERN =  24
+};
 
-#define TZ_COUNT 25
-#define TZ_INIT  255
+enum {
+TZ_COUNT = 25,
+TZ_INIT =  255
+};
 
 static byte tzCurrent = TZ_INIT;  // uninitialized
 
 /* C++11 form -- static std::array<std::pair<TimeChangeRule, TimeChangeRule>, TZ_COUNT> TZ_TABLE = {{ */
-static const std::pair<TimeChangeRule, TimeChangeRule> TZ_TABLE[] = {
+static const std::pair<TimeChangeRule, TimeChangeRule> kTzTable[] = {
     /* TZ_UTC */ {
                   {Last, Sun, Mar, 1, 0},                             // UTC
                              {Last, Sun, Mar, 1, 0}   // Same
@@ -171,9 +177,10 @@ static const std::pair<TimeChangeRule, TimeChangeRule> TZ_TABLE[] = {
    }
 };
 
-void updateTimezone() {
+static void updateTimezone() {
   delete tz;
-  TimeChangeRule tcrDaylight, tcrStandard;
+  TimeChangeRule tcrDaylight;
+  TimeChangeRule tcrStandard;
   auto           tz_table_entry = currentTimezone;
   if (tz_table_entry >= TZ_COUNT) {
     tz_table_entry = 0;
@@ -245,7 +252,7 @@ void handleNetworkTime() {
               // Retry
               ntpDNSlookup = AsyncDNS::query(ntpServerName, ntpDNSlookup);
             }
-            ntpLastSyncTime = millis() - (1000 * NTP_SYNC_INTERVAL - 300000);  // pause for 5 minutes
+            ntpLastSyncTime = millis() - ((1000 * NTP_SYNC_INTERVAL) - 300000);  // pause for 5 minutes
             break;
         }
       } else {
@@ -365,7 +372,7 @@ void updateLocalTime() {
   localTime         = tz->toLocal(tmc);
 }
 
-void getTimeString(char* out) {
+void getTimeString(const char* out) {
   updateLocalTime();
   byte hr = hour(localTime);
   if (useAMPM) {
@@ -486,12 +493,12 @@ void checkTimers() {
         if (!sunrise) {
           continue;
         }
-        tt = sunrise + t.minute * 60;
+        tt = sunrise + (t.minute * 60);
       } else if (t.isSunset()) {
         if (!sunset) {
           continue;
         }
-        tt = sunset + t.minute * 60;
+        tt = sunset + (t.minute * 60);
       } else {
         struct tm tim = {};
         tim.tm_year   = year(localTime) - 1900;
@@ -526,28 +533,28 @@ void checkTimers() {
   }
 }
 
-#define ZENITH -0.83
+#define ZENITH (-0.83)
 // get sunrise (or sunset) time (in minutes) for a given day at a given geo location. Returns >= INT16_MAX in case of
 // "no sunset"
 static int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset = false) {
   // 1. first calculate the day of the year
   float N1 = 275 * month / 9;
   float N2 = (month + 9) / 12;
-  float N3 = (1.0f + floor_t((year - 4 * floor_t(year / 4) + 2.0f) / 3.0f));
-  float N  = N1 - (N2 * N3) + day - 30.0f;
+  float N3 = (1.0F + floor_t((year - (4 * floor_t(year / 4)) + 2.0F) / 3.0F));
+  float N  = N1 - (N2 * N3) + day - 30.0F;
 
   // 2. convert the longitude to hour value and calculate an approximate time
-  float lngHour = lon / 15.0f;
+  float lngHour = lon / 15.0F;
   float t       = N + (((sunset ? 18 : 6) - lngHour) / 24);
 
   // 3. calculate the Sun's mean anomaly
-  float M = (0.9856f * t) - 3.289f;
+  float M = (0.9856F * t) - 3.289F;
 
   // 4. calculate the Sun's true longitude
-  float L = fmod_t(M + (1.916f * sin_t(DEG_TO_RAD * M)) + (0.02f * sin_t(2 * DEG_TO_RAD * M)) + 282.634f, 360.0f);
+  float L = fmod_t(M + (1.916F * sin_t(DEG_TO_RAD * M)) + (0.02F * sin_t(2 * DEG_TO_RAD * M)) + 282.634F, 360.0F);
 
   // 5a. calculate the Sun's right ascension
-  float RA = fmod_t(RAD_TO_DEG * atan_t(0.91764f * tan_t(DEG_TO_RAD * L)), 360.0f);
+  float RA = fmod_t(RAD_TO_DEG * atan_t(0.91764F * tan_t(DEG_TO_RAD * L)), 360.0F);
 
   // 5b. right ascension value needs to be in the same quadrant as L
   float Lquadrant  = floor_t(L / 90) * 90;
@@ -555,30 +562,30 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
   RA               = RA + (Lquadrant - RAquadrant);
 
   // 5c. right ascension value needs to be converted into hours
-  RA /= 15.0f;
+  RA /= 15.0F;
 
   // 6. calculate the Sun's declination
-  float sinDec = 0.39782f * sin_t(DEG_TO_RAD * L);
+  float sinDec = 0.39782F * sin_t(DEG_TO_RAD * L);
   float cosDec = cos_t(asin_t(sinDec));
 
   // 7a. calculate the Sun's local hour angle
   float cosH = (sin_t(DEG_TO_RAD * ZENITH) - (sinDec * sin_t(DEG_TO_RAD * lat))) / (cosDec * cos_t(DEG_TO_RAD * lat));
-  if ((cosH > 1.0f) && !sunset) {
+  if ((cosH > 1.0F) && !sunset) {
     return INT16_MAX;  // the sun never rises on this location (on the specified date)
   }
-  if ((cosH < -1.0f) && sunset) {
+  if ((cosH < -1.0F) && sunset) {
     return INT16_MAX;  // the sun never sets on this location (on the specified date)
   }
 
   // 7b. finish calculating H and convert into hours
-  float H = sunset ? RAD_TO_DEG * acos_t(cosH) : 360 - RAD_TO_DEG * acos_t(cosH);
-  H /= 15.0f;
+  float H = sunset ? RAD_TO_DEG * acos_t(cosH) : 360 - (RAD_TO_DEG * acos_t(cosH));
+  H /= 15.0F;
 
   // 8. calculate local mean time of rising/setting
-  float T = H + RA - (0.06571f * t) - 6.622f;
+  float T = H + RA - (0.06571F * t) - 6.622F;
 
   // 9. adjust back to UTC
-  float UT = fmod_t(T - lngHour, 24.0f);
+  float UT = fmod_t(T - lngHour, 24.0F);
 
   // return in minutes from midnight
   return UT * 60;
@@ -602,7 +609,7 @@ void calculateSunriseAndSunset() {
     int minUTC     = 0;
     int retryCount = 0;
     do {
-      time_t theDay = localTime - retryCount * 86400;  // one day back = 86400 seconds
+      time_t theDay = localTime - (retryCount * 86400);  // one day back = 86400 seconds
       minUTC        = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, false);
       DEBUG_PRINTF_P("* sunrise (minutes from UTC = %d\n", minUTC);
       retryCount++;
@@ -623,7 +630,7 @@ void calculateSunriseAndSunset() {
 
     retryCount = 0;
     do {
-      time_t theDay = localTime - retryCount * 86400;  // one day back = 86400 seconds
+      time_t theDay = localTime - (retryCount * 86400);  // one day back = 86400 seconds
       minUTC        = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, true);
       DEBUG_PRINTF_P("* sunset  (minutes from UTC = %d\n", minUTC);
       retryCount++;

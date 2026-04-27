@@ -10,7 +10,9 @@ bool parseLx(int lxValue, byte* rgbw) {
   DEBUG_PRINTLN(lxValue);
 
   bool  ok    = false;
-  float lxRed = 0, lxGreen = 0, lxBlue = 0;
+  float lxRed = 0;
+  float lxGreen = 0;
+  float lxBlue = 0;
 
   if (lxValue < 200000000) {
     // Loxone RGB
@@ -24,7 +26,7 @@ bool parseLx(int lxValue, byte* rgbw) {
     float    tmpBri = floor((lxValue - 200000000) / 10000);
     uint16_t ct     = (lxValue - 200000000) - ((static_cast<uint8_t>(tmpBri)) * 10000);
 
-    tmpBri *= 2.55f;
+    tmpBri *= 2.55F;
     tmpBri = constrain(tmpBri, 0, 255);
 
     colorKtoRGB(ct, rgbw);
@@ -65,7 +67,7 @@ void parseLxJson(int lxValue, byte segId, bool secondary) {
     DEBUG_PRINT("LX: segment ");
     DEBUG_PRINTLN(segId);
     strip.getSegment(segId).setColor(
-        secondary,
+        static_cast<uint8_t>(secondary),
         RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));  // legacy values handled as well in json.cpp by stateUpdated()
   }
 }

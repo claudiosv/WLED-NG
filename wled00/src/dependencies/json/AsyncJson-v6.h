@@ -14,6 +14,8 @@
 #define ASYNC_JSON_H_
 #include <Print.h>
 
+#include <utility>
+
 #include "ArduinoJson-v6.h"
 
 #define DYNAMIC_JSON_DOCUMENT_SIZE 16384
@@ -25,41 +27,40 @@
 class ChunkPrint : public Print {
  private:
   uint8_t *_destination;
-  size_t   _to_skip;
+  size_t   to_skip_;
   size_t   _to_write;
-  size_t   _pos;
+  size_t   _pos{0};
 
  public:
   ChunkPrint(uint8_t *destination, size_t from, size_t len)
-      : _destination(destination), _to_skip(from), _to_write(len), _pos{0} {
+      : _destination(destination), to_skip_(from), _to_write(len) {
   }
-  virtual ~ChunkPrint() {
-  }
-  size_t write(uint8_t c) {
-    if (_to_skip > 0) {
-      _to_skip--;
+  ~ChunkPrint() override = default;
+  size_t write(uint8_t c) override {
+    if (to_skip_ > 0) {
+      to_skip_--;
       return 1;
-    } else if (_to_write > 0) {
+    } if (_to_write > 0) {
       _to_write--;
       _destination[_pos++] = c;
       return 1;
     }
     return 0;
   }
-  size_t write(const uint8_t *buffer, size_t size) {
+  size_t write(const uint8_t *buffer, size_t size) override {
     return this->Print::write(buffer, size);
   }
 };
 
 class AsyncJsonResponse : public AsyncAbstractResponse {
  private:
-  DynamicJsonDocument _jsonBuffer;
+  DynamicJsonDocument jsonBuffer_;
 
-  JsonVariant _root;
-  bool        _isValid;
+  JsonVariant root_;
+  bool        isValid_;
 
  public:
-  AsyncJsonResponse(JsonDocument *ref, bool isArray = false) : _jsonBuffer(1), _isValid{false} {
+  explicit AsyncJsonResponse(JsonDocument *ref, bool isArray = false) : _jsonBuffer(1), isValid_{false} {
     _code        = 200;
     _contentType = CONTENT_TYPE_JSON;
     if (isArray) {
@@ -69,8 +70,8 @@ class AsyncJsonResponse : public AsyncAbstractResponse {
     }
   }
 
-  AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE, bool isArray = false)
-      : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
+  explicit AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE, bool isArray = false)
+      : _jsonBuffer(maxJsonBufferSize), isValid_{false} {
     _code        = 200;
     _contentType = CONTENT_TYPE_JSON;
     if (isArray) {
@@ -80,19 +81,18 @@ class AsyncJsonResponse : public AsyncAbstractResponse {
     }
   }
 
-  ~AsyncJsonResponse() {
-  }
+  ~AsyncJsonResponse() override = default;
   JsonVariant &getRoot() {
     return _root;
   }
-  bool _sourceValid() const {
-    return _isValid;
+  bool _sourceValid() const override {
+    return isValid_;
   }
   size_t setLength() {
     _contentLength = measureJson(_root);
 
     if (_contentLength) {
-      _isValid = true;
+      isValid_ = true;
     }
     return _contentLength;
   }
@@ -101,7 +101,7 @@ class AsyncJsonResponse : public AsyncAbstractResponse {
     return _root.size();
   }
 
-  size_t _fillBuffer(uint8_t *data, size_t len) {
+  size_t _fillBuffer(uint8_t *data, size_t len) override {
     ChunkPrint dest(data, _sentLength, len);
 
     serializeJson(_root, dest);
@@ -109,26 +109,26 @@ class AsyncJsonResponse : public AsyncAbstractResponse {
   }
 };
 
-typedef std::function<void(AsyncWebServerRequest *request)> ArJsonRequestHandlerFunction;
+using ArJsonRequestHandlerFunction = ;
 
 class AsyncCallbackJsonWebHandler : public AsyncWebHandler {
  private:
  protected:
-  const String                 _uri;
-  WebRequestMethodComposite    _method;
+  const String                 uri_;
+  WebRequestMethodComposite    _method{HTTP_POST | HTTP_PUT | HTTP_PATCH};
   ArJsonRequestHandlerFunction _onRequest;
-  int                          _contentLength;
-  const size_t                 maxJsonBufferSize;
-  int                          _maxContentLength;
+  int                          contentLength_;
+  const size_t                 maxJsonBufferSize_;
+  int                          _maxContentLength{16384};
 
  public:
-  AsyncCallbackJsonWebHandler(const String &uri, ArJsonRequestHandlerFunction onRequest,
+  AsyncCallbackJsonWebHandler(String uri, ArJsonRequestHandlerFunction onRequest,
                               size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE)
-      : _uri(uri),
-        _method(HTTP_POST | HTTP_PUT | HTTP_PATCH),
+      : uri_(std::move(uri)),
+        
         _onRequest(onRequest),
-        maxJsonBufferSize(maxJsonBufferSize),
-        _maxContentLength(16384) {
+        maxJsonBufferSize_(maxJsonBufferSize)
+        {
   }
 
   void setMethod(WebRequestMethodComposite method) {
@@ -141,7 +141,7 @@ class AsyncCallbackJsonWebHandler : public AsyncWebHandler {
     _onRequest = fn;
   }
 
-  virtual bool canHandle(AsyncWebServerRequest *request) override final {
+  bool canHandle(AsyncWebServerRequest *request) final {
     if (!_onRequest) {
       return false;
     }
@@ -150,7 +150,7 @@ class AsyncCallbackJsonWebHandler : public AsyncWebHandler {
       return false;
     }
 
-    if (_uri.length() && (_uri != request->url() && !request->url().startsWith(_uri + "/"))) {
+    if ((uri_.length() != 0u) && (uri_ != request->url() && !request->url().startsWith(uri_ + "/"))) {
       return false;
     }
 
@@ -158,34 +158,34 @@ class AsyncCallbackJsonWebHandler : public AsyncWebHandler {
     return true;
   }
 
-  virtual void handleRequest(AsyncWebServerRequest *request) override final {
+  void handleRequest(AsyncWebServerRequest *request) final {
     if (_onRequest) {
-      if (request->_tempObject != NULL) {
+      if (request->_tempObject != nullptr) {
         _onRequest(request);
         return;
       }
-      request->send(_contentLength > _maxContentLength ? 413 : 400);
+      request->send(contentLength_ > _maxContentLength ? 413 : 400);
     } else {
       request->send(500);
     }
   }
-  virtual void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data,
-                            size_t len, bool final) override final {
+  void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data,
+                            size_t len, bool final) final {
   }
-  virtual void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index,
-                          size_t total) override final {
+  void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index,
+                          size_t total) final {
     if (_onRequest) {
-      _contentLength = total;
-      if (total > 0 && request->_tempObject == NULL && static_cast<int>(total) < _maxContentLength) {
+      contentLength_ = total;
+      if (total > 0 && request->_tempObject == nullptr && static_cast<int>(total) < _maxContentLength) {
         request->_tempObject = malloc(total);
       }
-      if (request->_tempObject != NULL) {
+      if (request->_tempObject != nullptr) {
         memcpy(static_cast<uint8_t *>(request->_tempObject) + index, data, len);
       }
     }
   }
-  virtual bool isRequestHandlerTrivial() override final {
-    return _onRequest ? false : true;
+  bool isRequestHandlerTrivial() final {
+    return _onRequest == 0;
   }
 };
 #endif

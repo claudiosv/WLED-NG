@@ -23,7 +23,7 @@ static uint8_t  spiAllocCount           = 0;  // allow multiple allocation of SP
 static PinOwner ownerTag[WLED_NUM_PINS] = {PinOwner::None};
 
 /// Actual allocation/deallocation routines
-bool PinManager::deallocatePin(byte gpio, PinOwner tag) {
+static bool PinManager::deallocatePin(byte gpio, PinOwner tag) {
   if (gpio == 0xFF) {
     return true;  // explicitly allow clients to free -1 as a no-op
   }
@@ -44,7 +44,7 @@ bool PinManager::deallocatePin(byte gpio, PinOwner tag) {
 }
 
 // support function for deallocating multiple pins
-bool PinManager::deallocateMultiplePins(const uint8_t* pinArray, byte arrayElementCount, PinOwner tag) {
+static bool PinManager::deallocateMultiplePins(const uint8_t* pinArray, byte arrayElementCount, PinOwner tag) {
   bool shouldFail = false;
   DEBUG_PRINTLN("MULTIPIN DEALLOC");
   // first verify the pins are OK and allocated by selected owner
@@ -84,7 +84,7 @@ bool PinManager::deallocateMultiplePins(const uint8_t* pinArray, byte arrayEleme
   return true;
 }
 
-bool PinManager::deallocateMultiplePins(const managed_pin_type* mptArray, byte arrayElementCount, PinOwner tag) {
+static bool PinManager::deallocateMultiplePins(const managed_pin_type* mptArray, byte arrayElementCount, PinOwner tag) {
   uint8_t pins[arrayElementCount];
   for (int i = 0; i < arrayElementCount; i++) {
     pins[i] = mptArray[i].pin;
@@ -92,7 +92,7 @@ bool PinManager::deallocateMultiplePins(const managed_pin_type* mptArray, byte a
   return deallocateMultiplePins(pins, arrayElementCount, tag);
 }
 
-bool PinManager::allocateMultiplePins(const managed_pin_type* mptArray, byte arrayElementCount, PinOwner tag) {
+static bool PinManager::allocateMultiplePins(const managed_pin_type* mptArray, byte arrayElementCount, PinOwner tag) {
   bool shouldFail = false;
   // first verify the pins are OK and not already allocated
   for (int i = 0; i < arrayElementCount; i++) {
@@ -103,7 +103,7 @@ bool PinManager::allocateMultiplePins(const managed_pin_type* mptArray, byte arr
       continue;
     }
     // allow any GPIO for Ethernet (compile time assigned)
-    if (!(isPinOk(gpio, mptArray[i].isOutput) || tag == PinOwner::Ethernet)) {
+    if (!isPinOk(gpio, mptArray[i].isOutput) && tag != PinOwner::Ethernet) {
       DEBUG_PRINTF_P("PIN ALLOC: FAIL Invalid pin attempted to be allocated: GPIO %d as %s\n.", gpio,
                      mptArray[i].isOutput ? "output" : "input");
       shouldFail = true;
@@ -111,7 +111,7 @@ bool PinManager::allocateMultiplePins(const managed_pin_type* mptArray, byte arr
     if ((tag == PinOwner::HW_I2C || tag == PinOwner::HW_SPI) && isPinAllocated(gpio, tag)) {
       // allow multiple "allocations" of HW I2C & SPI bus pins
       continue;
-    } else if (isPinAllocated(gpio)) {
+    } if (isPinAllocated(gpio)) {
       DEBUG_PRINTF_P("PIN ALLOC: FAIL GPIO %d already allocated by 0x%02X.\n", gpio, static_cast<int>(ownerTag[gpio]));
       shouldFail = true;
     }
@@ -147,7 +147,7 @@ bool PinManager::allocateMultiplePins(const managed_pin_type* mptArray, byte arr
   return true;
 }
 
-bool PinManager::allocateMultiplePins(const int8_t* mptArray, byte arrayElementCount, PinOwner tag, boolean output) {
+static bool PinManager::allocateMultiplePins(const int8_t* mptArray, byte arrayElementCount, PinOwner tag, boolean output) {
   PinManagerPinType pins[arrayElementCount];
   for (int i = 0; i < arrayElementCount; i++) {
     pins[i] = {mptArray[i], output};
@@ -155,7 +155,7 @@ bool PinManager::allocateMultiplePins(const int8_t* mptArray, byte arrayElementC
   return allocateMultiplePins(pins, arrayElementCount, tag);
 }
 
-bool PinManager::allocatePin(byte gpio, bool output, PinOwner tag) {
+static bool PinManager::allocatePin(byte gpio, bool output, PinOwner tag) {
   // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
   // DMX_INPUT pins have to be allocated using allocateMultiplePins variant since there is always RX/TX/EN triple
   if (!isPinOk(gpio, output) || (gpio >= WLED_NUM_PINS) || tag == PinOwner::HW_I2C || tag == PinOwner::HW_SPI ||
@@ -192,7 +192,7 @@ bool PinManager::allocatePin(byte gpio, bool output, PinOwner tag) {
 
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
 // if tag is set to any other value, checks if that tag is the current owner of the pin.
-bool PinManager::isPinAllocated(byte gpio, PinOwner tag) {
+static bool PinManager::isPinAllocated(byte gpio, PinOwner tag) {
   if (!isPinOk(gpio, false)) {
     return true;
   }
@@ -222,13 +222,13 @@ bool PinManager::isPinAllocated(byte gpio, PinOwner tag) {
  */
 
 // Check if supplied GPIO is ok to use
-bool PinManager::isPinOk(byte gpio, bool output) {
+static bool PinManager::isPinOk(byte gpio, bool output) {
   if (gpio >= WLED_NUM_PINS) {
     return false;  // catch error case, to avoid array out-of-bounds access
   }
 #ifdef ARDUINO_ARCH_ESP32
   if (digitalPinIsValid(gpio)) {
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#ifdef CONFIG_IDF_TARGET_ESP32C3
     // strapping pins: 2, 8, & 9
     if (gpio > 11 && gpio < 18) {
       return false;  // 11-17 SPI FLASH
@@ -300,16 +300,14 @@ bool PinManager::isPinOk(byte gpio, bool output) {
     if (gpio == 17) {
       if (strncmp("ESP32-D0WDR2-V3", ESP.getChipModel(), 15) == 0) {
         return true;
-      } else {
-        return !psramFound();  // PSRAM pins on modules with in-package PSRAM
-      }
+      }         return !psramFound();  // PSRAM pins on modules with in-package PSRAM
+     
     }
 #endif
     if (output) {
       return digitalPinCanOutput(gpio);
-    } else {
-      return true;
-    }
+    }       return true;
+   
   }
 #else
   if (gpio < 6) {
@@ -325,7 +323,7 @@ bool PinManager::isPinOk(byte gpio, bool output) {
   return false;
 }
 
-bool PinManager::isReadOnlyPin(byte gpio) {
+static bool PinManager::isReadOnlyPin(byte gpio) {
 #ifdef ARDUINO_ARCH_ESP32
   if (gpio < WLED_NUM_PINS) {
     return (digitalPinIsValid(gpio) && !digitalPinCanOutput(gpio));
@@ -334,7 +332,7 @@ bool PinManager::isReadOnlyPin(byte gpio) {
   return false;
 }
 
-PinOwner PinManager::getPinOwner(byte gpio) {
+static PinOwner PinManager::getPinOwner(byte gpio) {
   if (!isPinOk(gpio, false)) {
     return PinOwner::None;
   }
@@ -342,7 +340,7 @@ PinOwner PinManager::getPinOwner(byte gpio) {
 }
 
 #ifdef ARDUINO_ARCH_ESP32
-byte PinManager::allocateLedc(byte channels) {
+static byte PinManager::allocateLedc(byte channels) {
   if (channels > WLED_MAX_ANALOG_CHANNELS || channels == 0) {
     return 255;
   }
@@ -375,7 +373,7 @@ byte PinManager::allocateLedc(byte channels) {
   return 255;  // not enough consecutive free LEDC channels
 }
 
-void PinManager::deallocateLedc(byte pos, byte channels) {
+static void PinManager::deallocateLedc(byte pos, byte channels) {
   for (unsigned j = pos; j < pos + channels && j < WLED_MAX_ANALOG_CHANNELS; j++) {
     bitWrite(ledcAlloc, j, false);
   }
@@ -383,7 +381,7 @@ void PinManager::deallocateLedc(byte pos, byte channels) {
 #endif
 
 // Convert PinOwner enum to string for allocated pins
-const char* PinManager::getPinOwnerName(uint8_t gpio) {
+static const char* PinManager::getPinOwnerName(uint8_t gpio) {
   PinOwner owner = PinManager::getPinOwner(gpio);  // returns "none" if allocated by system, unallocated or unavailable
   switch (owner) {
     case PinOwner::None:
@@ -417,7 +415,7 @@ const char* PinManager::getPinOwnerName(uint8_t gpio) {
     case PinOwner::HUB75:
       return "HUB75";
     // Usermods - return generic name for now
-    // TODO: Get actual usermod name from UsermodManager
+    // TODO: claudio - Get actual usermod name from UsermodManager
     default:
       // Check if it's a usermod (high bit not set)
       if (static_cast<uint8_t>(owner) > 0 && !(static_cast<uint8_t>(owner) & 0x80)) {
@@ -427,7 +425,7 @@ const char* PinManager::getPinOwnerName(uint8_t gpio) {
   }
 }
 
-int PinManager::getButtonIndex(byte gpio) {
+static int PinManager::getButtonIndex(byte gpio) {
   for (size_t b = 0; b < buttons.size(); b++) {
     if (buttons[b].pin == gpio && buttons[b].type != BTN_TYPE_NONE) {
       return b;
@@ -436,7 +434,7 @@ int PinManager::getButtonIndex(byte gpio) {
   return -1;
 }
 
-bool PinManager::isAnalogPin(byte gpio) {
+static bool PinManager::isAnalogPin(byte gpio) {
 #ifdef ARDUINO_ARCH_ESP32
 // Check ADC capability: only ADC1 channels can be used (ADC2 channels are not usable when WiFi is active)
 #if CONFIG_IDF_TARGET_ESP32

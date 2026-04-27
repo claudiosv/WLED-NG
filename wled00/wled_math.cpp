@@ -17,7 +17,7 @@
 // 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
 // input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
 // optimized integer implementation by @dedehai
-int16_t sin16_t(uint16_t theta) {
+static int16_t sin16_t(uint16_t theta) {
   int scale = 1;
   if (theta > 0x7FFF) {
     theta = 0xFFFF - theta;
@@ -30,22 +30,22 @@ int16_t sin16_t(uint16_t theta) {
   return result * scale;
 }
 
-int16_t cos16_t(uint16_t theta) {
+static int16_t cos16_t(uint16_t theta) {
   return sin16_t(theta + 0x4000);  // cos(x) = sin(x+pi/2)
 }
 
-uint8_t sin8_t(uint8_t theta) {
+static uint8_t sin8_t(uint8_t theta) {
   int32_t sin16 = sin16_t(static_cast<uint16_t>(theta) * 257);  // 255 * 257 = 0xFFFF
   sin16 += 0x7FFF + 128;                           // shift result to range 0-0xFFFF, +128 for rounding
   return min(sin16, static_cast<int32_t>(0xFFFF)) >> 8;         // min performs saturation, and prevents overflow
 }
 
-uint8_t cos8_t(uint8_t theta) {
+static uint8_t cos8_t(uint8_t theta) {
   return sin8_t(theta + 64);  // cos(x) = sin(x+pi/2)
 }
 
 // Float approximations: Hardware FPU bypasses the float->int->float conversion overhead
-float sin_approx(float theta) {
+static float sin_approx(float theta) {
 #ifdef HAS_HARDWARE_FPU
   return sinf(theta);
 #else
@@ -57,7 +57,7 @@ float sin_approx(float theta) {
 #endif
 }
 
-float cos_approx(float theta) {
+static float cos_approx(float theta) {
 #ifdef HAS_HARDWARE_FPU
   return cosf(theta);
 #else
@@ -69,7 +69,7 @@ float cos_approx(float theta) {
 #endif
 }
 
-float tan_approx(float x) {
+static float tan_approx(float x) {
 #ifdef HAS_HARDWARE_FPU
   return tanf(x);
 #else
@@ -82,7 +82,7 @@ float tan_approx(float x) {
 }
 
 // Basic operations: Hardware FPU instructions handle these inherently faster
-float floor_t(float x) {
+static float floor_t(float x) {
 #ifdef HAS_HARDWARE_FPU
   return floorf(x);
 #else
@@ -98,7 +98,7 @@ float floor_t(float x) {
 #endif
 }
 
-float fmod_t(float num, float denom) {
+static float fmod_t(float num, float denom) {
 #ifdef HAS_HARDWARE_FPU
   return fmodf(num, denom);
 #else
@@ -111,7 +111,7 @@ float fmod_t(float num, float denom) {
 #endif
 }
 
-uint32_t sqrt32_bw(uint32_t x) {
+static uint32_t sqrt32_bw(uint32_t x) {
 #ifdef HAS_HARDWARE_FPU
   // Cast to float, use single-cycle hardware square root, cast back to int.
   // Avoids the heavy pipeline branching of the while loop below.
@@ -203,10 +203,10 @@ float tan_t(float x) {
 
 // atan2_t approximation, with the idea from
 // https://gist.github.com/volkansalma/2972237?permalink_comment_id=3872525#gistcomment-3872525
-float atan2_t(float y, float x) {
+static float atan2_t(float y, float x) {
   float abs_y = fabs(y);
   float abs_x = fabs(x);
-  float r     = (abs_x - abs_y) / (abs_y + abs_x + 1e-10f);  // avoid division by zero by adding a small nubmer
+  float r     = (abs_x - abs_y) / (abs_y + abs_x + 1e-10F);  // avoid division by zero by adding a small nubmer
   float angle;
   if (x < 0) {
     r     = -r;
@@ -215,7 +215,7 @@ float atan2_t(float y, float x) {
     angle = M_PI_2 - M_PI_4;
   }
 
-  float add = (ATAN2_CONST_A * (r * r) - ATAN2_CONST_B) * r;
+  float add = ((ATAN2_CONST_A * (r * r)) - ATAN2_CONST_B) * r;
   angle += add;
   angle = y < 0 ? -angle : angle;
   return angle;
@@ -223,18 +223,18 @@ float atan2_t(float y, float x) {
 
 // https://stackoverflow.com/questions/3380628
 //  Absolute error <= 6.7e-5
-float acos_t(float x) {
-  float negate = static_cast<float>(x < 0);
+static float acos_t(float x) {
+  auto negate = static_cast<float>(x < 0);
   float xabs   = std::abs(x);
-  float ret    = -0.0187293f;
+  float ret    = -0.0187293F;
   ret          = ret * xabs;
-  ret          = ret + 0.0742610f;
+  ret          = ret + 0.0742610F;
   ret          = ret * xabs;
-  ret          = ret - 0.2121144f;
+  ret          = ret - 0.2121144F;
   ret          = ret * xabs;
   ret          = ret + M_PI_2;
-  ret          = ret * sqrt(1.0f - xabs);
-  ret          = ret - 2 * negate * ret;
+  ret          = ret * sqrt(1.0F - xabs);
+  ret          = ret - (2 * negate * ret);
   float res    = negate * M_PI + ret;
 #ifdef WLED_DEBUG_MATH
   Serial.printf("acos: %f,%f,%f,(%f)\n", x, res, acos(x), res - acos(x));
@@ -242,7 +242,7 @@ float acos_t(float x) {
   return res;
 }
 
-float asin_t(float x) {
+static float asin_t(float x) {
   float res = M_PI_2 - acos_t(x);
 #ifdef WLED_DEBUG_MATH
   Serial.printf("asin: %f,%f,%f,(%f)\n", x, res, asin(x), res - asin(x));
@@ -256,17 +256,17 @@ float asin_t(float x) {
 template <typename T>
 T atan_t(T x);
 template <>
-float atan_t(float x) {
+static float atan_t(float x) {
   // For A/B/C, see https://stackoverflow.com/a/42542593
-  static const double A{0.0776509570923569};
-  static const double B{-0.287434475393028};
-  static const double C{((M_PI_4)-A - B)};
+  static const double kA{0.0776509570923569};
+  static const double kB{-0.287434475393028};
+  static const double kC{((M_PI_4)-A - B)};
   // polynominal factors for approximation between 1 and 5
-  static const float C0{0.089494f};
-  static const float C1{0.974207f};
-  static const float C2{-0.326175f};
-  static const float C3{0.05375f};
-  static const float C4{-0.003445f};
+  static const float kC0{0.089494F};
+  static const float kC1{0.974207F};
+  static const float kC2{-0.326175F};
+  static const float kC3{0.05375F};
+  static const float kC4{-0.003445F};
 
 #ifdef WLED_DEBUG_MATH
   float xinput = x;
@@ -274,14 +274,14 @@ float atan_t(float x) {
   bool neg = (x < 0);
   x        = std::abs(x);
   float res;
-  if (x > 5.0f) {  // atan(x) converges to pi/2 - (1/x) for large values
+  if (x > 5.0F) {  // atan(x) converges to pi/2 - (1/x) for large values
     res = M_PI_2 - (1.0f / x);
-  } else if (x > 1.0f) {  // 1 < x < 5
+  } else if (x > 1.0F) {  // 1 < x < 5
     float xx = x * x;
-    res      = (C4 * xx * xx) + (C3 * xx * x) + (C2 * xx) + (C1 * x) + C0;
+    res      = (kC4 * xx * xx) + (kC3 * xx * x) + (kC2 * xx) + (kC1 * x) + kC0;
   } else {  // this approximation is only for x <= 1
     float xx = x * x;
-    res      = ((A * xx + B) * xx + C) * x;
+    res      = ((((kA * xx) + kB) * xx) + kC) * x;
   }
   if (neg) {
     res = -res;

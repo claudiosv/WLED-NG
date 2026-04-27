@@ -3,7 +3,7 @@
 
 #define ESPNOW_BUSWAIT_TIMEOUT 24  // one frame timeout to wait for bus to finish updating
 
-#define NIGHT_MODE_DEACTIVATED -1
+#define NIGHT_MODE_DEACTIVATED (-1)
 #define NIGHT_MODE_BRIGHTNESS  5
 
 #define WIZMOTE_BUTTON_ON          1
@@ -27,7 +27,7 @@
 // This is kind of an esoteric strucure because it's pulled from the "Wizmote"
 // product spec. That remote is used as the baseline for behavior and availability
 // since it's broadly commercially available and works out of the box as a drop-in
-typedef struct WizMoteMessageStructure {
+using message_structure_t = struct WizMoteMessageStructure {
   uint8_t program;   // 0x91 for ON button, 0x81 for all others
   uint8_t seq[4];    // Incremetal sequence number 32 bit unsigned integer LSB first
   uint8_t dt1;       // Button Data Type (0x20)
@@ -39,7 +39,7 @@ typedef struct WizMoteMessageStructure {
   uint8_t byte11;  // Unknown, maybe checksum
   uint8_t byte12;  // Unknown, maybe checksum
   uint8_t byte13;  // Unknown, maybe checksum
-} message_structure_t;
+};
 
 static uint32_t last_seq                  = UINT32_MAX;
 static int      brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
@@ -49,7 +49,7 @@ static int16_t  ESPNowButton              = -1;  // set in callback if new butto
 static const byte   brightnessSteps[]  = {6, 9, 14, 22, 33, 50, 75, 113, 170, 255};
 static const size_t numBrightnessSteps = sizeof(brightnessSteps) / sizeof(byte);
 
-inline bool nightModeActive() {
+static inline bool nightModeActive() {
   return brightnessBeforeNightMode != NIGHT_MODE_DEACTIVATED;
 }
 
@@ -78,9 +78,9 @@ static void brightnessUp() {
     return;
   }
   // dumb incremental search is efficient enough for so few items
-  for (unsigned index = 0; index < numBrightnessSteps; ++index) {
-    if (brightnessSteps[index] > bri) {
-      bri = brightnessSteps[index];
+  for (unsigned char brightnessStep : brightnessSteps) {
+    if (brightnessStep > bri) {
+      bri = brightnessStep;
       break;
     }
   }
@@ -198,7 +198,7 @@ static bool remoteJson(int button) {
 
 // Callback function that will be executed when data is received from a linked remote
 void handleWiZdata(uint8_t *incomingData, size_t len) {
-  message_structure_t *incoming = reinterpret_cast<message_structure_t *>(incomingData);
+  auto *incoming = reinterpret_cast<message_structure_t *>(incomingData);
 
   if (len != sizeof(message_structure_t)) {
     DEBUG_PRINTF_P("Unknown incoming ESP Now message received of length %u\n", len);

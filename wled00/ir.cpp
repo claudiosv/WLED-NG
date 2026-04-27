@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "wled.h"
 
 #ifndef WLED_DISABLE_INFRARED
@@ -35,9 +37,9 @@ const size_t  numBrightnessSteps = sizeof(brightnessSteps) / sizeof(uint8_t);
 // increment `bri` to the next `brightnessSteps` value
 static void incBrightness() {
   // dumb incremental search is efficient enough for so few items
-  for (unsigned index = 0; index < numBrightnessSteps; ++index) {
-    if (brightnessSteps[index] > bri) {
-      bri                  = brightnessSteps[index];
+  for (unsigned char brightnessStep : brightnessSteps) {
+    if (brightnessStep > bri) {
+      bri                  = brightnessStep;
       lastRepeatableAction = ACTION_BRIGHT_UP;
       break;
     }
@@ -65,12 +67,8 @@ static byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0,
   if (lowerBoundary >= higherBoundary) {
     return property;
   }
-  if (new_val > higherBoundary) {
-    new_val = higherBoundary;
-  }
-  if (new_val < lowerBoundary) {
-    new_val = lowerBoundary;
-  }
+  new_val = std::min<int>(new_val, higherBoundary);
+  new_val = std::max<int>(new_val, lowerBoundary);
   return static_cast<byte>constrain(new_val, 0, 255);
 }
 
@@ -127,7 +125,7 @@ static void changeEffectSpeed(int8_t amount) {
     }
   } else {  // if Effect == "solid Color", change the hue of the primary color
     Segment& sseg     = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
-    CRGBW    newcolor = CRGBW(sseg.colors[0]);
+    auto    newcolor = CRGBW(sseg.colors[0]);
     newcolor.adjust_hue(amount);
     newcolor.w = W(sseg.colors[0]);
     if (irApplyToAllSelected) {
@@ -1129,8 +1127,7 @@ static void applyRepeatActions() {
     decodeIRJson(lastValidCode);
     stateUpdated(CALL_MODE_BUTTON_PRESET);
     return;
-  } else {
-    switch (lastRepeatableAction) {
+  }     switch (lastRepeatableAction) {
       case ACTION_BRIGHT_UP:
         incBrightness();
         stateUpdated(CALL_MODE_BUTTON);
@@ -1158,7 +1155,7 @@ static void applyRepeatActions() {
       default:
         break;
     }
-  }
+ 
   if (lastValidCode == IR40_WPLUS) {
     changeWhite(10);
     stateUpdated(CALL_MODE_BUTTON);

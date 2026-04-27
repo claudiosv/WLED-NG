@@ -7,11 +7,13 @@
 #include <esp_flash.h>
 #include <esp_ota_ops.h>
 #include <mbedtls/sha256.h>
+
+#include <algorithm>
 #endif
 
 // Platform-specific metadata locations
 #ifdef ESP32
-constexpr size_t METADATA_OFFSET = 256;  // ESP32: metadata appears after Espressif metadata
+constexpr size_t kMetadataOffset = 256;  // ESP32: metadata appears after Espressif metadata
 #define UPDATE_ERROR errorString
 
 // Bootloader is at fixed offset 0x1000 (4KB), 0x0000 (0KB), or 0x2000 (8KB), and is typically 32KB
@@ -25,12 +27,12 @@ constexpr size_t BOOTLOADER_OFFSET = 0x2000;  // (future support) esp32-P4 and e
 constexpr size_t BOOTLOADER_SIZE   = 0x8000;  // 32KB, typical bootloader size
 #define BOOTLOADER_OTA_UNSUPPORTED  // still needs testing on these platforms
 #else
-constexpr size_t BOOTLOADER_OFFSET = 0x1000;  // esp32 and esp32-s2
-constexpr size_t BOOTLOADER_SIZE   = 0x8000;  // 32KB, typical bootloader size
+constexpr size_t kBootloaderOffset = 0x1000;  // esp32 and esp32-s2
+constexpr size_t kBootloaderSize   = 0x8000;  // 32KB, typical bootloader size
 #endif
 #endif
 
-constexpr size_t METADATA_SEARCH_RANGE = 512;  // bytes
+constexpr size_t kMetadataSearchRange = 512;  // bytes
 
 /**
  * Check if OTA should be allowed based on release compatibility using custom description
@@ -53,14 +55,13 @@ static bool validateOTA(const uint8_t* binaryData, size_t dataSize, char* errorM
 
   if (hasDesc) {
     return shouldAllowOTA(extractedDesc, errorMessage, errorMessageLen);
-  } else {
-    // No custom description - this could be a legacy binary
+  }     // No custom description - this could be a legacy binary
     if (errorMessage && errorMessageLen > 0) {
       strncpy(errorMessage, "This firmware file is missing compatibility metadata.", errorMessageLen - 1);
       errorMessage[errorMessageLen - 1] = '\0';
     }
     return false;
-  }
+ 
 }
 
 struct UpdateContext {
@@ -78,7 +79,7 @@ struct UpdateContext {
 };
 
 static void endOTA(AsyncWebServerRequest* request) {
-  UpdateContext* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
+  auto* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
   request->_tempObject   = nullptr;
 
   DEBUG_PRINTF_P("EndOTA %x --> %x (%d\n", (uintptr_t)request, (uintptr_t)context,
@@ -125,7 +126,7 @@ static bool beginOTA(AsyncWebServerRequest* request, UpdateContext* context) {
 
   DEBUG_PRINTF_P("OTA Update Start, %x --> %x\n", (uintptr_t)request, (uintptr_t)context);
 
-  auto skipValidationParam = request->getParam("skipValidation", true);
+  auto *skipValidationParam = request->getParam("skipValidation", true);
   if (skipValidationParam && (skipValidationParam->value() == "1")) {
     context->releaseCheckPassed = true;
     DEBUG_PRINTLN("OTA validation skipped by user");
@@ -161,7 +162,7 @@ bool initOTA(AsyncWebServerRequest* request) {
 }
 
 void setOTAReplied(AsyncWebServerRequest* request) {
-  UpdateContext* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
+  auto* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
   if (!context) {
     return;
   }
@@ -169,8 +170,8 @@ void setOTAReplied(AsyncWebServerRequest* request) {
 };
 
 // Returns pointer to error message, or nullptr if OTA was successful.
-std::pair<bool, String> getOTAResult(AsyncWebServerRequest* request) {
-  UpdateContext* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
+static std::pair<bool, String> getOTAResult(AsyncWebServerRequest* request) {
+  auto* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
   if (!context) {
     return {true, "OTA context unexpectedly missing"};
   }
@@ -186,9 +187,8 @@ std::pair<bool, String> getOTAResult(AsyncWebServerRequest* request) {
     endOTA(request);
     if (Update.hasError()) {
       return {true, Update.UPDATE_ERROR()};
-    } else {
-      return {true, {}};
-    }
+    }       return {true, {}};
+   
   }
 
   // Should never happen
@@ -196,7 +196,7 @@ std::pair<bool, String> getOTAResult(AsyncWebServerRequest* request) {
 }
 
 void handleOTAData(AsyncWebServerRequest* request, size_t index, uint8_t* data, size_t len, bool isFinal) {
-  UpdateContext* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
+  auto* context = reinterpret_cast<UpdateContext*>(request->_tempObject);
   if (!context) {
     return;
   }
@@ -214,14 +214,14 @@ void handleOTAData(AsyncWebServerRequest* request, size_t index, uint8_t* data, 
   }
 
   // Perform validation if we haven't done it yet and we have reached the metadata offset
-  if (!context->releaseCheckPassed && (index + len) > METADATA_OFFSET) {
+  if (!context->releaseCheckPassed && (index + len) > kMetadataOffset) {
     // Current chunk contains the metadata offset
-    size_t availableDataAfterOffset = (index + len) - METADATA_OFFSET;
+    size_t availableDataAfterOffset = (index + len) - kMetadataOffset;
 
     DEBUG_PRINTF_P("OTA metadata check: %d in buffer, %d received, %d available\n",
                    context->releaseMetadataBuffer.size(), len, availableDataAfterOffset);
 
-    if (availableDataAfterOffset >= METADATA_SEARCH_RANGE) {
+    if (availableDataAfterOffset >= kMetadataSearchRange) {
       // We have enough data to validate, one way or another
       const uint8_t* search_data = data;
       size_t         search_len  = len;
@@ -246,10 +246,9 @@ void handleOTAData(AsyncWebServerRequest* request, size_t index, uint8_t* data, 
         context->errorMessage = errorMessage;
         context->errorMessage += " Enable 'Ignore firmware validation' to proceed anyway.";
         return;
-      } else {
-        DEBUG_PRINTLN("OTA allowed: Release compatibility check passed");
+      }         DEBUG_PRINTLN("OTA allowed: Release compatibility check passed");
         context->releaseCheckPassed = true;
-      }
+     
     } else {
       // Store the data we just got for next pass
       context->releaseMetadataBuffer.insert(context->releaseMetadataBuffer.end(), data, data + len);
@@ -298,16 +297,16 @@ void markOTAvalid() {
 class BootloaderImageSizer {
  public:
   bool feed(const uint8_t* data, size_t len) {
-    if (error) {
+    if (error_) {
       return false;
     }
 
     // DEBUG_PRINTF("Feed %d\n", len);
 
-    if (imageSize == 0) {
+    if (imageSize_ == 0) {
       // Parse header first
       if (len < sizeof(esp_image_header_t)) {
-        error = true;
+        error_ = true;
         return false;
       }
 
@@ -315,23 +314,23 @@ class BootloaderImageSizer {
       memcpy(&header, data, sizeof(esp_image_header_t));
 
       if (header.segment_count == 0) {
-        error = true;
+        error_ = true;
         return false;
       }
 
-      imageSize    = sizeof(esp_image_header_t);
-      segmentsLeft = header.segment_count;
+      imageSize_    = sizeof(esp_image_header_t);
+      segmentsLeft_ = header.segment_count;
       data += sizeof(esp_image_header_t);
       len -= sizeof(esp_image_header_t);
       // DEBUG_PRINTF("BLS parsed image header, segment count %d, is %d\n", segmentsLeft, imageSize);
     }
 
-    while (len && segmentsLeft) {
-      if (segmentHeaderBytes < sizeof(esp_image_segment_header_t)) {
+    while (len && segmentsLeft_) {
+      if (segmentHeaderBytes_ < sizeof(esp_image_segment_header_t)) {
         size_t headerBytes = std::min(len, sizeof(esp_image_segment_header_t) - segmentHeaderBytes);
-        memcpy(reinterpret_cast<uint8_t*>(&segmentHeader) + segmentHeaderBytes, data, headerBytes);
-        segmentHeaderBytes += headerBytes;
-        if (segmentHeaderBytes < sizeof(esp_image_segment_header_t)) {
+        memcpy(reinterpret_cast<uint8_t*>(&segmentHeader_) + segmentHeaderBytes_, data, headerBytes);
+        segmentHeaderBytes_ += headerBytes;
+        if (segmentHeaderBytes_ < sizeof(esp_image_segment_header_t)) {
           return true;  // needs more bytes for the header
         }
 
@@ -339,21 +338,21 @@ class BootloaderImageSizer {
         // segmentHeader.data_len, segmentHeader.data_len, segmentsLeft, imageSize);
 
         // Validate segment size
-        if (segmentHeader.data_len > BOOTLOADER_SIZE) {
-          error = true;
+        if (segmentHeader_.data_len > kBootloaderSize) {
+          error_ = true;
           return false;
         }
 
         data += headerBytes;
         len -= headerBytes;
-        imageSize += sizeof(esp_image_segment_header_t) + segmentHeader.data_len;
-        --segmentsLeft;
-        if (segmentsLeft == 0) {
+        imageSize_ += sizeof(esp_image_segment_header_t) + segmentHeader_.data_len;
+        --segmentsLeft_;
+        if (segmentsLeft_ == 0) {
           // all done, actually; we don't need to read any more
 
           // Round up to nearest 16 bytes.
           // Always add 1 to account for the checksum byte.
-          imageSize = ((imageSize / 16) + 1) * 16;
+          imageSize_ = ((imageSize_ / 16) + 1) * 16;
 
           // DEBUG_PRINTF("BLS complete, is %d\n", imageSize);
           return false;
@@ -361,41 +360,41 @@ class BootloaderImageSizer {
       }
 
       // If we don't have enough bytes ...
-      if (len < segmentHeader.data_len) {
+      if (len < segmentHeader_.data_len) {
         // DEBUG_PRINTF("Needs more bytes\n");
-        segmentHeader.data_len -= len;
+        segmentHeader_.data_len -= len;
         return true;  // still in this segment
       }
 
       // Segment complete
-      len -= segmentHeader.data_len;
-      data += segmentHeader.data_len;
-      segmentHeaderBytes = 0;
+      len -= segmentHeader_.data_len;
+      data += segmentHeader_.data_len;
+      segmentHeaderBytes_ = 0;
       // DEBUG_PRINTF("Segment complete: len %d\n", len);
     }
 
-    return !error;
+    return !error_;
   }
 
   bool hasError() const {
-    return error;
+    return error_;
   }
   bool isSizeKnown() const {
-    return !error && imageSize != 0 && segmentsLeft == 0;
+    return !error_ && imageSize_ != 0 && segmentsLeft_ == 0;
   }
   size_t totalSize() const {
     if (!isSizeKnown()) {
       return 0;
     }
-    return imageSize;
+    return imageSize_;
   }
 
  private:
-  size_t                     imageSize    = 0;
-  size_t                     segmentsLeft = 0;
-  esp_image_segment_header_t segmentHeader;
-  size_t                     segmentHeaderBytes = 0;
-  bool                       error              = false;
+  size_t                     imageSize_    = 0;
+  size_t                     segmentsLeft_ = 0;
+  esp_image_segment_header_t segmentHeader_;
+  size_t                     segmentHeaderBytes_ = 0;
+  bool                       error_              = false;
 };
 
 static bool    bootloaderSHA256CacheValid = false;
@@ -419,19 +418,19 @@ static void calculateBootloaderSHA256() {
 
   const size_t                        chunkSize = 256;
   alignas(esp_image_header_t) uint8_t buffer[chunkSize];
-  size_t                              bootloaderSize = BOOTLOADER_SIZE;
+  size_t                              bootloaderSize = kBootloaderSize;
   BootloaderImageSizer                sizer;
   size_t                              totalHashLen = 0;
 
   for (uint32_t offset = 0; offset < bootloaderSize; offset += chunkSize) {
     size_t readSize = min((bootloaderSize - offset), chunkSize);
-    if (esp_flash_read(NULL, buffer, BOOTLOADER_OFFSET + offset, readSize) == ESP_OK) {
+    if (esp_flash_read(nullptr, buffer, kBootloaderOffset + offset, readSize) == ESP_OK) {
       sizer.feed(buffer, readSize);
 
       size_t hashLen = readSize;
       if (sizer.isSizeKnown()) {
         size_t totalSize = sizer.totalSize();
-        if (totalSize > 0 && totalSize <= BOOTLOADER_SIZE) {
+        if (totalSize > 0 && totalSize <= kBootloaderSize) {
           bootloaderSize = totalSize;
           if (offset + readSize > totalSize) {
             hashLen = (totalSize > offset) ? (totalSize - offset) : 0;
@@ -461,8 +460,7 @@ String getBootloaderSHA256Hex() {
   // Convert to hex string
   String result;
   result.reserve(65);
-  for (int i = 0; i < 32; i++) {
-    char b1 = bootloaderSHA256Cache[i];
+  for (char b1 : bootloaderSHA256Cache) {
     char b2 = b1 >> 4;
     b1 &= 0x0F;
     b2 &= 0x0F;
@@ -507,12 +505,12 @@ static bool verifyBootloaderImage(const uint8_t*& buffer, size_t& len, String& b
 
   // Check if the bootloader starts at offset 0x1000 (common in partition table dumps)
   // This happens when someone uploads a complete flash dump instead of just the bootloader
-  if (len > BOOTLOADER_OFFSET + MIN_IMAGE_HEADER_SIZE && buffer[BOOTLOADER_OFFSET] == ESP_IMAGE_HEADER_MAGIC &&
+  if (len > kBootloaderOffset + MIN_IMAGE_HEADER_SIZE && buffer[kBootloaderOffset] == ESP_IMAGE_HEADER_MAGIC &&
       buffer[0] != ESP_IMAGE_HEADER_MAGIC) {
     DEBUG_PRINTF_P("Bootloader detected at offset\n");
     // Adjust buffer pointer to start at the actual bootloader
-    buffer = buffer + BOOTLOADER_OFFSET;
-    len    = len - BOOTLOADER_OFFSET;
+    buffer = buffer + kBootloaderOffset;
+    len    = len - kBootloaderOffset;
 
     // Re-validate size after adjustment
     if (len < MIN_IMAGE_HEADER_SIZE) {
@@ -584,7 +582,7 @@ struct BootloaderUpdateContext {
 
 // Cleanup bootloader OTA context
 static void endBootloaderOTA(AsyncWebServerRequest* request) {
-  BootloaderUpdateContext* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
+  auto* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
   request->_tempObject             = nullptr;
 
   DEBUG_PRINTF_P("EndBootloaderOTA %x --> %x\n", (uintptr_t)request, (uintptr_t)context);
@@ -612,7 +610,7 @@ bool initBootloaderOTA(AsyncWebServerRequest* request) {
     return true;  // Already initialized
   }
 
-  BootloaderUpdateContext* context = new BootloaderUpdateContext();
+  auto* context = new BootloaderUpdateContext();
   if (!context) {
     DEBUG_PRINTLN("Failed to allocate bootloader OTA context");
     return false;
@@ -659,15 +657,15 @@ bool initBootloaderOTA(AsyncWebServerRequest* request) {
 
 // Set bootloader OTA replied flag
 void setBootloaderOTAReplied(AsyncWebServerRequest* request) {
-  BootloaderUpdateContext* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
+  auto* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
   if (context) {
     context->replySent = true;
   }
 }
 
 // Get bootloader OTA result
-std::pair<bool, String> getBootloaderOTAResult(AsyncWebServerRequest* request) {
-  BootloaderUpdateContext* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
+static std::pair<bool, String> getBootloaderOTAResult(AsyncWebServerRequest* request) {
+  auto* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
 
   if (!context) {
     return std::make_pair(true, String("Internal error: No bootloader OTA context"));
@@ -694,8 +692,8 @@ std::pair<bool, String> getBootloaderOTAResult(AsyncWebServerRequest* request) {
 }
 
 // Handle bootloader OTA data
-void handleBootloaderOTAData(AsyncWebServerRequest* request, size_t index, uint8_t* data, size_t len, bool isFinal) {
-  BootloaderUpdateContext* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
+void handleBootloaderOTAData(AsyncWebServerRequest* request, size_t  /*index*/, const uint8_t* data, size_t len, bool isFinal) {
+  auto* context = reinterpret_cast<BootloaderUpdateContext*>(request->_tempObject);
 
   if (!context) {
     DEBUG_PRINTLN("No bootloader OTA context - ignoring data");
@@ -760,19 +758,17 @@ void handleBootloaderOTAData(AsyncWebServerRequest* request, size_t index, uint8
 
         // Calculate erase size (must be multiple of 4KB)
         size_t eraseSize = ((bytesToWrite + 0xFFF) / 0x1000) * 0x1000;
-        if (eraseSize > context->maxBootloaderSize) {
-          eraseSize = context->maxBootloaderSize;
-        }
+        eraseSize = std::min<size_t>(eraseSize, context->maxBootloaderSize);
 
         // Erase bootloader region
         DEBUG_PRINTF_P("Erasing %d bytes at 0x%04X...\n", eraseSize, flashOffset);
-        esp_err_t err = esp_flash_erase_region(NULL, flashOffset, eraseSize);
+        esp_err_t err = esp_flash_erase_region(nullptr, flashOffset, eraseSize);
         if (err != ESP_OK) {
           DEBUG_PRINTF_P("Bootloader erase error: %d\n", err);
           context->errorMessage = "Flash erase failed (error code: " + String(err) + ")";
         } else {
           // Write the validated bootloader data to flash
-          err = esp_flash_write(NULL, dataToWrite, flashOffset, bytesToWrite);
+          err = esp_flash_write(nullptr, dataToWrite, flashOffset, bytesToWrite);
           if (err != ESP_OK) {
             DEBUG_PRINTF_P("Bootloader flash write error: %d\n", err);
             context->errorMessage = "Flash write failed (error code: " + String(err) + ")";

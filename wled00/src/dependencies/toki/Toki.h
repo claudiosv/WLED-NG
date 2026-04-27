@@ -42,29 +42,29 @@
 #define TOKI_TS_NTP_P   170  // NTP time with multi-step sync, higher accuracy. Not implemented in WLED
 
 class Toki {
-  typedef enum {
+  using TickT = enum {
     inactive,
     marked,
     active
-  } TickT;
+  };
 
  public:
-  typedef struct {
+  using Time = struct {
     uint32_t sec;
     uint16_t ms;
-  } Time;
+  };
 
  private:
-  uint32_t fullSecondMillis = 0;
-  uint32_t unix             = 0;
-  TickT    tick             = TickT::inactive;
-  uint8_t  timeSrc          = TOKI_TS_NONE;
+  uint32_t fullSecondMillis_ = 0;
+  uint32_t unix_             = 0;
+  TickT    tick_             = TickT::inactive;
+  uint8_t  timeSrc_          = TOKI_TS_NONE;
 
  public:
   void setTime(Time t, uint8_t timeSource = TOKI_TS_MS) {
-    fullSecondMillis = millis() - t.ms;
-    unix             = t.sec;
-    timeSrc          = timeSource;
+    fullSecondMillis_ = millis() - t.ms;
+    unix_             = t.sec;
+    timeSrc_          = timeSource;
   }
 
   void setTime(uint32_t sec, uint16_t ms = TOKI_NO_MS_ACCURACY, uint8_t timeSource = TOKI_TS_MS) {
@@ -78,7 +78,7 @@ class Toki {
     setTime(t, timeSource);
   }
 
-  Time fromNTP(byte *timestamp) {  // ntp timestamp is 8 bytes, 4 bytes second and 4 bytes sub-second fraction
+  static Time fromNTP(byte *timestamp) {  // ntp timestamp is 8 bytes, 4 bytes second and 4 bytes sub-second fraction
     unsigned long highWord = word(timestamp[0], timestamp[1]);
     unsigned long lowWord  = word(timestamp[2], timestamp[3]);
 
@@ -94,13 +94,13 @@ class Toki {
   }
 
   uint16_t millisecond() {
-    uint32_t ms = millis() - fullSecondMillis;
+    uint32_t ms = millis() - fullSecondMillis_;
     while (ms > 999) {
       ms -= 1000;
-      fullSecondMillis += 1000;
-      unix++;
-      if (tick == TickT::inactive) {
-        tick = TickT::marked;  // marked, will be active on next loop
+      fullSecondMillis_ += 1000;
+      unix_++;
+      if (tick_ == TickT::inactive) {
+        tick_ = TickT::marked;  // marked, will be active on next loop
       }
     }
     return ms;
@@ -108,14 +108,15 @@ class Toki {
 
   uint32_t second() {
     millisecond();
-    return unix;
+    return unix_;
   }
 
   // gets the absolute difference between two timestamps in milliseconds
-  uint32_t msDifference(const Time &t0, const Time &t1) {
+  static uint32_t msDifference(const Time &t0, const Time &t1) {
     bool     t1BiggerSec = (t1.sec > t0.sec);
-    uint32_t secDiff     = (t1BiggerSec) ? t1.sec - t0.sec : t0.sec - t1.sec;
-    uint32_t t0ms = t0.ms, t1ms = t1.ms;
+    uint32_t secDiff     = t1BiggerSec ? t1.sec - t0.sec : t0.sec - t1.sec;
+    uint32_t t0ms = t0.ms;
+    uint32_t t1ms = t1.ms;
     if (t1BiggerSec) {
       t1ms += secDiff * 1000;
     } else {
@@ -126,7 +127,7 @@ class Toki {
   }
 
   // return true if t1 is later than t0
-  bool isLater(const Time &t0, const Time &t1) {
+  static bool isLater(const Time &t0, const Time &t1) {
     if (t1.sec > t0.sec) {
       return true;
     }
@@ -139,9 +140,9 @@ class Toki {
     return false;
   }
 
-  void adjust(Time &t, int32_t offset) {
+  static void adjust(Time &t, int32_t offset) {
     int32_t secs = offset / 1000;
-    int32_t ms   = offset - secs * 1000;
+    int32_t ms   = offset - (secs * 1000);
     t.sec += secs;
     int32_t nms = t.ms + ms;
     if (nms > 1000) {
@@ -158,31 +159,31 @@ class Toki {
   Time getTime() {
     Time t;
     t.ms  = millisecond();
-    t.sec = unix;
+    t.sec = unix_;
     return t;
   }
 
-  uint8_t getTimeSource() {
-    return timeSrc;
+  uint8_t getTimeSource() const {
+    return timeSrc_;
   }
 
   void setTick() {
-    if (tick == TickT::marked) {
-      tick = TickT::active;
+    if (tick_ == TickT::marked) {
+      tick_ = TickT::active;
     }
   }
 
   void resetTick() {
-    if (tick == TickT::active) {
-      tick = TickT::inactive;
+    if (tick_ == TickT::active) {
+      tick_ = TickT::inactive;
     }
   }
 
   bool isTick() {
-    return (tick == TickT::active);
+    return (tick_ == TickT::active);
   }
 
-  void printTime(const Time &t, Print &dest = Serial) {
+  static void printTime(const Time &t, Print &dest = Serial) {
     dest.printf("%u,%03u\n", t.sec, t.ms);
   }
 };
