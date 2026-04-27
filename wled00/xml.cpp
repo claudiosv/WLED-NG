@@ -271,6 +271,11 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     #endif
     printSetFormCheckbox(settingsScript,"FG",force802_3g);
     printSetFormCheckbox(settingsScript,"WS",noWifiSleep);
+    #ifdef SOC_WIFI_SUPPORT_5G
+    printSetFormValue(settingsScript,"BM",wifiBandMode);
+    #else
+    settingsScript.print(F("gId('bm').style.display='none';"));
+    #endif
 
     #ifndef WLED_DISABLE_ESPNOW
     printSetFormCheckbox(settingsScript,"RE",enableESPNow);
@@ -291,14 +296,14 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     settingsScript.print("gId('ethd').style.display='none';");
     #endif
 
-    if (Network.isConnected()) //is connected
+    if (WLEDNetwork.isConnected()) //is connected
     {
       char s[32];
-      IPAddress localIP = Network.localIP();
+      IPAddress localIP = WLEDNetwork.localIP();
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
 
       #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-      if (Network.isEthernet()) strcat(s ," (Ethernet)"));
+      if (WLEDNetwork.isEthernet()) strcat_P(s ," (Ethernet)");
       #endif
       printSetClassElementHTML(settingsScript,"sip",0,s);
     } else

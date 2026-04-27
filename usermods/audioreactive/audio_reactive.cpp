@@ -874,7 +874,7 @@ class AudioReactive : public Usermod {
     static const char _dynamics[];
     static const char _frequency[];
     static const char _inputLvl[];
-#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32) // analog mic is only supported on classic esp32
     static const char _analogmic[];
 #endif
     static const char _digitalmic[];
@@ -1366,7 +1366,7 @@ class AudioReactive : public Usermod {
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);   // E (696) I2S: i2s_driver_uninstall(2006): I2S port 0 has not installed
-      #if !defined(CONFIG_IDF_TARGET_ESP32C3)
+      #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5)
         delay(100);
         periph_module_reset(PERIPH_I2S0_MODULE);   // not possible on -C3
       #endif
@@ -1374,15 +1374,15 @@ class AudioReactive : public Usermod {
       useBandPassFilter = false; // filter cuts lowest and highest frequency bands from FFT result (use on very noisy mic inputs)
       useMicFilter = true;       // filter fixes aliasing to base & highest frequency bands and reduces noise floor (recommended for all mic inputs)
 
-      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5)
         if ((i2sckPin == I2S_PIN_NO_CHANGE) && (i2ssdPin >= 0) && (i2swsPin >= 0) && ((dmType == 1) || (dmType == 4)) ) dmType = 5;   // dummy user support: SCK == -1 --means--> PDM microphone
       #endif
 
       switch (dmType) {
-      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
+      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips
         case 0:  //ADC analog
-        #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+        #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5)
         case 5:  //PDM Microphone
         #endif
       #endif
@@ -1411,7 +1411,7 @@ class AudioReactive : public Usermod {
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5)
         case 5:
           DEBUGSR_PRINT("AR: Generic PDM Microphone - "); DEBUGSR_PRINTLN(I2S_PDM_MIC_CHANNEL_TEXT);
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
@@ -1428,7 +1428,7 @@ class AudioReactive : public Usermod {
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
 
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         // ADC over I2S is only possible on "classic" ESP32
         case 0:
           DEBUGSR_PRINTLN("AR: Analog Microphone (left channel only).");
@@ -2006,7 +2006,7 @@ class AudioReactive : public Usermod {
       top[_addPalettes] = addPalettes;
 
 #ifdef ARDUINO_ARCH_ESP32
-    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       JsonObject amic = top.createNestedObject(_analogmic);
       amic["pin"] = audioPin;
     #endif
@@ -2065,16 +2065,16 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[_addPalettes], addPalettes);
 
 #ifdef ARDUINO_ARCH_ESP32
-    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       configComplete &= getJsonValue(top[_analogmic]["pin"], audioPin);
     #else
       audioPin = -1; // MCU does not support analog mic
     #endif
 
       configComplete &= getJsonValue(top[_digitalmic]["type"],   dmType);
-    #if  defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
+    #if  defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32S3)
       if (dmType == 0) dmType = SR_DMTYPE;   // MCU does not support analog
-      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5)
       if (dmType == 5) dmType = SR_DMTYPE;   // MCU does not support PDM
       #endif
     #endif
@@ -2112,14 +2112,14 @@ class AudioReactive : public Usermod {
 #ifdef ARDUINO_ARCH_ESP32
       uiScript.print("uxp=ux+':digitalmic:pin[]';"); // uxp = shortcut for AudioReactive:digitalmic:pin[]
       uiScript.print("dd=addDropdown(ux,'digitalmic:type');");
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       uiScript.print("addOption(dd,'Generic Analog',0);");
     #endif
       uiScript.print("addOption(dd,'Generic I2S',1);");
       uiScript.print("addOption(dd,'ES7243',2);");
       uiScript.print("addOption(dd,'SPH0654',3);");
       uiScript.print("addOption(dd,'Generic I2S with Mclk',4);");
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32C61)
       uiScript.print("addOption(dd,'Generic PDM',5);");
     #endif
     uiScript.print("addOption(dd,'ES8388',6);");
@@ -2155,7 +2155,7 @@ class AudioReactive : public Usermod {
       uiScript.print("addInfo(uxp,0,'<i>sd/data/dout</i>','I2S SD');");
       uiScript.print("addInfo(uxp,1,'<i>ws/clk/lrck</i>','I2S WS');");
       uiScript.print("addInfo(uxp,2,'<i>sck/bclk</i>','I2S SCK');");
-      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         uiScript.print("addInfo(uxp,3,'<i>only use -1, 0, 1 or 3</i>','I2S MCLK');");
       #else
         uiScript.print("addInfo(uxp,3,'<i>master clock</i>','I2S MCLK');");
@@ -2272,14 +2272,14 @@ void AudioReactive::fillAudioPalettes() {
 }
 
 // strings to reduce flash memory usage (used more than twice)
-const char AudioReactive::_name[] = "AudioReactive";
-const char AudioReactive::_enabled[] = "enabled";
-const char AudioReactive::_config[] = "config";
-const char AudioReactive::_dynamics[] = "dynamics";
-const char AudioReactive::_frequency[] = "frequency";
-const char AudioReactive::_inputLvl[] = "inputLevel";
-#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-const char AudioReactive::_analogmic[] = "analogmic";
+const char AudioReactive::_name[]        = "AudioReactive";
+const char AudioReactive::_enabled[]     = "enabled";
+const char AudioReactive::_config[]      = "config";
+const char AudioReactive::_dynamics[]    = "dynamics";
+const char AudioReactive::_frequency[]   = "frequency";
+const char AudioReactive::_inputLvl[]    = "inputLevel";
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C5) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+const char AudioReactive::_analogmic[]   = "analogmic";
 #endif
 const char AudioReactive::_digitalmic[] = "digitalmic";
 const char AudioReactive::_addPalettes[] = "add-palettes";

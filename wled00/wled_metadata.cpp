@@ -2,6 +2,20 @@
 #include "wled.h"
 #include "wled_metadata.h"
 
+#ifndef WLED_VERSION
+  #warning WLED_VERSION was not set - using default value of 'dev'
+  //#define WLED_VERSION dev
+  #define WLED_VERSION 17.0.0-devV5  // ToDO: remove once that set_metadata.py is fixed
+#endif
+#ifndef WLED_RELEASE_NAME
+  #warning WLED_RELEASE_NAME was not set - using default value of 'Custom'
+  #define WLED_RELEASE_NAME "Custom"
+#endif
+#ifndef WLED_REPO
+  // No warning for this one: integrators are not always on GitHub
+  #define WLED_REPO "unknown"
+#endif
+
 constexpr uint32_t WLED_CUSTOM_DESC_MAGIC = 0x57535453;  // "WSTS" (WLED System Tag Structure)
 constexpr uint32_t WLED_CUSTOM_DESC_VERSION = 2;    // v1 - original PR; v2 - "safe to update from" version
 

@@ -231,6 +231,16 @@ bool initEthernet()
   }
   #endif
 
+#if defined(ESP_IDF_VERSION) && (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+  if (!ETH.begin(    // parameter order in V5 has changed
+                (eth_phy_type_t)   es.eth_type,
+                (int32_t) es.eth_address,
+                (int)     es.eth_mdc,
+                (int)     es.eth_mdio,
+                (int)     es.eth_power,
+                (eth_clock_mode_t) es.eth_clk_mode
+                )) {
+#else
   if (!ETH.begin(
                 (uint8_t) es.eth_address,
                 (int)     es.eth_power,
@@ -239,6 +249,7 @@ bool initEthernet()
                 (eth_phy_type_t)   es.eth_type,
                 (eth_clock_mode_t) es.eth_clk_mode
                 )) {
+#endif
     DEBUG_PRINTLN("initE: ETH.begin() failed");
     // de-allocate the allocated pins
     for (managed_pin_type mpt : pinsToAllocate) {
@@ -313,7 +324,7 @@ int findWiFi(bool doScan) {
   } else if (status >= 0) {   // status contains number of found networks (including duplicate SSIDs with different BSSID)
     DEBUG_PRINTF_P("WiFi: Found %d SSIDs. @ %lus\n", status, millis()/1000);
     int rssi = -9999;
-    int selected = selectedWiFi;
+    size_t selected = (static_cast<size_t>(selectedWiFi) < multiWiFi.size()) ? static_cast<size_t>(selectedWiFi) : 0; // ensure valid starting index
     for (int o = 0; o < status; o++) {
       DEBUG_PRINTF_P(" SSID: %s (BSSID: %s RSSI: %ddB\n", WiFi.SSID(o).c_str(), WiFi.BSSIDstr(o).c_str(), WiFi.RSSI(o));
       for (unsigned n = 0; n < multiWiFi.size(); n++)
@@ -390,15 +401,15 @@ void WiFiEvent(WiFiEvent_t event)
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
       // AP client disconnected
       if (--apClients == 0 && isWiFiConfigured()) forceReconnect = true; // no clients reconnect WiFi if awailable
-      DEBUG_PRINTF_P("WiFi-E: AP Client Disconnected (%d @ %lus.\n", (int)apClients, millis()/1000);
+      DEBUG_PRINTF_P("WiFi-E: AP Client Disconnected (%d @ %lus).\n", (int)apClients, millis()/1000);
       break;
     case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
       // AP client connected
       apClients++;
-      DEBUG_PRINTF_P("WiFi-E: AP Client Connected (%d @ %lus.\n", (int)apClients, millis()/1000);
+      DEBUG_PRINTF_P("WiFi-E: AP Client Connected (%d @ %lus).\n", (int)apClients, millis()/1000);
       break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-      DEBUG_PRINT("WiFi-E: IP address: "); DEBUG_PRINTLN(Network.localIP());
+      DEBUG_PRINT("WiFi-E: IP address: "); DEBUG_PRINTLN(WLEDNetwork.localIP());
       break;
     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
       // followed by IDLE and SCAN_DONE
