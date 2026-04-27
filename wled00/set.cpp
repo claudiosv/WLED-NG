@@ -152,7 +152,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
 
 #ifdef ARDUINO_ARCH_ESP32
     int tx  = request->arg("TX").toInt();
-    txPower = min(max(tx, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
+    txPower = min(max(tx, static_cast<int>(WIFI_POWER_2dBm)), static_cast<int>(WIFI_POWER_19_5dBm));
 #endif
 
     force802_3g = request->hasArg("FG");
@@ -407,10 +407,10 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
     } else {
       rlyPin = -1;
     }
-    rlyMde       = (bool)request->hasArg("RM");
-    rlyOpenDrain = (bool)request->hasArg("RO");
+    rlyMde       = request->hasArg("RM");
+    rlyOpenDrain = request->hasArg("RO");
 
-    disablePullUp  = (bool)request->hasArg("IP");
+    disablePullUp  = request->hasArg("IP");
     touchThreshold = request->arg("TT").toInt();
     for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
       int  offset    = i < 10 ? '0' : 'A' - 10;
@@ -745,7 +745,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
     clearTimers();
     char k[5];
     k[4] = 0;
-    for (int ti = 0; ti < (int)WLED_MAX_TIMERS; ti++) {
+    for (int ti = 0; ti < WLED_MAX_TIMERS; ti++) {
       if (ti < 10) {
         k[1] = ti + 48;
         k[2] = 0;
@@ -769,7 +769,7 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
       if (minuteVal > 120) {
         minuteVal = 120;
       }
-      int8_t m   = (int8_t)minuteVal;
+      int8_t m   = static_cast<int8_t>(minuteVal);
       k[0]       = 'W';
       uint8_t wd = request->arg(k).toInt();
       uint8_t ms = 1, me = 12, ds = 1, de = 31;
@@ -885,8 +885,8 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
     }
 
     // global I2C & SPI pins
-    int8_t hw_sda_pin = !request->arg("SDA").length() ? -1 : (int)request->arg("SDA").toInt();
-    int8_t hw_scl_pin = !request->arg("SCL").length() ? -1 : (int)request->arg("SCL").toInt();
+    int8_t hw_sda_pin = !request->arg("SDA").length() ? -1 : static_cast<int>(request->arg("SDA").toInt());
+    int8_t hw_scl_pin = !request->arg("SCL").length() ? -1 : static_cast<int>(request->arg("SCL").toInt());
     if (i2c_sda != hw_sda_pin || i2c_scl != hw_scl_pin) {
       // only if pins changed
       uint8_t old_i2c[2] = {static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda)};
@@ -908,9 +908,9 @@ void handleSettingsSet(AsyncWebServerRequest* request, byte subPage) {
         i2c_scl = -1;
       }
     }
-    int8_t hw_mosi_pin = !request->arg("MOSI").length() ? -1 : (int)request->arg("MOSI").toInt();
-    int8_t hw_miso_pin = !request->arg("MISO").length() ? -1 : (int)request->arg("MISO").toInt();
-    int8_t hw_sclk_pin = !request->arg("SCLK").length() ? -1 : (int)request->arg("SCLK").toInt();
+    int8_t hw_mosi_pin = !request->arg("MOSI").length() ? -1 : static_cast<int>(request->arg("MOSI").toInt());
+    int8_t hw_miso_pin = !request->arg("MISO").length() ? -1 : static_cast<int>(request->arg("MISO").toInt());
+    int8_t hw_sclk_pin = !request->arg("SCLK").length() ? -1 : static_cast<int>(request->arg("SCLK").toInt());
     if (spi_mosi != hw_mosi_pin || spi_miso != hw_miso_pin || spi_sclk != hw_sclk_pin) {
       // only if pins changed
       uint8_t old_spi[3] = {static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso),
@@ -1305,18 +1305,18 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
   // set color from HEX or 32bit DEC
   pos = req.indexOf("CL=");
   if (pos > 0) {
-    colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colIn, const_cast<char*>(req.substring(pos + 3).c_str()));
     col0Changed = true;
   }
   pos = req.indexOf("C2=");
   if (pos > 0) {
-    colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colInSec, const_cast<char*>(req.substring(pos + 3).c_str()));
     col1Changed = true;
   }
   pos = req.indexOf("C3=");
   if (pos > 0) {
     byte tmpCol[4];
-    colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(tmpCol, const_cast<char*>(req.substring(pos + 3).c_str()));
     col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2);  // defined above (SS= or main)
     col2Changed = true;
@@ -1409,13 +1409,13 @@ bool handleSet(AsyncWebServerRequest* request, const String& req, bool apply) {
       seg.custom3 = custom3In;
     }
     if (check1Changed) {
-      seg.check1 = (bool)check1In;
+      seg.check1 = static_cast<bool>(check1In);
     }
     if (check2Changed) {
-      seg.check2 = (bool)check2In;
+      seg.check2 = static_cast<bool>(check2In);
     }
     if (check3Changed) {
-      seg.check3 = (bool)check3In;
+      seg.check3 = static_cast<bool>(check3In);
     }
   }
 

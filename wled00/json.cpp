@@ -518,7 +518,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId) {
 
   tr = root["tb"] | -1;
   if (tr >= 0) {
-    strip.timebase = (unsigned long)tr - millis();
+    strip.timebase = static_cast<unsigned long>(tr) - millis();
   }
 
   JsonObject nl = root["nl"];
@@ -752,7 +752,7 @@ static void serializeSegment(JsonObject& root, const Segment& seg, byte id, bool
     segcol[2] = B(seg.colors[i]);
     segcol[3] = W(seg.colors[i]);
     char tmpcol[22];
-    sprintf(tmpcol, format, (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
+    sprintf(tmpcol, format, static_cast<unsigned>(c[0]), static_cast<unsigned>(c[1]), static_cast<unsigned>(c[2]), static_cast<unsigned>(c[3]));
     strcat(colstr, i < 2 ? strcat(tmpcol, ",") : tmpcol);
   }
   strcat(colstr, "]");
@@ -1078,7 +1078,7 @@ static void setPaletteColors(JsonArray json, CRGBPalette16 palette) {
 }
 
 static void setPaletteColors(JsonArray json, byte* tcp) {
-  TRGBGradientPaletteEntryUnion* ent = (TRGBGradientPaletteEntryUnion*)(tcp);
+  TRGBGradientPaletteEntryUnion* ent = reinterpret_cast<TRGBGradientPaletteEntryUnion*>(tcp);
   TRGBGradientPaletteEntryUnion  u;
 
   // Count entries
@@ -1374,7 +1374,7 @@ static size_t writeJSONString(uint8_t* dest, size_t maxLen, const char* src) {
     if (pos >= maxLen) {
       return false;
     }
-    dest[pos++] = (uint8_t)c;
+    dest[pos++] = static_cast<uint8_t>(c);
     return true;
   };
 

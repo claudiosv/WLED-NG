@@ -1,0 +1,7 @@
+CompileFlags:
+  Add:
+  - "--query-driver=/Users/claudio/.pioarduino/packages/toolchain-*/bin/*"
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add: ["-xc++"]

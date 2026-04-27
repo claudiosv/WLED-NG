@@ -395,7 +395,7 @@ static void parseNotifyPacket(const uint8_t* udpIn) {
         // LSB to MSB: select, reverse, on, mirror, freeze, reset, reverse_y, mirror_y, transpose, map1d2d (3), ssim
         // (2), set (2)
         DEBUG_PRINTF_P("Apply options: %u\n", id);
-        selseg.options = (selseg.options & 0b0000000000110001U) | ((uint16_t)udpIn[28 + ofs] << 8) |
+        selseg.options = (selseg.options & 0b0000000000110001U) | (static_cast<uint16_t>(udpIn[28 + ofs]) << 8) |
                          (udpIn[9 + ofs] & 0b11001110U);  // ignore selected, freeze, reset
         if (applyEffects) {
           DEBUG_PRINTF_P("Apply sliders: %u\n", id);
@@ -790,7 +790,7 @@ void handleNotifications() {
     if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') {  // HTTP API
       String apireq = "win";
       apireq += '&';  // reduce flash string usage
-      apireq += (char*)udpIn;
+      apireq += reinterpret_cast<char*>(udpIn);
       handleSet(nullptr, apireq);
     } else if (udpIn[0] == '{') {  // JSON API
       DeserializationError error = deserializeJson(*pDoc, udpIn);

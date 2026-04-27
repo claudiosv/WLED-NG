@@ -496,15 +496,15 @@ void initServer() {
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, CONTENT_TYPE_PLAIN, (String)VERSION);
+    request->send(200, CONTENT_TYPE_PLAIN, String(VERSION));
   });
 
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, CONTENT_TYPE_PLAIN, (String)millis());
+    request->send(200, CONTENT_TYPE_PLAIN, String(millis()));
   });
 
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, CONTENT_TYPE_PLAIN, (String)getFreeHeapSize());
+    request->send(200, CONTENT_TYPE_PLAIN, String(getFreeHeapSize()));
   });
 
 #ifdef WLED_ENABLE_USERMOD_PAGE

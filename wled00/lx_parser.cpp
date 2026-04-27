@@ -22,7 +22,7 @@ bool parseLx(int lxValue, byte* rgbw) {
     // Loxone Lumitech
     ok              = true;
     float    tmpBri = floor((lxValue - 200000000) / 10000);
-    uint16_t ct     = (lxValue - 200000000) - (((uint8_t)tmpBri) * 10000);
+    uint16_t ct     = (lxValue - 200000000) - ((static_cast<uint8_t>(tmpBri)) * 10000);
 
     tmpBri *= 2.55f;
     tmpBri = constrain(tmpBri, 0, 255);
@@ -38,9 +38,9 @@ bool parseLx(int lxValue, byte* rgbw) {
   }
 
   if (ok) {
-    rgbw[0] = (uint8_t)constrain(lxRed, 0, 255);
-    rgbw[1] = (uint8_t)constrain(lxGreen, 0, 255);
-    rgbw[2] = (uint8_t)constrain(lxBlue, 0, 255);
+    rgbw[0] = static_cast<uint8_t>constrain(lxRed, 0, 255);
+    rgbw[1] = static_cast<uint8_t>constrain(lxGreen, 0, 255);
+    rgbw[2] = static_cast<uint8_t>constrain(lxBlue, 0, 255);
     rgbw[3] = 0;
     return true;
   }

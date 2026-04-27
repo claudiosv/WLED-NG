@@ -308,25 +308,25 @@ void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8
           seg.setPalette(e131_data[dataOffset + 4]);
         }
 
-        if (bool(e131_data[dataOffset + 5] & 0b00000010) != seg.reverse_y) {
-          seg.reverse_y = bool(e131_data[dataOffset + 5] & 0b00000010);
+        if (static_cast<bool>(e131_data[dataOffset + 5] & 0b00000010) != seg.reverse_y) {
+          seg.reverse_y = static_cast<bool>(e131_data[dataOffset + 5] & 0b00000010);
         }
-        if (bool(e131_data[dataOffset + 5] & 0b00000100) != seg.mirror_y) {
-          seg.mirror_y = bool(e131_data[dataOffset + 5] & 0b00000100);
+        if (static_cast<bool>(e131_data[dataOffset + 5] & 0b00000100) != seg.mirror_y) {
+          seg.mirror_y = static_cast<bool>(e131_data[dataOffset + 5] & 0b00000100);
         }
-        if (bool(e131_data[dataOffset + 5] & 0b00001000) != seg.transpose) {
-          seg.transpose = bool(e131_data[dataOffset + 5] & 0b00001000);
+        if (static_cast<bool>(e131_data[dataOffset + 5] & 0b00001000) != seg.transpose) {
+          seg.transpose = static_cast<bool>(e131_data[dataOffset + 5] & 0b00001000);
         }
         if ((e131_data[dataOffset + 5] & 0b00110000) >> 4 != seg.map1D2D) {
           seg.map1D2D = (e131_data[dataOffset + 5] & 0b00110000) >> 4;
         }
         // To maintain backwards compatibility with prior e1.31 values, reverse is fixed to mask 0x01000000
         if ((e131_data[dataOffset + 5] & 0b01000000) != seg.reverse) {
-          seg.reverse = bool(e131_data[dataOffset + 5] & 0b01000000);
+          seg.reverse = static_cast<bool>(e131_data[dataOffset + 5] & 0b01000000);
         }
         // To maintain backwards compatibility with prior e1.31 values, mirror is fixed to mask 0x10000000
         if ((e131_data[dataOffset + 5] & 0b10000000) != seg.mirror) {
-          seg.mirror = bool(e131_data[dataOffset + 5] & 0b10000000);
+          seg.mirror = static_cast<bool>(e131_data[dataOffset + 5] & 0b10000000);
         }
 
         uint32_t colors[3];
@@ -543,8 +543,8 @@ static void prepareArtnetPollReply(ArtPollReply* reply) {
 
   reply->reply_esta_man = 0x0000;
 
-  strlcpy((char*)(reply->reply_short_name), serverDescription, 18);
-  strlcpy((char*)(reply->reply_long_name), serverDescription, 64);
+  strlcpy(reinterpret_cast<char*>(reply->reply_short_name), serverDescription, 18);
+  strlcpy(reinterpret_cast<char*>(reply->reply_long_name), serverDescription, 64);
 
   reply->reply_node_report[0] = '\0';
 
@@ -623,11 +623,11 @@ static void prepareArtnetPollReply(ArtPollReply* reply) {
 }
 
 static void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress) {
-  reply->reply_net_sw    = (uint8_t)((portAddress >> 8) & 0x007F);
-  reply->reply_sub_sw    = (uint8_t)((portAddress >> 4) & 0x000F);
-  reply->reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
+  reply->reply_net_sw    = static_cast<uint8_t>((portAddress >> 8) & 0x007F);
+  reply->reply_sub_sw    = static_cast<uint8_t>((portAddress >> 4) & 0x000F);
+  reply->reply_sw_out[0] = static_cast<uint8_t>(portAddress & 0x000F);
 
-  snprintf((char*)reply->reply_node_report, sizeof(reply->reply_node_report) - 1, "#0001 [%04u] OK - WLED v%.32s",
+  snprintf(reinterpret_cast<char*>(reply->reply_node_report), sizeof(reply->reply_node_report) - 1, "#0001 [%04u] OK - WLED v%.32s",
            pollReplyCount, versionString);
 
   if (pollReplyCount < 9999) {

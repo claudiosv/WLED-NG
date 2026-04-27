@@ -24,7 +24,7 @@ int16_t sin16_t(uint16_t theta) {
     scale = -1;  // second half of the sine function is negative (pi - 2*pi)
   }
   uint32_t precal      = theta * (0x7FFF - theta);
-  uint64_t numerator   = (uint64_t)precal * (4 * 0x7FFF);  // 64bit required
+  uint64_t numerator   = static_cast<uint64_t>(precal) * (4 * 0x7FFF);  // 64bit required
   int32_t  denominator = 1342095361 - precal;              // 1342095361 is 5 * 0x7FFF^2 / 4
   int16_t  result      = numerator / denominator;
   return result * scale;
@@ -35,9 +35,9 @@ int16_t cos16_t(uint16_t theta) {
 }
 
 uint8_t sin8_t(uint8_t theta) {
-  int32_t sin16 = sin16_t((uint16_t)theta * 257);  // 255 * 257 = 0xFFFF
+  int32_t sin16 = sin16_t(static_cast<uint16_t>(theta) * 257);  // 255 * 257 = 0xFFFF
   sin16 += 0x7FFF + 128;                           // shift result to range 0-0xFFFF, +128 for rounding
-  return min(sin16, int32_t(0xFFFF)) >> 8;         // min performs saturation, and prevents overflow
+  return min(sin16, static_cast<int32_t>(0xFFFF)) >> 8;         // min performs saturation, and prevents overflow
 }
 
 uint8_t cos8_t(uint8_t theta) {
@@ -115,7 +115,7 @@ uint32_t sqrt32_bw(uint32_t x) {
 #ifdef HAS_HARDWARE_FPU
   // Cast to float, use single-cycle hardware square root, cast back to int.
   // Avoids the heavy pipeline branching of the while loop below.
-  return (uint32_t)sqrtf((float)x);
+  return (uint32_t)sqrtf(static_cast<float>(x));
 #else
   // bit-wise integer square root calculation (exact)
   uint32_t res = 0;
@@ -224,7 +224,7 @@ float atan2_t(float y, float x) {
 // https://stackoverflow.com/questions/3380628
 //  Absolute error <= 6.7e-5
 float acos_t(float x) {
-  float negate = float(x < 0);
+  float negate = static_cast<float>(x < 0);
   float xabs   = std::abs(x);
   float ret    = -0.0187293f;
   ret          = ret * xabs;

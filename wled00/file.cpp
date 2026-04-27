@@ -454,7 +454,7 @@ static const uint8_t* getPresetCache(size_t& size) {
       presetsCachedTime     = presetsModifiedTime;
       presetsCachedValidate = cacheInvalidate;
       presetsCachedSize     = 0;
-      presetsCached         = (uint8_t*)p_malloc(file.size() + 1);
+      presetsCached         = static_cast<uint8_t*>(p_malloc(file.size() + 1));
       if (presetsCached) {
         presetsCachedSize = file.size();
         file.read(presetsCached, presetsCachedSize);

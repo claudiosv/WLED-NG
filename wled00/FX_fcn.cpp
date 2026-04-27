@@ -58,7 +58,7 @@ uint8_t  Segment::_clipStopY  = 1;
 // copy constructor
 Segment::Segment(const Segment &orig) {
   // DEBUG_PRINTF_P("-- Copy segment constructor: %p -> %p\n", &orig, this);
-  memcpy((void *)this, (void *)&orig, sizeof(Segment));
+  memcpy(reinterpret_cast<void *>(this), reinterpret_cast<void *>(&orig), sizeof(Segment));
   _t       = nullptr;  // copied segment cannot be in transition
   name     = nullptr;
   data     = nullptr;
@@ -97,7 +97,7 @@ Segment::Segment(const Segment &orig) {
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
   // DEBUG_PRINTF_P("-- Move segment constructor: %p -> %p\n", &orig, this);
-  memcpy((void *)this, (void *)&orig, sizeof(Segment));
+  memcpy(reinterpret_cast<void *>(this), reinterpret_cast<void *>(&orig), sizeof(Segment));
   orig._t       = nullptr;  // old segment cannot be in transition any more
   orig.name     = nullptr;
   orig.data     = nullptr;
@@ -121,7 +121,7 @@ Segment &Segment::operator=(const Segment &orig) {
     p_free(pixels);
     pixels = nullptr;
     // copy source
-    memcpy((void *)this, (void *)&orig, sizeof(Segment));
+    memcpy(reinterpret_cast<void *>(this), reinterpret_cast<void *>(&orig), sizeof(Segment));
     // erase pointers to allocated data
     data     = nullptr;
     _dataLen = 0;
@@ -172,7 +172,7 @@ Segment &Segment::operator=(Segment &&orig) noexcept {
     deallocateData();  // free old runtime data
     p_free(pixels);    // free old pixel buffer
     // move source data
-    memcpy((void *)this, (void *)&orig, sizeof(Segment));
+    memcpy(reinterpret_cast<void *>(this), reinterpret_cast<void *>(&orig), sizeof(Segment));
     orig.name     = nullptr;
     orig.data     = nullptr;
     orig._dataLen = 0;
@@ -512,7 +512,7 @@ void Segment::handleRandomPalette() {
   // if randomPaletteChangeTime is shorter than strip.getTransition() palette will never fully blend
   unsigned frameTime      = strip.getFrameTime();   // in ms [8-1000]
   unsigned transitionTime = strip.getTransition();  // in ms [100-65535]
-  if ((uint16_t)now < Segment::_nextPaletteBlend ||
+  if (static_cast<uint16_t>(now) < Segment::_nextPaletteBlend ||
       now > ((Segment::_lastPaletteChange * 1000) + transitionTime + 2 * frameTime)) {
     return;  // not yet time or past transition time, no need to blend
   }
@@ -723,11 +723,11 @@ Segment &Segment::setMode(uint8_t fx, bool loadDefaults) {
       sOpt      = extractModeDefaults(fx, "c3");
       custom3   = (sOpt >= 0) ? sOpt : DEFAULT_C3;
       sOpt      = extractModeDefaults(fx, "o1");
-      check1    = (sOpt >= 0) ? (bool)sOpt : false;
+      check1    = (sOpt >= 0) ? static_cast<bool>(sOpt) : false;
       sOpt      = extractModeDefaults(fx, "o2");
-      check2    = (sOpt >= 0) ? (bool)sOpt : false;
+      check2    = (sOpt >= 0) ? static_cast<bool>(sOpt) : false;
       sOpt      = extractModeDefaults(fx, "o3");
-      check3    = (sOpt >= 0) ? (bool)sOpt : false;
+      check3    = (sOpt >= 0) ? static_cast<bool>(sOpt) : false;
       sOpt      = extractModeDefaults(fx, "m12");
       if (sOpt >= 0) {
         map1D2D = constrain(sOpt, 0, 7);
@@ -740,19 +740,19 @@ Segment &Segment::setMode(uint8_t fx, bool loadDefaults) {
       }
       sOpt = extractModeDefaults(fx, "rev");
       if (sOpt >= 0) {
-        reverse = (bool)sOpt;
+        reverse = static_cast<bool>(sOpt);
       }
       sOpt = extractModeDefaults(fx, "mi");
       if (sOpt >= 0) {
-        mirror = (bool)sOpt;  // NOTE: setting this option is a risky business
+        mirror = static_cast<bool>(sOpt);  // NOTE: setting this option is a risky business
       }
       sOpt = extractModeDefaults(fx, "rY");
       if (sOpt >= 0) {
-        reverse_y = (bool)sOpt;
+        reverse_y = static_cast<bool>(sOpt);
       }
       sOpt = extractModeDefaults(fx, "mY");
       if (sOpt >= 0) {
-        mirror_y = (bool)sOpt;  // NOTE: setting this option is a risky business
+        mirror_y = static_cast<bool>(sOpt);  // NOTE: setting this option is a risky business
       }
     }
     sOpt = extractModeDefaults(fx, "pal");  // always extract 'pal' to set _default_palette
@@ -785,7 +785,7 @@ Segment &Segment::setPalette(uint8_t pal) {
 
 Segment &Segment::setName(const char *newName) {
   if (newName) {
-    const int newLen = min(strlen(newName), (size_t)WLED_MAX_SEGNAME_LEN);
+    const int newLen = min(strlen(newName), static_cast<size_t>(WLED_MAX_SEGNAME_LEN));
     if (newLen) {
       if (name) {
         p_free(name);  // free old name
@@ -893,7 +893,7 @@ uint16_t Segment::virtualLength() const {
 uint16_t Segment::maxMappingLength() const {
   uint32_t vW = virtualWidth();
   uint32_t vH = virtualHeight();
-  return max(sqrt32_bw(vH * vH + vW * vW), (uint32_t)getPinwheelLength(vW, vH));  // use diagonal
+  return max(sqrt32_bw(vH * vH + vW * vW), static_cast<uint32_t>(getPinwheelLength(vW, vH)));  // use diagonal
 }
 #endif
 // pixel is clipped if it falls outside clipping range
@@ -1028,7 +1028,7 @@ void WLED_O2_ATTR Segment::setPixelColor(int i, uint32_t col) const {
           int idx = 0;
           int err = dx + dy;
           while (true) {
-            if ((unsigned)x0 >= (unsigned)vW || (unsigned)y0 >= (unsigned)vH) {
+            if (static_cast<unsigned>(x0) >= static_cast<unsigned>(vW) || static_cast<unsigned>(y0) >= static_cast<unsigned>(vH)) {
               closestEdgeIdx = min(closestEdgeIdx, idx - 2);
               break;  // stop if outside of grid (exploit unsigned int overflow)
             }
@@ -1169,7 +1169,7 @@ uint32_t WLED_O2_ATTR Segment::getPixelColor(int i) const {
   int vStrip = i >> 16;  // virtual strips are only relevant in Bar expansion mode
   i &= 0xFFFF;
 #endif
-  if (i >= (int)vLength()) {
+  if (i >= static_cast<int>(vLength())) {
     return 0;
   }
 
@@ -2325,7 +2325,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   BusManager::setBrightness(scaledBri(b));
   if (!direct) {
     unsigned long t = millis();
-    if (t - _lastShow > min(_frametime, uint16_t(FRAMETIME_FIXED))) {
+    if (t - _lastShow > min(_frametime, static_cast<uint16_t>(FRAMETIME_FIXED))) {
       trigger();  // apply brightness change immediately if no refresh soon, but don't speed up above 42fps
     }
   }

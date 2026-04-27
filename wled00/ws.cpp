@@ -34,7 +34,7 @@ void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
     DEBUG_PRINTLN("WS client disconnected.");
   } else if (type == WS_EVT_DATA) {
     // data packet
-    AwsFrameInfo* info = (AwsFrameInfo*)arg;
+    AwsFrameInfo* info = static_cast<AwsFrameInfo*>(arg);
     if (info->final && info->index == 0 && info->len == len) {
       // the whole message is in a single frame and we got all of its data (max. 1428 bytes)
       if (info->opcode == WS_TEXT) {
@@ -90,10 +90,10 @@ void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
         }
         switch (data[0]) {
           case BINARY_PROTOCOL_E131:
-            handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_E131);
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_E131);
             break;
           case BINARY_PROTOCOL_ARTNET:
-            handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_ARTNET);
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_ARTNET);
             break;
           case BINARY_PROTOCOL_DDP:
             if (len < 10 + offset) {
@@ -108,7 +108,7 @@ void wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType 
               return;  // not enough data, prevent out of bounds read
             }
             // could be a valid DDP packet, forward to handler
-            handleE131Packet((e131_packet_t*)&data[offset], client->remoteIP(), P_DDP);
+            handleE131Packet(reinterpret_cast<e131_packet_t*>(&data[offset]), client->remoteIP(), P_DDP);
         }
       }
     } else {
@@ -182,7 +182,7 @@ void sendDataWs(AsyncWebSocketClient* client) {
     ws.cleanupClients(0);  // disconnect all clients to release memory
     return;                // out of memory
   }
-  serializeJson(*pDoc, (char*)buffer.data(), len);
+  serializeJson(*pDoc, buffer.data(), len);
 
   DEBUG_PRINT("Sending WS data ");
   if (client) {

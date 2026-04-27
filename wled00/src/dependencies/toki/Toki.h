@@ -90,7 +90,7 @@ class Toki {
 
     unsigned long frac = word(timestamp[4], timestamp[5]);  // 65536ths of a second
     frac               = (frac * 1000) >> 16;               // convert to ms
-    return {unix, (uint16_t)frac};
+    return {unix, static_cast<uint16_t>(frac)};
   }
 
   uint16_t millisecond() {

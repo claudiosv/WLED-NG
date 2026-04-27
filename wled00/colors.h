@@ -50,13 +50,13 @@ class NeoGammaWLEDMethod {
     if (!gammaCorrectCol) {
       return color;  // no gamma correction
     }
-    uint8_t w = byte(color >> 24), r = byte(color >> 16), g = byte(color >> 8),
-            b = byte(color);  // extract r, g, b, w channels
+    uint8_t w = static_cast<byte>(color >> 24), r = static_cast<byte>(color >> 16), g = static_cast<byte>(color >> 8),
+            b = static_cast<byte>(color);  // extract r, g, b, w channels
     w         = gammaT[w];
     r         = gammaT[r];
     g         = gammaT[g];
     b         = gammaT[b];
-    return (uint32_t(w) << 24) | (uint32_t(r) << 16) | (uint32_t(g) << 8) | uint32_t(b);
+    return (static_cast<uint32_t>(w) << 24) | (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(b);
   }
 
  private:
@@ -76,7 +76,7 @@ inline uint32_t                  color_blend16(uint32_t c1, uint32_t c2, uint16_
 void                             adjust_color(CRGBW& rgb, int32_t hueShift, int32_t satChange, int32_t valueChange);
 
 [[gnu::hot, gnu::pure]] uint32_t  ColorFromPalette(const CRGBPalette16& pal, unsigned index,
-                                                   uint8_t    brightness = (uint8_t)255U,
+                                                   uint8_t    brightness = static_cast<uint8_t>(255U),
                                                    TBlendType blendType  = LINEARBLEND);
 CRGBPalette16                     generateHarmonicRandomPalette(const CRGBPalette16& basepalette);
 CRGBPalette16                     generateRandomPalette();
@@ -131,15 +131,15 @@ struct CHSV32 {  // 32bit HSV color with 16bit hue for more accurate conversions
   }
 
   inline CHSV32(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline))  // constructor from 8bit h, s, v
-      : h((uint16_t)ih << 8), s(is), v(iv) {
+      : h(static_cast<uint16_t>(ih) << 8), s(is), v(iv) {
   }
 
   inline CHSV32(const CHSV& chsv) __attribute__((always_inline))  // constructor from CHSV
-      : h((uint16_t)chsv.h << 8), s(chsv.s), v(chsv.v) {
+      : h(static_cast<uint16_t>(chsv.h) << 8), s(chsv.s), v(chsv.v) {
   }
 
   inline operator CHSV() const {
-    return CHSV((uint8_t)(h >> 8), s, v);
+    return CHSV(static_cast<uint8_t>(h >> 8), s, v);
   }  // typecast to CHSV
 
   // construction from a 32bit rgb color (white channel is ignored)

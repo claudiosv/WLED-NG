@@ -130,9 +130,9 @@ void DMXInput::init(int8_t rxPin, int8_t txPin, int8_t enPin, uint8_t inputPortN
 
   if (rxPin >= 0 && enPin >= 0 && txPin >= 0) {
     const managed_pin_type pins[] = {
-        {(int8_t)txPin, false}, // these are not used as gpio pins, thus isOutput is always false.
-        {(int8_t)rxPin, false},
-        {(int8_t)enPin, false}
+        {txPin, false}, // these are not used as gpio pins, thus isOutput is always false.
+        {rxPin, false},
+        {enPin, false}
     };
     const bool pinsAllocated = PinManager::allocateMultiplePins(pins, 3, PinOwner::DMX_INPUT);
     if (!pinsAllocated) {
@@ -225,7 +225,7 @@ bool DMXInput::isIdentifyOn() const {
   const bool gotIdentify = rdm_get_identify_device(inputPortNum, &identify);
   // gotIdentify should never be false because it is a default parameter in rdm
   // but just in case we check for it anyway
-  return bool(identify) && gotIdentify;
+  return static_cast<bool>(identify) && gotIdentify;
 }
 
 void DMXInput::checkAndUpdateConfig() {

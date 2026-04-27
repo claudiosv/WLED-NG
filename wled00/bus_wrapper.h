@@ -240,7 +240,7 @@ class PolyBus {
       dotStar_strip->Begin(sck, miso, mosi, ss);
     }
     if (clock_kHz) {
-      dotStar_strip->SetMethodSettings(NeoSpiSettings((uint32_t)clock_kHz * 1000));
+      dotStar_strip->SetMethodSettings(NeoSpiSettings(static_cast<uint32_t>(clock_kHz) * 1000));
     }
   }
 

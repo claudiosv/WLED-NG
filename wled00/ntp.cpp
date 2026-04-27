@@ -587,7 +587,7 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
 #define SUNSET_MAX (24 * 60)  // 1day = max expected absolute value for sun offset in minutes
 // calculate sunrise and sunset (if longitude and latitude are set)
 void calculateSunriseAndSunset() {
-  if ((int)(longitude * 10.) || (int)(latitude * 10.)) {
+  if (static_cast<int>(longitude * 10.) || static_cast<int>(latitude * 10.)) {
     struct tm tim_0;
     tim_0.tm_year  = year(localTime) - 1900;
     tim_0.tm_mon   = month(localTime) - 1;

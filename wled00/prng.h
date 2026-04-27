@@ -22,7 +22,7 @@ class PRNG {
     return seed;
   }
   uint16_t random16(uint16_t lim) {
-    return ((uint32_t)random16() * lim) >> 16;
+    return (static_cast<uint32_t>(random16()) * lim) >> 16;
   }
   uint16_t random16(uint16_t min, uint16_t lim) {
     uint16_t delta = lim - min;
@@ -32,7 +32,7 @@ class PRNG {
     return random16();
   }
   uint8_t random8(uint8_t lim) {
-    return (uint8_t)(((uint16_t)random8() * lim) >> 8);
+    return static_cast<uint8_t>((static_cast<uint16_t>(random8()) * lim) >> 8);
   }
   uint8_t random8(uint8_t min, uint8_t lim) {
     uint8_t delta = lim - min;

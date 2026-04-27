@@ -84,7 +84,7 @@ void onHueData(void* arg, AsyncClient* client, void* data, size_t len) {
   if (!len) {
     return;
   }
-  char* str = (char*)data;
+  char* str = static_cast<char*>(data);
   DEBUG_PRINTLN(hueApiKey);
   DEBUG_PRINTLN(str);
   // only get response body

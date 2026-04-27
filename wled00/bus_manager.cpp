@@ -95,18 +95,18 @@ void Bus::calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
   //          cw: __░▒▓▓  |          cw: ░░▒▒▓ |          cw: ░▒▓▓▓
   int32_t ww_val, cw_val;
   if (_cctBlend < 0) {
-    uint16_t range = 255 - 2 * (uint16_t)(-_cctBlend);
+    uint16_t range = 255 - 2 * static_cast<uint16_t>(-_cctBlend);
     if (range > 255) {
       range = 255;  // prevent overflow
     }
-    ww_val = range ? ((int32_t)(255 + _cctBlend - cct) * 255) / range : (cct < 128 ? 255 : 0);  // exclusive blending
+    ww_val = range ? (static_cast<int32_t>(255 + _cctBlend - cct) * 255) / range : (cct < 128 ? 255 : 0);  // exclusive blending
     cw_val = 255 - ww_val;
   } else {
-    ww_val = _cctBlend ? ((int32_t)(255 - cct) * 255) / (255 - _cctBlend) : 255 - cct;  // additive blending
-    cw_val = _cctBlend ? ((int32_t)cct * 255) / (255 - _cctBlend) : cct;
+    ww_val = _cctBlend ? (static_cast<int32_t>(255 - cct) * 255) / (255 - _cctBlend) : 255 - cct;  // additive blending
+    cw_val = _cctBlend ? (static_cast<int32_t>(cct) * 255) / (255 - _cctBlend) : cct;
   }
-  ww = (uint8_t)(ww_val < 0 ? 0 : ww_val > 255 ? 255 : ww_val);
-  cw = (uint8_t)(cw_val < 0 ? 0 : cw_val > 255 ? 255 : cw_val);
+  ww = static_cast<uint8_t>(ww_val < 0 ? 0 : ww_val > 255 ? 255 : ww_val);
+  cw = static_cast<uint8_t>(cw_val < 0 ? 0 : cw_val > 255 ? 255 : cw_val);
 
   ww = (w * ww) / 255;  // brightness scaling
   cw = (w * cw) / 255;
@@ -231,7 +231,7 @@ void BusDigital::estimateCurrent() {
   // _colorSum has all the values of color channels summed, max would be getLength()*(3*255 + (255 if hasWhite()):
   // convert to milliAmps
   uint32_t clrUnitsPerChannel = hasWhite() ? 4 * 255 : 3 * 255;
-  _milliAmpsTotal             = ((uint64_t)_colorSum * actualMilliampsPerLed) / clrUnitsPerChannel +
+  _milliAmpsTotal             = (static_cast<uint64_t>(_colorSum) * actualMilliampsPerLed) / clrUnitsPerChannel +
                                 getLength();  // add 1mA standby current per LED to total (WS2812: ~0.7mA, WS2815: ~2mA)
 }
 
@@ -247,7 +247,7 @@ void BusDigital::applyBriLimit(uint8_t newBri) {
     if (_milliAmpsLimit > getLength()) {  // each LED uses about 1mA in standby
       if (_milliAmpsTotal > _milliAmpsLimit) {
         // scale brightness down to stay in current limit
-        newBri          = ((uint32_t)_milliAmpsLimit * 255) / _milliAmpsTotal + 1;  // +1 to avoid 0 brightness
+        newBri          = (static_cast<uint32_t>(_milliAmpsLimit) * 255) / _milliAmpsTotal + 1;  // +1 to avoid 0 brightness
         _milliAmpsTotal = _milliAmpsLimit;
       }
     } else {
@@ -515,7 +515,7 @@ BusPwm::BusPwm(const BusConfig &bc)
 
   managed_pin_type pins[numPins];
   for (unsigned i = 0; i < numPins; i++) {
-    pins[i] = {(int8_t)bc.pins[i], true};
+    pins[i] = {static_cast<int8_t>(bc.pins[i]), true};
   }
   if (PinManager::allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) {
     // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the
@@ -539,8 +539,8 @@ BusPwm::BusPwm(const BusConfig &bc)
       ledcAttachPin(_pins[i], channel);
       // LEDC timer reset credit @dedehai
       uint8_t group = (channel / 8), timer = ((channel / 2) % 4);  // same fromula as in ledcSetup()
-      ledc_timer_rst((ledc_mode_t)group,
-                     (ledc_timer_t)timer);  // reset timer so all timers are almost in sync (for phase shift)
+      ledc_timer_rst(static_cast<ledc_mode_t>(group),
+                     static_cast<ledc_timer_t>(timer));  // reset timer so all timers are almost in sync (for phase shift)
     }
     _hasRgb   = hasRGB(bc.type);
     _hasWhite = hasWhite(bc.type);
@@ -646,9 +646,9 @@ void BusPwm::show() {
     pwmBri = (pwmBri * maxBri + 2300 / 2) /
              2300;  // adding '0.5' before division for correct rounding, 2300 gives a good match to CIE curve
   } else {          // cubic response for values [21-255]
-    float temp = float(pwmBri + 41) / float(255 + 41);  // 41 is to match offset & slope to linear part
-    temp       = temp * temp * temp * (float)maxBri;
-    pwmBri     = (unsigned)temp;  // pwmBri is in range [0-maxBri] C
+    float temp = static_cast<float>(pwmBri + 41) / static_cast<float>(255 + 41);  // 41 is to match offset & slope to linear part
+    temp       = temp * temp * temp * static_cast<float>(maxBri);
+    pwmBri     = static_cast<unsigned>(temp);  // pwmBri is in range [0-maxBri] C
   }
 
   [[maybe_unused]] unsigned hPoint = 0;  // phase shift (0 - maxBri)
@@ -686,7 +686,7 @@ void BusPwm::show() {
         duty << ((!dithering) * 4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
     LEDC.channel_group[gr].channel[ch].hpoint.hpoint =
         hPoint >> bitShift;  // hPoint is at _depth resolution (needs shifting if dithering)
-    ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
+    ledc_update_duty(static_cast<ledc_mode_t>(gr), static_cast<ledc_channel_t>(ch));
 
     if (!_reversed) {
       hPoint += duty;
@@ -761,7 +761,7 @@ void BusOnOff::setPixelColor(unsigned pix, uint32_t c) {
   if (pix != 0 || !_valid) {
     return;  // only react to first pixel
   }
-  _data = (c > 0) && bool(_bri) ? 0xFF : 0;  // if any color channel is on and brightness is not zero, set to on
+  _data = (c > 0) && static_cast<bool>(_bri) ? 0xFF : 0;  // if any color channel is on and brightness is not zero, set to on
 }
 
 uint32_t BusOnOff::getPixelColor(unsigned pix) const {
@@ -775,7 +775,7 @@ void BusOnOff::show() {
   if (!_valid) {
     return;
   }
-  digitalWrite(_pin, _reversed ? !(bool)_data : (bool)_data);
+  digitalWrite(_pin, _reversed ? !static_cast<bool>(_data) : static_cast<bool>(_data));
 }
 
 size_t BusOnOff::getPins(uint8_t *pinArray) const {
@@ -819,7 +819,7 @@ BusNetwork::BusNetwork(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhit
   _hostname = bc.text;
   resolveHostname();  // resolve hostname to IP address if needed
 #endif
-  _data  = (uint8_t *)d_calloc(_len, _UDPchannels);
+  _data  = static_cast<uint8_t *>(d_calloc(_len, _UDPchannels));
   _valid = (_data != nullptr);
   DEBUGBUS_PRINTF_P("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n", _valid ? "S" : "Uns",
                     bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);

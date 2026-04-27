@@ -435,7 +435,7 @@ class BusDigital : public Bus {
 
   inline uint32_t restoreColorLossy(uint32_t c, uint8_t restoreBri) const {
     if (restoreBri < 255) {
-      uint8_t *chan = (uint8_t *)&c;
+      uint8_t *chan = reinterpret_cast<uint8_t *>(&c);
       for (uint_fast8_t i = 0; i < 4; i++) {
         uint_fast16_t val = chan[i];
         chan[i]           = ((val << 8) + restoreBri) /
@@ -667,7 +667,7 @@ struct BusConfig {
         iType(0)  // default to I_NONE
         ,
         text(sometext) {
-    refreshReq = (bool)GET_BIT(busType, 7);
+    refreshReq = static_cast<bool>GET_BIT(busType, 7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
     size_t nPins = Bus::getNumberOfPins(type);
     for (size_t i = 0; i < nPins; i++) {

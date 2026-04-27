@@ -234,7 +234,7 @@ void WLED::loop() {
   }
 
   // free memory and reconnect WiFi to clear stale allocations if heap is too low for too long, check once every 5s
-  if ((uint16_t)(millis() - heapTime) > 5000) {
+  if (static_cast<uint16_t>(millis() - heapTime) > 5000) {
 #ifdef CONFIG_IDF_TARGET_ESP32C3
     // calling getContiguousFreeHeap() during led update causes glitches on C3
     // this can (probably) be removed once RMT driver for C3 is fixed
@@ -278,7 +278,7 @@ void WLED::loop() {
       default:
         break;
     }
-    heapTime = (uint16_t)millis();
+    heapTime = static_cast<uint16_t>(millis());
   }
 
   // LED settings have been saved, re-init busses
@@ -448,7 +448,7 @@ void WLED::setup() {
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
-  gpio_pulldown_en((gpio_num_t)hardwareRX);
+  gpio_pulldown_en(static_cast<gpio_num_t>(hardwareRX));
   delay(1);  // suppress noise in case RX pin is floating (at low noise energy) - see issue #3128
 // note: can not use pinMode(): it routes GPIO through the GPIO matrix and detaches UART0 RX
 #endif

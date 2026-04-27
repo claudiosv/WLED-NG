@@ -539,7 +539,7 @@ class Segment {
 
  protected:
   inline static void addUsedSegmentData(int len) {
-    Segment::_usedSegmentData = max(0, int(Segment::_usedSegmentData) + len);
+    Segment::_usedSegmentData = max(0, static_cast<int>(Segment::_usedSegmentData) + len);
   }  // clamp negative results to 0
 
   inline uint32_t *getPixels() const {
@@ -792,7 +792,7 @@ class Segment {
   uint16_t          maxMappingLength() const;
   [[gnu::hot]] void setPixelColor(int n, uint32_t c) const;  // set relative pixel within segment with color
   inline void       setPixelColor(unsigned n, uint32_t c) const {
-    setPixelColor(int(n), c);
+    setPixelColor(static_cast<int>(n), c);
   }
   inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) const {
     setPixelColor(n, RGBW32(r, g, b, w));
@@ -871,7 +871,7 @@ class Segment {
   }
   [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c) const;  // set relative pixel within segment with color
   inline void       setPixelColorXY(unsigned x, unsigned y, uint32_t c) const {
-    setPixelColorXY(int(x), int(y), c);
+    setPixelColorXY(static_cast<int>(x), static_cast<int>(y), c);
   }
   inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const {
     setPixelColorXY(x, y, RGBW32(r, g, b, w));
@@ -880,7 +880,7 @@ class Segment {
     setPixelColorXY(x, y, RGBW32(c.r, c.g, c.b, 0));
   }
   inline void setPixelColorXY(unsigned x, unsigned y, CRGB c) const {
-    setPixelColorXY(int(x), int(y), RGBW32(c.r, c.g, c.b, 0));
+    setPixelColorXY(static_cast<int>(x), static_cast<int>(y), RGBW32(c.r, c.g, c.b, 0));
   }
 #ifdef WLED_USE_AA_PIXELS
   void        setPixelColorXY(float x, float y, uint32_t c, bool aa = true) const;

@@ -169,7 +169,7 @@ void sendImprovStateResponse(uint8_t state, bool error) {
     checksum += out[i];
   }
   out[10] = checksum;
-  Serial.write((uint8_t*)out, 11);
+  Serial.write(reinterpret_cast<uint8_t*>(out), 11);
   Serial.write('\n');
 }
 
@@ -206,7 +206,7 @@ void sendImprovRPCResult(ImprovRPCType type, uint8_t n_strings, const char** str
     checksum += out[i];
   }
   out[packetLen - 1] = checksum;
-  Serial.write((uint8_t*)out, packetLen);
+  Serial.write(reinterpret_cast<uint8_t*>(out), packetLen);
   Serial.write('\n');
   DIMPROV_PRINT("RPC result checksum");
   DIMPROV_PRINTLN(checksum);

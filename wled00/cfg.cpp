@@ -96,7 +96,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       char      ssid[33]  = "";
       char      pass[65]  = "";
       char      bssid[13] = "";
-      IPAddress nIP = (uint32_t)0U, nGW = (uint32_t)0U, nSN = (uint32_t)0x00FFFFFF;  // little endian
+      IPAddress nIP = static_cast<uint32_t>(0U), nGW = static_cast<uint32_t>(0U), nSN = static_cast<uint32_t>(0x00FFFFFF);  // little endian
       getStringFromJson(ssid, wifi["ssid"], 33);
       getStringFromJson(pass, wifi["psk"], 65);  // password is not normally present but if it is, use it
       getStringFromJson(bssid, wifi["bssid"], 13);
@@ -175,7 +175,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(force802_3g, wifi["phy"]);  // force phy mode g?
 #ifdef ARDUINO_ARCH_ESP32
   CJSON(txPower, wifi["txpwr"]);
-  txPower = min(max((int)txPower, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
+  txPower = min(max(static_cast<int>(txPower), static_cast<int>(WIFI_POWER_2dBm)), static_cast<int>(WIFI_POWER_19_5dBm));
 #endif
 
   JsonObject hw = doc["hw"];

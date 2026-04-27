@@ -91,7 +91,7 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   if (durations.isNull()) {
     uint32_t durMs         = playlistObj["dur"] | 100;                 // 10 seconds as fallback (tenths)
     durMs                  = constrain(durMs, 0L, 42949670L) * 100UL;  // limit to max value and convert to ms
-    playlistEntries[0].dur = (uint32_t)durMs;
+    playlistEntries[0].dur = durMs;
     it                     = 1;
   } else {
     for (int dur : durations) {
@@ -99,7 +99,7 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
         break;
       }
       uint32_t durMs          = constrain(dur, 0L, 42949670L) * 100UL;  // limit to max value and convert to ms
-      playlistEntries[it].dur = (uint32_t)durMs;
+      playlistEntries[it].dur = durMs;
       it++;
     }
   }

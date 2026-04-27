@@ -13,10 +13,10 @@ static void _overlayAnalogClock() {
     _overlayAnalogCountdown();
     return;
   }
-  float hourP        = ((float)(hour(localTime) % 12)) / 12.0f;
-  float minuteP      = ((float)minute(localTime)) / 60.0f;
+  float hourP        = (static_cast<float>(hour(localTime) % 12)) / 12.0f;
+  float minuteP      = (static_cast<float>(minute(localTime))) / 60.0f;
   hourP              = hourP + minuteP / 12.0f;
-  float    secondP   = ((float)second(localTime)) / 60.0f;
+  float    secondP   = (static_cast<float>(second(localTime))) / 60.0f;
   unsigned hourPixel = floorf(analogClock12pixel + overlaySize * hourP);
   if (hourPixel > overlayMax) {
     hourPixel = overlayMin - 1 + hourPixel - overlayMax;
@@ -54,7 +54,7 @@ static void _overlayAnalogClock() {
 }
 
 static void _overlayAnalogCountdown() {
-  if ((unsigned long)toki.second() < countdownTime) {
+  if (static_cast<unsigned long>(toki.second()) < countdownTime) {
     long  diff = countdownTime - toki.second();
     float pval = 60.0f;
     if (diff > 31557600L)  // display in years if more than 365 days
@@ -77,7 +77,7 @@ static void _overlayAnalogCountdown() {
       pval = 3600.0f;  // 1 hour
     }
     int   overlaySize = overlayMax - overlayMin + 1;
-    float perc        = (pval - (float)diff) / pval;
+    float perc        = (pval - static_cast<float>(diff)) / pval;
     if (perc > 1.0f) {
       perc = 1.0f;
     }
@@ -85,14 +85,14 @@ static void _overlayAnalogCountdown() {
     if (analogClock12pixel + pixelCnt > overlayMax) {
       strip.setRange(
           analogClock12pixel, overlayMax,
-          ((uint32_t)colSec[3] << 24) | ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+          (static_cast<uint32_t>(colSec[3]) << 24) | (static_cast<uint32_t>(colSec[0]) << 16) | (static_cast<uint32_t>(colSec[1]) << 8) | colSec[2]);
       strip.setRange(
           overlayMin, overlayMin + pixelCnt - (1 + overlayMax - analogClock12pixel),
-          ((uint32_t)colSec[3] << 24) | ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+          (static_cast<uint32_t>(colSec[3]) << 24) | (static_cast<uint32_t>(colSec[0]) << 16) | (static_cast<uint32_t>(colSec[1]) << 8) | colSec[2]);
     } else {
       strip.setRange(
           analogClock12pixel, analogClock12pixel + pixelCnt,
-          ((uint32_t)colSec[3] << 24) | ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+          (static_cast<uint32_t>(colSec[3]) << 24) | (static_cast<uint32_t>(colSec[0]) << 16) | (static_cast<uint32_t>(colSec[1]) << 8) | colSec[2]);
     }
   }
 }

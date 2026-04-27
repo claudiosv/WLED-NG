@@ -38,9 +38,9 @@ void parseNumber(const char* str, byte& val, byte minv, byte maxv) {
         return;
       }
       if (str[1] == '-') {
-        val = (int)(val - 1) < (int)minv ? maxv : min((int)maxv, (val - 1));  //-1, wrap around
+        val = (val - 1) < static_cast<int>(minv) ? maxv : min(static_cast<int>(maxv), (val - 1));  //-1, wrap around
       } else {
-        val = (int)(val + 1) > (int)maxv ? minv : max((int)minv, (val + 1));  //+1, wrap around
+        val = (val + 1) > static_cast<int>(maxv) ? minv : max(static_cast<int>(minv), (val + 1));  //+1, wrap around
       }
     } else {
       if (wrap && val == maxv && out > 0) {
@@ -152,7 +152,7 @@ static void sanitizeHostname(char* hostname, size_t maxLen) {
   unsigned pos = 0;
   while (*pC && pos < maxLen) {
     char c = *pC;
-    if (isalnum((unsigned char)c)) {
+    if (isalnum(static_cast<unsigned char>(c))) {
       hostname[pos++] = c;
     } else if (c == ' ' || c == '_' || c == '-' || c == '+' || c == '!' || c == '?' ||
                c == '*') {  // convert certain characters to hyphens
@@ -243,7 +243,7 @@ bool isAsterisksOnly(const char* str, byte maxLen) {
   ((c) < 0x80 ? 1 : ((c) < 0xE0 ? 2 : ((c) < 0xF0 ? 3 : 4)))  // determine UTF-8 sequence length from first byte
 
 uint32_t utf8_decode(const char* s, uint8_t* len) {
-  uint8_t c = (uint8_t)s[0];
+  uint8_t c = static_cast<uint8_t>(s[0]);
   if (c == '\0') {
     return 0;
   }
@@ -417,7 +417,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char* dest, uint8_t maxL
             if (i == slider) {
               nameDefault = names.indexOf('=', nameBegin);  // find default value
               if (nameDefault > 0 && var && ((nameEnd > 0 && nameDefault < nameEnd) || nameEnd < 0)) {
-                *var = (uint8_t)atoi(names.substring(nameDefault + 1).c_str());
+                *var = static_cast<uint8_t>(atoi(names.substring(nameDefault + 1).c_str()));
               }
               if (names.charAt(nameBegin) == '!') {
                 switch (slider) {
@@ -467,7 +467,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char* dest, uint8_t maxL
               nameBegin = -1;
             }
             if (nameBegin >= 0 && var) {
-              *var = (uint8_t)atoi(names.substring(nameBegin + 1).c_str());
+              *var = static_cast<uint8_t>(atoi(names.substring(nameBegin + 1).c_str()));
             }
           }
         }
@@ -542,7 +542,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
   while (length--) {
     x = crc >> 8 ^ *data_p++;
     x ^= x >> 4;
-    crc = (crc << 8) ^ ((uint16_t)(x << 12)) ^ ((uint16_t)(x << 5)) ^ ((uint16_t)x);
+    crc = (crc << 8) ^ (static_cast<uint16_t>(x << 12)) ^ (static_cast<uint16_t>(x << 5)) ^ (static_cast<uint16_t>(x));
   }
   return crc;
 }
@@ -654,7 +654,7 @@ um_data_t* simulateSound(uint8_t simulationId) {
     um_data->u_data[7] = &binNum;
   } else {
     // get arrays from um_data
-    fftResult = (uint8_t*)um_data->u_data[2];
+    fftResult = static_cast<uint8_t*>(um_data->u_data[2]);
   }
 
   uint32_t ms = millis();
@@ -810,7 +810,7 @@ uint32_t hashInt(uint32_t s) {
 // 32 bit random number generator, inlining uses more code, use hw_random16() if speed is critical (see fcn_declare.h)
 uint32_t hw_random(uint32_t upperlimit) {
   uint32_t rnd    = hw_random();
-  uint64_t scaled = uint64_t(rnd) * uint64_t(upperlimit);
+  uint64_t scaled = static_cast<uint64_t>(rnd) * static_cast<uint64_t>(upperlimit);
   return scaled >> 32;
 }
 
@@ -1300,17 +1300,17 @@ uint16_t perlin16(uint32_t x, uint32_t y, uint32_t z) {
 }
 
 uint8_t perlin8(uint16_t x) {
-  return (((perlin1D_raw((uint32_t)x << 8, true) * 1353) >> 10) + 32769) >>
+  return (((perlin1D_raw(static_cast<uint32_t>(x) << 8, true) * 1353) >> 10) + 32769) >>
          8;  // scale to 16 bit, offset, then scale to 8bit
 }
 
 uint8_t perlin8(uint16_t x, uint16_t y) {
-  return (((perlin2D_raw((uint32_t)x << 8, (uint32_t)y << 8, true) * 1620) >> 10) + 32771) >>
+  return (((perlin2D_raw(static_cast<uint32_t>(x) << 8, static_cast<uint32_t>(y) << 8, true) * 1620) >> 10) + 32771) >>
          8;  // scale to 16 bit, offset, then scale to 8bit
 }
 
 uint8_t perlin8(uint16_t x, uint16_t y, uint16_t z) {
-  return (((perlin3D_raw((uint32_t)x << 8, (uint32_t)y << 8, (uint32_t)z << 8, true) * 2015) >> 10) + 33168) >>
+  return (((perlin3D_raw(static_cast<uint32_t>(x) << 8, static_cast<uint32_t>(y) << 8, static_cast<uint32_t>(z) << 8, true) * 2015) >> 10) + 33168) >>
          8;  // scale to 16 bit, offset, then scale to 8bit
 }
 
@@ -1322,7 +1322,7 @@ String computeSHA1(const String& input) {
 
   mbedtls_sha1_init(&ctx);
   mbedtls_sha1_starts_ret(&ctx);
-  mbedtls_sha1_update_ret(&ctx, (const unsigned char*)input.c_str(), input.length());
+  mbedtls_sha1_update_ret(&ctx, reinterpret_cast<const unsigned char*>(input.c_str()), input.length());
   mbedtls_sha1_finish_ret(&ctx, shaResult);
   mbedtls_sha1_free(&ctx);
 
@@ -1342,7 +1342,7 @@ String generateDeviceFingerprint() {
   uint32_t        fp[2] = {0, 0};  // create 64 bit fingerprint
   esp_chip_info_t chip_info;
   esp_chip_info(&chip_info);
-  esp_efuse_mac_get_default((uint8_t*)fp);
+  esp_efuse_mac_get_default(reinterpret_cast<uint8_t*>(fp));
   fp[1] ^= ESP.getFlashChipSize();
   fp[0] ^= chip_info.full_revision | (chip_info.model << 16);
   // mix in ADC calibration data:

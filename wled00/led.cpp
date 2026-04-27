@@ -66,11 +66,11 @@ void toggleOnOff() {
 
 // scales the brightness with the briMultiplier factor
 byte scaledBri(byte in) {
-  unsigned val = ((unsigned)in * briMultiplier) / 100;
+  unsigned val = (static_cast<unsigned>(in) * briMultiplier) / 100;
   if (val > 255) {
     val = 255;
   }
-  return (byte)val;
+  return static_cast<byte>(val);
 }
 
 // applies global temporary brightness (briT) to strip
@@ -204,7 +204,7 @@ void handleTransitions() {
       return;
     }
     byte briTO    = briT;
-    int  deltaBri = (int)bri - (int)briOld;
+    int  deltaBri = static_cast<int>(bri) - static_cast<int>(briOld);
     briT          = briOld + (deltaBri * ti / tr);
     if (briTO != briT) {
       applyBri();
@@ -232,7 +232,7 @@ void handleNightlight() {
     if (!nightlightActiveOld)  // init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs   = (unsigned)(nightlightDelayMins * 60000);
+      nightlightDelayMs   = static_cast<unsigned>(nightlightDelayMins * 60000);
       nightlightActiveOld = true;
       briNlT              = bri;
       for (unsigned i = 0; i < 4; i++) {
@@ -262,7 +262,7 @@ void handleNightlight() {
         colorUpdated(CALL_MODE_NO_NOTIFY);
       }
     }
-    float nper = (millis() - nightlightStartTime) / ((float)nightlightDelayMs);
+    float nper = (millis() - nightlightStartTime) / (static_cast<float>(nightlightDelayMs));
     if (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE) {
       bri = briNlT + ((nightlightTargetBri - briNlT) * nper);
       if (nightlightMode == NL_MODE_COLORFADE)  // color fading only is enabled with "NF=2"

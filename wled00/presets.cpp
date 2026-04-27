@@ -74,7 +74,7 @@ static void doSaveState() {
     p_free(tmpRAMbuffer);
     size_t len = measureJson(*pDoc) + 1;
     // if possible use SPI RAM on ESP32
-    tmpRAMbuffer = (char*)p_malloc(len);
+    tmpRAMbuffer = static_cast<char*>(p_malloc(len));
     if (tmpRAMbuffer != nullptr) {
       serializeJson(*pDoc, tmpRAMbuffer, len);
     } else {

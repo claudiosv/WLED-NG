@@ -213,7 +213,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) const {
   if (!isActive()) {
     return;  // not active
   }
-  if ((unsigned)x >= vWidth() || (unsigned)y >= vHeight()) {
+  if (static_cast<unsigned>(x) >= vWidth() || static_cast<unsigned>(y) >= vHeight()) {
     return;  // if pixel would fall out of virtual segment just exit
   }
   setPixelColorXYRaw(x, y, col);
@@ -270,7 +270,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) {
     return 0;  // not active
   }
-  if ((unsigned)x >= vWidth() || (unsigned)y >= vHeight()) {
+  if (static_cast<unsigned>(x) >= vWidth() || static_cast<unsigned>(y) >= vHeight()) {
     return 0;  // if pixel would fall out of virtual segment just exit
   }
   return getPixelColorXYRaw(x, y);
@@ -531,8 +531,8 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
     int       y       = radius;
     unsigned  oldFade = 0;
     while (x < y) {
-      float   yf   = sqrtf(float(rsq - x * x));       // needs to be floating point
-      uint8_t fade = float(0xFF) * (ceilf(yf) - yf);  // how much color to keep
+      float   yf   = sqrtf(static_cast<float>(rsq - x * x));       // needs to be floating point
+      uint8_t fade = static_cast<float>(0xFF) * (ceilf(yf) - yf);  // how much color to keep
       if (oldFade > fade) {
         y--;
       }
@@ -591,8 +591,8 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
   // fill it
   for (int y = -radius; y <= radius; y++) {
     for (int x = -radius; x <= radius; x++) {
-      if (x * x + y * y <= radius * radius && int(cx) + x >= 0 && int(cy) + y >= 0 && int(cx) + x < vW &&
-          int(cy) + y < vH) {
+      if (x * x + y * y <= radius * radius && static_cast<int>(cx) + x >= 0 && static_cast<int>(cy) + y >= 0 && static_cast<int>(cx) + x < vW &&
+          static_cast<int>(cy) + y < vH) {
         setPixelColorXY(cx + x, cy + y, col);
       }
     }
@@ -632,12 +632,12 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       std::swap(x0, x1);
       std::swap(y0, y1);
     }
-    float gradient   = x1 - x0 == 0 ? 1.0f : float(y1 - y0) / float(x1 - x0);
+    float gradient   = x1 - x0 == 0 ? 1.0f : static_cast<float>(y1 - y0) / static_cast<float>(x1 - x0);
     float intersectY = y0;
     for (int x = x0; x <= x1; x++) {
-      uint8_t keep = float(0xFF) * (intersectY - int(intersectY));  // how much color to keep
+      uint8_t keep = static_cast<float>(0xFF) * (intersectY - static_cast<int>(intersectY));  // how much color to keep
       uint8_t seep = 0xFF - keep;                                   // how much background to keep
-      int     y    = int(intersectY);
+      int     y    = static_cast<int>(intersectY);
       if (steep) {
         std::swap(x, y);  // temporaryly swap if steep
       }

@@ -139,7 +139,7 @@ class Espalexa {
   // get device index from Json key
   uint8_t decodeLightKey(int key) {
     // return key -1;
-    return (((uint32_t)key >> 7) == mac24) ? (key & 127U) : 255U;
+    return ((static_cast<uint32_t>(key) >> 7) == mac24) ? (key & 127U) : 255U;
   }
 
   // device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color
@@ -157,7 +157,7 @@ class Espalexa {
       // sprintf(buf_col,",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%f,%f]"
       //   ,dev->getHue(), dev->getSat(), dev->getX(), dev->getY());
       snprintf(buf_col, sizeof(buf_col), ",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%s,%s]", dev->getHue(),
-               dev->getSat(), ((String)dev->getX()).c_str(), ((String)dev->getY()).c_str());
+               dev->getSat(), (String(dev->getX())).c_str(), (String(dev->getY())).c_str());
     }
 
     char buf_ct[16] = "";
@@ -333,7 +333,7 @@ class Espalexa {
 
     espalexaUdp.beginPacket(espalexaUdp.remoteIP(), espalexaUdp.remotePort());
 #ifdef ARDUINO_ARCH_ESP32
-    espalexaUdp.write((uint8_t*)buf, strlen(buf));
+    espalexaUdp.write(reinterpret_cast<uint8_t*>(buf), strlen(buf));
 #else
     espalexaUdp.write(buf);
 #endif
@@ -419,7 +419,7 @@ class Espalexa {
       return;  // do not reply to M-SEARCH if not discoverable
     }
 
-    const char* request = (const char*)packetBuffer;
+    const char* request = reinterpret_cast<const char*>(packetBuffer);
     if (strstr(request, "M-SEARCH") == nullptr) {
       return;
     }

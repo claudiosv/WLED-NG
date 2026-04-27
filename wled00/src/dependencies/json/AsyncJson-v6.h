@@ -176,11 +176,11 @@ class AsyncCallbackJsonWebHandler : public AsyncWebHandler {
                           size_t total) override final {
     if (_onRequest) {
       _contentLength = total;
-      if (total > 0 && request->_tempObject == NULL && (int)total < _maxContentLength) {
+      if (total > 0 && request->_tempObject == NULL && static_cast<int>(total) < _maxContentLength) {
         request->_tempObject = malloc(total);
       }
       if (request->_tempObject != NULL) {
-        memcpy((uint8_t *)(request->_tempObject) + index, data, len);
+        memcpy(static_cast<uint8_t *>(request->_tempObject) + index, data, len);
       }
     }
   }

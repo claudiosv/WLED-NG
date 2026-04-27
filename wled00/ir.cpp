@@ -61,7 +61,7 @@ static void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID
 }
 
 static byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF) {
-  int16_t new_val = (int16_t)property + amount;
+  int16_t new_val = static_cast<int16_t>(property) + amount;
   if (lowerBoundary >= higherBoundary) {
     return property;
   }
@@ -71,7 +71,7 @@ static byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0,
   if (new_val < lowerBoundary) {
     new_val = lowerBoundary;
   }
-  return (byte)constrain(new_val, 0, 255);
+  return static_cast<byte>constrain(new_val, 0, 255);
 }
 
 static void changeEffect(uint8_t fx) {
@@ -110,8 +110,8 @@ static void changePalette(uint8_t pal) {
 
 static void changeEffectSpeed(int8_t amount) {
   if (effectCurrent != 0) {
-    int16_t new_val = (int16_t)effectSpeed + amount;
-    effectSpeed     = (byte)constrain(new_val, 0, 255);
+    int16_t new_val = static_cast<int16_t>(effectSpeed) + amount;
+    effectSpeed     = static_cast<byte>constrain(new_val, 0, 255);
     if (irApplyToAllSelected) {
       for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
@@ -157,8 +157,8 @@ static void changeEffectSpeed(int8_t amount) {
 
 static void changeEffectIntensity(int8_t amount) {
   if (effectCurrent != 0) {
-    int16_t new_val = (int16_t)effectIntensity + amount;
-    effectIntensity = (byte)constrain(new_val, 0, 255);
+    int16_t new_val = static_cast<int16_t>(effectIntensity) + amount;
+    effectIntensity = static_cast<byte>constrain(new_val, 0, 255);
     if (irApplyToAllSelected) {
       for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
@@ -176,8 +176,8 @@ static void changeEffectIntensity(int8_t amount) {
     Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
 
     CHSV32  prim_hsv = CRGBW(sseg.colors[0]);
-    int32_t new_val  = (int32_t)prim_hsv.s + amount;
-    prim_hsv.s       = (byte)constrain(new_val, 0, 255);  // constrain to 0-255
+    int32_t new_val  = static_cast<int32_t>(prim_hsv.s) + amount;
+    prim_hsv.s       = static_cast<byte>constrain(new_val, 0, 255);  // constrain to 0-255
     CRGBW newcolor   = prim_hsv;
     newcolor.w       = W(sseg.colors[0]);
     if (irApplyToAllSelected) {
@@ -1045,7 +1045,7 @@ static void decodeIRJson(uint32_t code) {
     return;
   }
 
-  sprintf(objKey, "\"0x%lX\":", (unsigned long)code);
+  sprintf(objKey, "\"0x%lX\":", static_cast<unsigned long>(code));
   strcpy(fileName, "/ir.json");  // for FS.exists()
 
   // attempt to read command from ir.json
@@ -1258,7 +1258,7 @@ void handleIR() {
     irCheckedTime = currentTime;
     if (irrecv->decode(&results)) {
       if (results.value != 0 && serialCanTX) {  // only print results if anything is received ( != 0 )
-        Serial.printf("IR recv: 0x%lX\n", (unsigned long)results.value);
+        Serial.printf("IR recv: 0x%lX\n", static_cast<unsigned long>(results.value));
       }
       decodeIR(results.value);
       irrecv->resume();

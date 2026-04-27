@@ -424,7 +424,7 @@ static void calculateBootloaderSHA256() {
   size_t                              totalHashLen = 0;
 
   for (uint32_t offset = 0; offset < bootloaderSize; offset += chunkSize) {
-    size_t readSize = min((size_t)(bootloaderSize - offset), chunkSize);
+    size_t readSize = min((bootloaderSize - offset), chunkSize);
     if (esp_flash_read(NULL, buffer, BOOTLOADER_OFFSET + offset, readSize) == ESP_OK) {
       sizer.feed(buffer, readSize);
 

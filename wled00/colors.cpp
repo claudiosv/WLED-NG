@@ -63,7 +63,7 @@ uint32_t WLED_O2_ATTR color_add(uint32_t c1, uint32_t c2, bool preserveCR) {
                             : ((g > b) ? g : b);  // find max value. note: faster than using max() function or on par
       maxval = (w > maxval) ? w : maxval;  // check white channel as well to avoid division by zero in pure white input
       const uint32_t scale =
-          (uint32_t(255) << 8) /
+          (static_cast<uint32_t>(255) << 8) /
           maxval;  // division of two 8bit (shifted) values does not work -> use bit shifts and multiplaction instead
       rb = ((rb * scale) >> 8) & TWO_CHANNEL_MASK;
       wg = (wg * scale) & ~TWO_CHANNEL_MASK;
@@ -103,8 +103,8 @@ uint32_t IRAM_ATTR color_fade(uint32_t c1, uint8_t amount, bool video) {
   if (video) {
     rb_scaled = ((rb * amount + 0x007F007F) >> 8) & TWO_CHANNEL_MASK;  // scale red and blue, add 0.5 for rounding
     wg_scaled = (wg * amount + 0x007F007F) & ~TWO_CHANNEL_MASK;        // scale white and green, add 0.5 for rounding
-    uint8_t r = byte(rb >> 16), g = byte(wg), b = byte(rb),
-            w    = byte(wg >> 16);  // extract r, g, b, w channels from original color (wg is shifted)
+    uint8_t r = static_cast<byte>(rb >> 16), g = static_cast<byte>(wg), b = static_cast<byte>(rb),
+            w    = static_cast<byte>(wg >> 16);  // extract r, g, b, w channels from original color (wg is shifted)
     uint8_t maxc = (r > g) ? ((r > b) ? r : b) : ((g > b) ? g : b);  // determine dominant channel for hue preservation
     maxc = (maxc >> 2) + 1;  // divide by 4 to get ~25% threshold for hue preservation, add 1 to prevent "washout" of
                              // very dark colors (prevents them becoming gray)
@@ -133,8 +133,8 @@ WLED_O3_ATTR void adjust_color(CRGBW& rgb, int32_t hueShift, int32_t satChange, 
   CHSV32 hsv;
   rgb2hsv(rgb, hsv);         // convert to HSV
   hsv.h += (hueShift << 8);  // shift hue (hue is 16 bits)
-  hsv.s = (int)hsv.s + satChange < 0 ? 0 : ((int)hsv.s + satChange > 255 ? 255 : (int)hsv.s + satChange);
-  hsv.v = (int)hsv.v + valueChange < 0 ? 0 : ((int)hsv.v + valueChange > 255 ? 255 : (int)hsv.v + valueChange);
+  hsv.s = static_cast<int>(hsv.s) + satChange < 0 ? 0 : (static_cast<int>(hsv.s) + satChange > 255 ? 255 : static_cast<int>(hsv.s) + satChange);
+  hsv.v = static_cast<int>(hsv.v) + valueChange < 0 ? 0 : (static_cast<int>(hsv.v) + valueChange > 255 ? 255 : static_cast<int>(hsv.v) + valueChange);
   hsv2rgb_spectrum(hsv, rgb);  // convert back to RGB
 }
 
@@ -144,9 +144,9 @@ uint32_t ColorFromPalette(const CRGBPalette16& pal, unsigned index, uint8_t brig
   if (blendType == LINEARBLEND_NOWRAP) {
     index = (index * 0xF0) >> 8;  // Blend range is affected by lo4 blend of values, remap to avoid wrapping
   }
-  unsigned    hi4    = byte(index) >> 4;
+  unsigned    hi4    = static_cast<byte>(index) >> 4;
   unsigned    lo4    = (index & 0x0F);
-  const CRGB* entry  = (CRGB*)&(pal[0]) + hi4;
+  const CRGB* entry  = const_cast<CRGB*>(&(pal[0])) + hi4;
   unsigned    red1   = entry->r;
   unsigned    green1 = entry->g;
   unsigned    blue1  = entry->b;
@@ -158,9 +158,9 @@ uint32_t ColorFromPalette(const CRGBPalette16& pal, unsigned index, uint8_t brig
     }
     unsigned f2 = (lo4 << 4);
     unsigned f1 = 256 - f2;
-    red1        = (red1 * f1 + (unsigned)entry->r * f2) >> 8;  // note: using color_blend() is slower
-    green1      = (green1 * f1 + (unsigned)entry->g * f2) >> 8;
-    blue1       = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;
+    red1        = (red1 * f1 + static_cast<unsigned>(entry->r) * f2) >> 8;  // note: using color_blend() is slower
+    green1      = (green1 * f1 + static_cast<unsigned>(entry->g) * f2) >> 8;
+    blue1       = (blue1 * f1 + static_cast<unsigned>(entry->b) * f2) >> 8;
   }
   if (brightness <
       255) {  // note: zero checking could be done to return black but that is hardly ever used so it is omitted
@@ -271,7 +271,7 @@ CRGBPalette16 generateHarmonicRandomPalette(const CRGBPalette16& basepalette) {
     if (makepastelpalette && palettecolors[i].saturation > 180) {
       palettecolors[i].saturation -= 160;  // desaturate all four colors
     }
-    RGBpalettecolors[i] = (CRGB)palettecolors[i];                         // convert to RGB
+    RGBpalettecolors[i] = CRGB(palettecolors[i]);                         // convert to RGB
     RGBpalettecolors[i] = ((uint32_t)RGBpalettecolors[i]) & 0x00FFFFFFU;  // strip alpha from CRGB
   }
 
@@ -352,7 +352,7 @@ void loadCustomPalettes() {
 // convert HSV (16bit hue) to RGB (32bit with white = 0), optimized for speed
 WLED_O2_ATTR void hsv2rgb_spectrum(const CHSV32& hsv, CRGBW& rgb) {
   unsigned p, q, t;
-  unsigned region    = ((unsigned)hsv.h * 6) >> 16;     // h / (65536 / 6)
+  unsigned region    = (static_cast<unsigned>(hsv.h) * 6) >> 16;     // h / (65536 / 6)
   unsigned remainder = (hsv.h - (region * 10923)) * 6;  // 10923 = (65536 / 6)
 
   // check for zero saturation
@@ -428,11 +428,11 @@ WLED_O3_ATTR void rgb2hsv(const CRGBW& rgb, CHSV32& hsv) {
     hsv.s = (255 * delta) / maxval;
     // note: early return if s==0 is omitted here to increase speed as gray values are rarely used
     if (maxval == r) {
-      hsv.h = (uint16_t)((10923 * (g - b)) / delta);
+      hsv.h = static_cast<uint16_t>((10923 * (g - b)) / delta);
     } else if (maxval == g) {
-      hsv.h = (uint16_t)(21845 + (10923 * (b - r)) / delta);
+      hsv.h = static_cast<uint16_t>(21845 + (10923 * (b - r)) / delta);
     } else {
-      hsv.h = (uint16_t)(43690 + (10923 * (r - g)) / delta);
+      hsv.h = static_cast<uint16_t>(43690 + (10923 * (r - g)) / delta);
     }
   } else {
     hsv.s = 0;
@@ -474,9 +474,9 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb)  // white spectrum to rgb, calc
     b = 255;
   }
   // g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
-  rgb[0] = (uint8_t)constrain(r, 0, 255);
-  rgb[1] = (uint8_t)constrain(g, 0, 255);
-  rgb[2] = (uint8_t)constrain(b, 0, 255);
+  rgb[0] = static_cast<uint8_t>constrain(r, 0, 255);
+  rgb[1] = static_cast<uint8_t>constrain(g, 0, 255);
+  rgb[2] = static_cast<uint8_t>constrain(b, 0, 255);
   rgb[3] = 0;
 }
 
@@ -526,9 +526,9 @@ void colorXYtoRGB(
   float z = 1.0f - x - y;
   float X = (1.0f / y) * x;
   float Z = (1.0f / y) * z;
-  float r = (int)255 * (X * 1.656492f - 0.354851f - Z * 0.255038f);
-  float g = (int)255 * (-X * 0.707196f + 1.655397f + Z * 0.036152f);
-  float b = (int)255 * (X * 0.051713f - 0.121364f + Z * 1.011530f);
+  float r = 255 * (X * 1.656492f - 0.354851f - Z * 0.255038f);
+  float g = 255 * (-X * 0.707196f + 1.655397f + Z * 0.036152f);
+  float b = 255 * (X * 0.051713f - 0.121364f + Z * 1.011530f);
   if (r > b && r > g && r > 1.0f) {
     // red is too big
     g = g / r;
@@ -572,9 +572,9 @@ void colorXYtoRGB(
       b = 1.0f;
     }
   }
-  rgb[0] = byte(255.0f * r);
-  rgb[1] = byte(255.0f * g);
-  rgb[2] = byte(255.0f * b);
+  rgb[0] = static_cast<byte>(255.0f * r);
+  rgb[1] = static_cast<byte>(255.0f * g);
+  rgb[2] = static_cast<byte>(255.0f * b);
 }
 
 void colorRGBtoXY(
@@ -660,9 +660,9 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb) {
   }
   lastKelvin = kelvin;
   byte rgbw[4];
-  rgbw[0] = ((uint16_t)correctionRGB[0] * R(rgb)) / 255;  // correct R
-  rgbw[1] = ((uint16_t)correctionRGB[1] * G(rgb)) / 255;  // correct G
-  rgbw[2] = ((uint16_t)correctionRGB[2] * B(rgb)) / 255;  // correct B
+  rgbw[0] = (static_cast<uint16_t>(correctionRGB[0]) * R(rgb)) / 255;  // correct R
+  rgbw[1] = (static_cast<uint16_t>(correctionRGB[1]) * G(rgb)) / 255;  // correct G
+  rgbw[2] = (static_cast<uint16_t>(correctionRGB[2]) * B(rgb)) / 255;  // correct B
   rgbw[3] = W(rgb);
   return RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
 }
@@ -684,7 +684,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
   if (r > b) {
     // scale blue up as if red was at 255
     uint16_t scale = 0xFFFF / r;  // get scale factor (range 257-65535)
-    b              = ((uint16_t)b * scale) >> 8;
+    b              = (static_cast<uint16_t>(b) * scale) >> 8;
     // For all temps K<6600 R is bigger than B (for full bri colors R=255)
     //-> Use 9 linear approximations for blackbody radiation blue values from 2000-6600K (blue is always 0 below 2000K)
     if (b < 33) {
@@ -715,7 +715,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
   } else {
     // scale red up as if blue was at 255
     uint16_t scale = 0xFFFF / b;  // get scale factor (range 257-65535)
-    r              = ((uint16_t)r * scale) >> 8;
+    r              = (static_cast<uint16_t>(r) * scale) >> 8;
     // For all temps K>6600 B is bigger than R (for full bri colors B=255)
     //-> Use 2 linear approximations for blackbody radiation red values from 6600-10091K (blue is always 0 below 2000K)
     if (r > 225) {
@@ -734,8 +734,8 @@ uint8_t NeoGammaWLEDMethod::gammaT_inv[256];
 void NeoGammaWLEDMethod::calcGammaTable(float gamma) {
   float gamma_inv = 1.0f / gamma;  // inverse gamma
   for (size_t i = 1; i < 256; i++) {
-    gammaT[i]     = (int)(powf((float)i / 255.0f, gamma) * 255.0f + 0.5f);
-    gammaT_inv[i] = (int)(powf(((float)i - 0.5f) / 255.0f, gamma_inv) * 255.0f + 0.5f);
+    gammaT[i]     = (int)(powf(static_cast<float>(i) / 255.0f, gamma) * 255.0f + 0.5f);
+    gammaT_inv[i] = (int)(powf((static_cast<float>(i) - 0.5f) / 255.0f, gamma_inv) * 255.0f + 0.5f);
     // DEBUG_PRINTF_P("gammaT[%d] = %d gammaT_inv[%d] = %d\n", i, gammaT[i], i, gammaT_inv[i]);
   }
   gammaT[0]     = 0;

@@ -18,7 +18,7 @@
 
 // get metadata pointer
 SegmentFontMetadata* FontManager::getMetadata() {
-  return (SegmentFontMetadata*)_segment->data;
+  return reinterpret_cast<SegmentFontMetadata*>(_segment->data);
 }
 
 void FontManager::updateFontBase() {
@@ -148,7 +148,7 @@ void FontManager::cacheGlyphs(const char* text) {
   uint8_t neededCodes[MAX_CACHED_GLYPHS];
   uint8_t neededCount = collectNeededCodes(text, hdr, neededCodes);
 
-  GlyphEntry* registry = (GlyphEntry*)(_segment->data + sizeof(SegmentFontMetadata));
+  GlyphEntry* registry = reinterpret_cast<GlyphEntry*>(_segment->data + sizeof(SegmentFontMetadata));
   for (uint8_t k = 0; k < neededCount; k++) {
     // look up glyph in registry
     bool found = false;
@@ -236,7 +236,7 @@ void FontManager::rebuildCache(const char* text) {
   // read wbf font header
   FontHeader hdr;
   if (file) {
-    if (file.read((uint8_t*)&hdr, FONT_HEADER_SIZE) != FONT_HEADER_SIZE) {
+    if (file.read(reinterpret_cast<uint8_t*>(&hdr), FONT_HEADER_SIZE) != FONT_HEADER_SIZE) {
       file.close();
       return;
     }  // header incomplete
@@ -302,7 +302,7 @@ void FontManager::rebuildCache(const char* text) {
   uint8_t* dataptr = _segment->data + sizeof(SegmentFontMetadata);
 
   // write registry (GlyphEntry array)
-  GlyphEntry* registry = (GlyphEntry*)dataptr;
+  GlyphEntry* registry = reinterpret_cast<GlyphEntry*>(dataptr);
   for (uint8_t k = 0; k < neededCount; k++) {
     uint8_t code = neededCodes[k];
     if (code >= numGlyphs) {
@@ -371,8 +371,8 @@ uint8_t FontManager::getGlyphWidth(uint32_t unicode) {
     return 0;
   }
 
-  SegmentFontMetadata* meta     = (SegmentFontMetadata*)_segment->data;
-  GlyphEntry*          registry = (GlyphEntry*)(_segment->data + sizeof(SegmentFontMetadata));
+  SegmentFontMetadata* meta     = reinterpret_cast<SegmentFontMetadata*>(_segment->data);
+  GlyphEntry*          registry = reinterpret_cast<GlyphEntry*>(_segment->data + sizeof(SegmentFontMetadata));
 
   for (uint8_t k = 0; k < meta->glyphCount; k++) {
     if (registry[k].code == idx) {
@@ -389,8 +389,8 @@ uint8_t* FontManager::getGlyphBitmap(uint32_t unicode, uint8_t& outWidth, uint8_
   if (idx < 0) {
     return nullptr;
   }
-  SegmentFontMetadata* meta     = (SegmentFontMetadata*)_segment->data;
-  GlyphEntry*          registry = (GlyphEntry*)(_segment->data + sizeof(SegmentFontMetadata));
+  SegmentFontMetadata* meta     = reinterpret_cast<SegmentFontMetadata*>(_segment->data);
+  GlyphEntry*          registry = reinterpret_cast<GlyphEntry*>(_segment->data + sizeof(SegmentFontMetadata));
 
   uint32_t bitmapOffset = 0;
   for (uint8_t k = 0; k < meta->glyphCount; k++) {

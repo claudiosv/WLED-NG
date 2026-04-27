@@ -10,13 +10,13 @@
 
 // inline math functions
 __attribute__((always_inline)) inline uint8_t scale8(uint8_t i, uint8_t scale) {
-  return ((int)i * (1 + (int)scale)) >> 8;
+  return (static_cast<int>(i) * (1 + static_cast<int>(scale))) >> 8;
 }
 __attribute__((always_inline)) inline uint8_t scale8_video(uint8_t i, uint8_t scale) {
-  return (((int)i * (int)scale) >> 8) + ((i && scale) ? 1 : 0);
+  return ((static_cast<int>(i) * static_cast<int>(scale)) >> 8) + ((i && scale) ? 1 : 0);
 }
 __attribute__((always_inline)) inline uint16_t scale16(uint16_t i, uint16_t scale) {
-  return ((uint32_t)i * (1 + (uint32_t)scale)) >> 16;
+  return (static_cast<uint32_t>(i) * (1 + static_cast<uint32_t>(scale))) >> 16;
 }
 __attribute__((always_inline)) inline uint8_t qadd8(uint8_t i, uint8_t j) {
   unsigned t = i + j;
@@ -27,14 +27,14 @@ __attribute__((always_inline)) inline uint8_t qsub8(uint8_t i, uint8_t j) {
   return t < 0 ? 0 : t;
 }
 __attribute__((always_inline)) inline uint8_t qmul8(uint8_t i, uint8_t j) {
-  unsigned p = (unsigned)i * (unsigned)j;
+  unsigned p = static_cast<unsigned>(i) * static_cast<unsigned>(j);
   return p > 255 ? 255 : p;
 }
 __attribute__((always_inline)) inline int8_t abs8(int8_t i) {
   return i < 0 ? -i : i;
 }
 __attribute__((always_inline)) inline int8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
-  return a + ((((int32_t)b - (int32_t)a) * ((int32_t)frac + 1)) >> 8);
+  return a + (((static_cast<int32_t>(b) - static_cast<int32_t>(a)) * (static_cast<int32_t>(frac) + 1)) >> 8);
 }
 
 // forward declarations
@@ -178,7 +178,7 @@ struct CRGB {
 
   // allow construction from 32-bit (really 24-bit) bit 0xRRGGBB color code
   inline CRGB(uint32_t colorcode) __attribute__((always_inline))
-      : r(uint8_t(colorcode >> 16)), g(uint8_t(colorcode >> 8)), b(uint8_t(colorcode)) {
+      : r(static_cast<uint8_t>(colorcode >> 16)), g(static_cast<uint8_t>(colorcode >> 8)), b(static_cast<uint8_t>(colorcode)) {
   }
 
   // allow copy construction
@@ -211,9 +211,9 @@ struct CRGB {
 
   // allow assignment from 32-bit (really 24-bit) 0xRRGGBB color code
   inline CRGB& operator=(const uint32_t colorcode) __attribute__((always_inline)) {
-    r = uint8_t(colorcode >> 16);
-    g = uint8_t(colorcode >> 8);
-    b = uint8_t(colorcode);
+    r = static_cast<uint8_t>(colorcode >> 16);
+    g = static_cast<uint8_t>(colorcode >> 8);
+    b = static_cast<uint8_t>(colorcode);
     return *this;
   }
 
@@ -227,9 +227,9 @@ struct CRGB {
 
   // allow assignment from 32-bit (really 24-bit) 0xRRGGBB color code
   inline CRGB& setColorCode(uint32_t colorcode) __attribute__((always_inline)) {
-    r = uint8_t(colorcode >> 16);
-    g = uint8_t(colorcode >> 8);
-    b = uint8_t(colorcode);
+    r = static_cast<uint8_t>(colorcode >> 16);
+    g = static_cast<uint8_t>(colorcode >> 8);
+    b = static_cast<uint8_t>(colorcode);
     return *this;
   }
 
@@ -318,18 +318,18 @@ struct CRGB {
   // scale down a RGB to N/256ths of its current brightness (will not scale all the way to black)
   inline CRGB& nscale8_video(uint8_t scaledown) {
     uint8_t nonzeroscale = (scaledown != 0) ? 1 : 0;
-    r                    = (r == 0) ? 0 : (((int)r * (int)(scaledown)) >> 8) + nonzeroscale;
-    g                    = (g == 0) ? 0 : (((int)g * (int)(scaledown)) >> 8) + nonzeroscale;
-    b                    = (b == 0) ? 0 : (((int)b * (int)(scaledown)) >> 8) + nonzeroscale;
+    r                    = (r == 0) ? 0 : ((static_cast<int>(r) * static_cast<int>(scaledown)) >> 8) + nonzeroscale;
+    g                    = (g == 0) ? 0 : ((static_cast<int>(g) * static_cast<int>(scaledown)) >> 8) + nonzeroscale;
+    b                    = (b == 0) ? 0 : ((static_cast<int>(b) * static_cast<int>(scaledown)) >> 8) + nonzeroscale;
     return *this;
   }
 
   // scale down a RGB to N/256ths of its current brightness (can scale to black)
   inline CRGB& nscale8(uint8_t scaledown) {
     uint32_t scale_fixed = scaledown + 1;
-    r                    = (((uint32_t)r) * scale_fixed) >> 8;
-    g                    = (((uint32_t)g) * scale_fixed) >> 8;
-    b                    = (((uint32_t)b) * scale_fixed) >> 8;
+    r                    = ((static_cast<uint32_t>(r)) * scale_fixed) >> 8;
+    g                    = ((static_cast<uint32_t>(g)) * scale_fixed) >> 8;
+    b                    = ((static_cast<uint32_t>(b)) * scale_fixed) >> 8;
     return *this;
   }
 
@@ -344,9 +344,9 @@ struct CRGB {
   inline CRGB scale8(uint8_t scaledown) const {
     CRGB     out         = *this;
     uint32_t scale_fixed = scaledown + 1;
-    out.r                = (((uint32_t)out.r) * scale_fixed) >> 8;
-    out.g                = (((uint32_t)out.g) * scale_fixed) >> 8;
-    out.b                = (((uint32_t)out.b) * scale_fixed) >> 8;
+    out.r                = ((static_cast<uint32_t>(out.r)) * scale_fixed) >> 8;
+    out.g                = ((static_cast<uint32_t>(out.g)) * scale_fixed) >> 8;
+    out.b                = ((static_cast<uint32_t>(out.b)) * scale_fixed) >> 8;
     return out;
   }
 
@@ -362,9 +362,9 @@ struct CRGB {
   // fadeToBlackBy is a synonym for nscale8(), as a fade instead of a scale
   inline CRGB& fadeToBlackBy(uint8_t fadefactor) {
     uint32_t scale_fixed = 256 - fadefactor;
-    r                    = (((uint32_t)r) * scale_fixed) >> 8;
-    g                    = (((uint32_t)g) * scale_fixed) >> 8;
-    b                    = (((uint32_t)b) * scale_fixed) >> 8;
+    r                    = ((static_cast<uint32_t>(r)) * scale_fixed) >> 8;
+    g                    = ((static_cast<uint32_t>(g)) * scale_fixed) >> 8;
+    b                    = ((static_cast<uint32_t>(b)) * scale_fixed) >> 8;
     return *this;
   }
 
@@ -648,23 +648,23 @@ class CRGBPalette16 {
 
   // Copy constructor
   CRGBPalette16(const CRGBPalette16& rhs) {
-    memmove((void*)&(entries[0]), &(rhs.entries[0]), sizeof(entries));
+    memmove(reinterpret_cast<void*>(&(entries[0])), &(rhs.entries[0]), sizeof(entries));
   }
 
   // Create palette from array of CRGB colors
   CRGBPalette16(const CRGB rhs[16]) {
-    memmove((void*)&(entries[0]), &(rhs[0]), sizeof(entries));
+    memmove(reinterpret_cast<void*>(&(entries[0])), &(rhs[0]), sizeof(entries));
   }
 
   // Copy assignment operator
   CRGBPalette16& operator=(const CRGBPalette16& rhs) {
-    memmove((void*)&(entries[0]), &(rhs.entries[0]), sizeof(entries));
+    memmove(reinterpret_cast<void*>(&(entries[0])), &(rhs.entries[0]), sizeof(entries));
     return *this;
   }
 
   // Create palette from array of CRGB colors
   CRGBPalette16& operator=(const CRGB rhs[16]) {
-    memmove((void*)&(entries[0]), &(rhs[0]), sizeof(entries));
+    memmove(reinterpret_cast<void*>(&(entries[0])), &(rhs[0]), sizeof(entries));
     return *this;
   }
 
@@ -685,8 +685,8 @@ class CRGBPalette16 {
 
   // Equality operator
   bool operator==(const CRGBPalette16& rhs) const {
-    const uint8_t* p = (const uint8_t*)(&(this->entries[0]));
-    const uint8_t* q = (const uint8_t*)(&(rhs.entries[0]));
+    const uint8_t* p = reinterpret_cast<const uint8_t*>(&(this->entries[0]));
+    const uint8_t* q = reinterpret_cast<const uint8_t*>(&(rhs.entries[0]));
     if (p == q) {
       return true;
     }
@@ -717,12 +717,12 @@ class CRGBPalette16 {
 
   // Array subscript operator
   inline CRGB& operator[](int x) __attribute__((always_inline)) {
-    return entries[(uint8_t)x];
+    return entries[static_cast<uint8_t>(x)];
   }
 
   // Array subscript operator (const)
   inline const CRGB& operator[](int x) const __attribute__((always_inline)) {
-    return entries[(uint8_t)x];
+    return entries[static_cast<uint8_t>(x)];
   }
 
   // Get the underlying pointer to the CRGB entries making up the palette

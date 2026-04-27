@@ -37,7 +37,7 @@ void shortPressAction(uint8_t b) {
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[MQTT_MAX_TOPIC_LEN + 32];
-    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, static_cast<int>(b));
     mqtt->publish(subuf, 0, false, "short");
   }
 #endif
@@ -82,7 +82,7 @@ void longPressAction(uint8_t b) {
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[MQTT_MAX_TOPIC_LEN + 32];
-    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, static_cast<int>(b));
     mqtt->publish(subuf, 0, false, "long");
   }
 #endif
@@ -105,7 +105,7 @@ void doublePressAction(uint8_t b) {
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[MQTT_MAX_TOPIC_LEN + 32];
-    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, static_cast<int>(b));
     mqtt->publish(subuf, 0, false, "double");
   }
 #endif
@@ -193,9 +193,9 @@ void handleSwitch(uint8_t b) {
     if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
       char subuf[MQTT_MAX_TOPIC_LEN + 32];
       if (buttons[b].type == BTN_TYPE_PIR_SENSOR) {
-        sprintf(subuf, "%s/motion/%d", mqttDeviceTopic, (int)b);
+        sprintf(subuf, "%s/motion/%d", mqttDeviceTopic, static_cast<int>(b));
       } else {
-        sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+        sprintf(subuf, _mqtt_topic_button, mqttDeviceTopic, static_cast<int>(b));
       }
       mqtt->publish(subuf, 0, false, !buttons[b].pressedBefore ? "off" : "on");
     }
@@ -224,8 +224,8 @@ void handleAnalog(uint8_t b) {
   yield();                                  // keep WiFi task running
 
   filteredReading[b] +=
-      POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]);  // filter raw input, and scale to [0..255]
-  unsigned aRead = max(min(int(filteredReading[b]), 255), 0);              // squash into 8bit
+      POT_SMOOTHING * ((static_cast<float>(rawReading) / 16.0f) - filteredReading[b]);  // filter raw input, and scale to [0..255]
+  unsigned aRead = max(min(static_cast<int>(filteredReading[b]), 255), 0);              // squash into 8bit
   if (aRead <= POT_SENSITIVITY) {
     aRead = 0;  // make sure that 0 and 255 are used
   }
@@ -238,7 +238,7 @@ void handleAnalog(uint8_t b) {
   }
 
   // remove noise & reduce frequency of UI updates
-  if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) {
+  if (abs(static_cast<int>(aRead) - static_cast<int>(oldRead[b])) <= POT_SENSITIVITY) {
     return;  // no significant change in reading
   }
 
